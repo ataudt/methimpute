@@ -1,0 +1,37 @@
+Package: popmeth
+Type: Package
+Title: Population analysis suite for Bisulfite-sequencing data
+Version: 0.1.0
+Date: 2016-04-29
+Author: Aaron Taudt
+Maintainer: Aaron Taudt <aaron.taudt@gmail.com>
+Description: This package implements functions for calling methylated and unmethylated regions and estimate variability among a population of samples.
+Depends:
+    R (>= 3.3.0),
+    GenomicRanges,
+    ggplot2
+Imports:
+    Rcpp (>= 0.12.4.5),
+    utils,
+    grDevices,
+    graphics,
+    stats,
+    foreach,
+    doParallel,
+    S4Vectors,
+    GenomeInfoDb,
+    IRanges,
+    reshape2,
+    Rsamtools,
+    GenomicAlignments
+Suggests:
+		knitr,
+		testthat,
+    biomaRt,
+    ggbio
+LinkingTo: Rcpp
+License: Artistic-2.0
+LazyLoad: yes
+VignetteBuilder: knitr
+Packaged: 2014-05-03 00:00:00 CET+1; Taudt
+RoxygenNote: 5.0.1
