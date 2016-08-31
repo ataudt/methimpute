@@ -138,7 +138,7 @@ class Beta : public Density {
 	public:
 		// Constructor and Destructor
 		Beta();
-		Beta(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, const Rcpp::IntegerVector & intervals, double a, double b, int numintervals);
+		Beta(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b);
 		~Beta();
 
 		// Methods
@@ -165,8 +165,6 @@ class Beta : public Density {
 		Rcpp::NumericVector obs; ///< vector [NDATA] of observations
 		Rcpp::NumericVector logObs; ///< vector [NDATA] of log(observations)
 		Rcpp::NumericVector log1mObs; ///< vector [NDATA] of log(1-observations)
-		Rcpp::IntegerVector intervals; ///< vector [NDATA] of intervals of observations
-		int numintervals; ///< number of intervals for the histogram
 };
 
 
@@ -174,7 +172,7 @@ class Beta_mirror : public Beta {
 	public:
 		// Constructor and Destructor
 		Beta_mirror();
-		Beta_mirror(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, const Rcpp::IntegerVector & intervals, double a, double b, int numintervals);
+		Beta_mirror(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b);
 		~Beta_mirror();
 
 		// Methods
@@ -201,8 +199,6 @@ class Beta_mirror : public Beta {
 		Rcpp::NumericVector obs; ///< vector [NDATA] of observations
 		Rcpp::NumericVector logObs; ///< vector [NDATA] of log(observations)
 		Rcpp::NumericVector log1mObs; ///< vector [NDATA] of log(1-observations)
-		Rcpp::IntegerVector intervals; ///< vector [NDATA] of intervals of observations
-		int numintervals; ///< number of intervals for the histogram
 };
 
 
@@ -210,7 +206,7 @@ class Beta_symmetric : public Beta {
 	public:
 		// Constructor and Destructor
 		Beta_symmetric();
-		Beta_symmetric(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, const Rcpp::IntegerVector & intervals, double a, double b, int numintervals);
+		Beta_symmetric(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b);
 		~Beta_symmetric();
 
 		// Methods
@@ -237,8 +233,6 @@ class Beta_symmetric : public Beta {
 		Rcpp::NumericVector obs; ///< vector [NDATA] of observations
 		Rcpp::NumericVector logObs; ///< vector [NDATA] of log(observations)
 		Rcpp::NumericVector log1mObs; ///< vector [NDATA] of log(1-observations)
-		Rcpp::IntegerVector intervals; ///< vector [NDATA] of intervals of observations
-		int numintervals; ///< number of intervals for the histogram
 };
 
 

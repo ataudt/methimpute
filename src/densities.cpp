@@ -717,37 +717,31 @@ Beta_symmetric::Beta_symmetric() { }
 
 Beta_mirror::Beta_mirror() { }
 
-Beta::Beta(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, const Rcpp::IntegerVector & intervals, double a, double b, int numintervals)
+Beta::Beta(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b)
 {
 	this->obs = obs;
 	this->logObs = logObs;
 	this->log1mObs = log1mObs;
-	this->intervals = intervals;
 	this->a = a;
 	this->b = b;
-	this->numintervals=numintervals;
 }
 
-Beta_symmetric::Beta_symmetric(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, const Rcpp::IntegerVector & intervals, double a, double b, int numintervals)
+Beta_symmetric::Beta_symmetric(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b)
 {
 	this->obs = obs;
 	this->logObs = logObs;
 	this->log1mObs = log1mObs;
-	this->intervals = intervals;
 	this->a = a;
 	this->b = b;
-	this->numintervals=numintervals;
 }
 
-Beta_mirror::Beta_mirror(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, const Rcpp::IntegerVector & intervals, double a, double b, int numintervals)
+Beta_mirror::Beta_mirror(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b)
 {
 	this->obs = obs;
 	this->logObs = logObs;
 	this->log1mObs = log1mObs;
-	this->intervals = intervals;
 	this->a = a;
 	this->b = b;
-	this->numintervals=numintervals;
 }
 
 Beta::~Beta() { }
@@ -763,43 +757,25 @@ void Beta::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 
 void Beta::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
-	double binwidth = 1.0 / this->numintervals;
-	std::vector<double> probs(this->numintervals);
-	for (int i1=0; i1<probs.size(); i1++)
+	for (int t=0; t<this->obs.size(); t++)
 	{
-		probs[i1] = R::pbeta(binwidth*(i1+1), this->a, this->b, 1, 0) - R::pbeta(binwidth*i1, this->a, this->b, 1, 0);
-	}
-	for (int t=0; t<this->intervals.size(); t++)
-	{
-		dens[t] = probs[this->intervals[t]];
+		dens[t] = R::dbeta(this->obs[t], this->a, this->b, 0);
 	}
 } 
 
 void Beta_mirror::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
-	double binwidth = 1.0 / this->numintervals;
-	std::vector<double> probs(this->numintervals);
-	for (int i1=0; i1<probs.size(); i1++)
+	for (int t=0; t<this->obs.size(); t++)
 	{
-		probs[i1] = R::pbeta(binwidth*(i1+1), this->a, this->b, 1, 0) - R::pbeta(binwidth*i1, this->a, this->b, 1, 0);
-	}
-	for (int t=0; t<this->intervals.size(); t++)
-	{
-		dens[t] = probs[this->intervals[t]];
+		dens[t] = R::dbeta(this->obs[t], this->a, this->b, 0);
 	}
 } 
 
 void Beta_symmetric::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
-	double binwidth = 1.0 / this->numintervals;
-	std::vector<double> probs(this->numintervals);
-	for (int i1=0; i1<probs.size(); i1++)
+	for (int t=0; t<this->obs.size(); t++)
 	{
-		probs[i1] = R::pbeta(binwidth*(i1+1), this->a, this->b, 1, 0) - R::pbeta(binwidth*i1, this->a, this->b, 1, 0);
-	}
-	for (int t=0; t<this->intervals.size(); t++)
-	{
-		dens[t] = probs[this->intervals[t]];
+		dens[t] = R::dbeta(this->obs[t], this->a, this->b, 0);
 	}
 } 
 
@@ -824,35 +800,41 @@ void Beta_mirror::update(const Rcpp::NumericMatrix & weights, const int * rows)
 	double DiC, TriC;
 	double F, dFdx, FdivM;
 
-	// A
-	a0 = this->get_a();
-	b0 = this->get_b();
-	for (int k=0; k<kmax; k++)
-	{
-		F = dFdx = 0.0;
-		DiC = - R::digamma(a0) + R::digamma(a0+b0);
-		TriC = - R::trigamma(a0) + R::trigamma(a0+b0);
-		for(int t=0; t<this->obs.size(); t++)
-		{
-			F += weights(rows[0],t) * ( DiC + this->logObs[t] );
-			F += weights(rows[1],t) * ( DiC + this->log1mObs[t] );
-			dFdx += ( weights(rows[0],t) + weights(rows[1],t) ) * TriC;
-		}
-		FdivM = F/dFdx;
-		if (FdivM < a0)
-		{
-			a0 = a0-FdivM;
-		}
-		else if (FdivM >= a0)
-		{
-			a0 = a0/2.0;
-		}
-		if(fabs(F)<eps)
-		{
-			break;
-		}
-	}
-	this->a = a0;
+// Update only B to keep A fixed at 1
+// 	// A
+// 	a0 = this->get_a();
+// 	b0 = this->get_b();
+// 	for (int k=0; k<kmax; k++)
+// 	{
+// 		F = dFdx = 0.0;
+// 		DiC = - R::digamma(a0) + R::digamma(a0+b0);
+// 		TriC = - R::trigamma(a0) + R::trigamma(a0+b0);
+// 		for(int t=0; t<this->obs.size(); t++)
+// 		{
+// 			F += weights(rows[0],t) * ( DiC + this->logObs[t] );
+// 			F += weights(rows[1],t) * ( DiC + this->log1mObs[t] );
+// 			dFdx += ( weights(rows[0],t) + weights(rows[1],t) ) * TriC;
+// 		}
+// 		FdivM = F/dFdx;
+// 		if (FdivM < a0)
+// 		{
+// 			a0 = a0-FdivM;
+// 		}
+// 		else if (FdivM >= a0)
+// 		{
+// 			a0 = a0/2.0;
+// 		}
+// 		if(fabs(F)<eps)
+// 		{
+// 			break;
+// 		}
+// 	}
+// 	// Artificially restrict to values >= 1 to avoid Inf when obs=0 or 1
+// 	if (a0 < 1)
+// 	{
+// 		a0 = 1;
+// 	}
+// 	this->a = a0;
 
 	// B
 	a0 = this->get_a();
@@ -882,6 +864,11 @@ void Beta_mirror::update(const Rcpp::NumericMatrix & weights, const int * rows)
 			break;
 		}
 	}
+	// Artificially restrict to values >= 1 to avoid Inf when obs=0 or 1
+	if (b0 < 1)
+	{
+		b0 = 1;
+	}
 	this->b = b0;
 
 }
@@ -900,8 +887,8 @@ void Beta_symmetric::update(const Rcpp::NumericMatrix & weights, const int * row
 	for (int k=0; k<kmax; k++)
 	{
 		F = dFdx = 0.0;
-		DiC = - 2*R::digamma(a0) + R::digamma(a0+a0);
-		TriC = - 2*R::trigamma(a0) + R::trigamma(a0+a0);
+		DiC = - 2*R::digamma(a0) + 2*R::digamma(a0+a0);
+		TriC = - 2*R::trigamma(a0) + 2*R::trigamma(a0+a0);
 		for(int t=0; t<this->obs.size(); t++)
 		{
 			F += weights(rows[0],t) * ( DiC + this->logObs[t] + this->log1mObs[t] );

@@ -4,7 +4,7 @@
 \alias{fitSignalBackground}
 \title{Fit a two-component HMM}
 \usage{
-fitSignalBackground(data, observable = "counts", fit.on.chrom = "chr1",
+fitSignalBackground(data, observable = "counts", fit.on.chrom = NULL,
   transDist = 10000, eps = 0.01, max.time = Inf, max.iter = Inf,
   count.cutoff = 1000, verbosity = 1)
 }
@@ -31,6 +31,6 @@ fitSignalBackground(data, observable = "counts", fit.on.chrom = "chr1",
 A list with fitted parameters, posteriors, and the input parameters.
 }
 \description{
-Fit a two-component Hidden Markov Model to the supplied \code{counts}. The transition matrix is distance-dependent with exponential decaying constant \code{transDist}. Components are modeled as negative binomial distributions.
+Fit a two-component Hidden Markov Model to the supplied counts. The transition matrix is distance-dependent with exponential decaying constant \code{transDist}. Components are modeled as negative binomial distributions.
 }
 

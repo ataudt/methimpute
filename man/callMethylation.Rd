@@ -4,16 +4,11 @@
 \alias{callMethylation}
 \title{Call methylated regions}
 \usage{
-callMethylation(data, per.chrom = FALSE, num.threads = 1,
-  fit.on.chrom = "chr1", transDist = 10000, eps = 0.01, max.time = Inf,
-  max.iter = Inf, count.cutoff = 1000, verbosity = 1)
+callMethylation(data, fit.on.chrom = NULL, transDist = 10000, eps = 0.01,
+  max.time = Inf, max.iter = Inf, count.cutoff = 1000, verbosity = 1)
 }
 \arguments{
 \item{data}{A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'distance' and 'counts'.}
-
-\item{per.chrom}{Parallelize the fitting of the multivariate HMM per chromosome using \code{num.threads}.}
-
-\item{num.threads}{Number of threads to use if \code{per.chrom = TRUE}.}
 
 \item{fit.on.chrom}{A character vector giving the chromosomes on which the HMM will be fitted.}
 

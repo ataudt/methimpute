@@ -2,7 +2,7 @@
 #'
 #' Get the colors that are used for plotting.
 #'
-#' @param labels Any combination of \code{c("unmethylated","methylated","heterozygous", "total")}.
+#' @param states Any combination of \code{c("unmethylated","methylated","heterozygous", "total")}.
 #' @return A character vector with colors.
 #' @seealso \code{\link{plotting}}
 #' @export
@@ -29,7 +29,7 @@ plotHistogramRatio <- function(hmm, num.intervals=20) {
     ggplt <- ggplot(data.frame(ratio=hmm$data$ratio)) + geom_histogram(aes_string(x='ratio', y='..density..'), breaks=seq(0, 1, length.out = num.intervals+1), color='black', fill='white') + coord_cartesian(xlim=c(0,1)) + xlab("ratio")
 
     ## Add distributions
-    x <- c(seq(0, 0.1, by=0.001), seq(0, 0.9, by=0.01), seq(0.9, 1, by=0.001))
+    x <- c(seq(0, 0.1, by=0.001), seq(0.1, 0.9, by=0.01), seq(0.9, 1, by=0.001))
     distr <- list(x=x)
     p <- hmm$params
     for (irow in 1:nrow(p$emissionParams)) {
@@ -45,7 +45,7 @@ plotHistogramRatio <- function(hmm, num.intervals=20) {
     lweights <- round(p$weights, 2)
     legend <- paste0(rownames(p$emissionParams), ", weight=", lweights)
     legend <- c(legend, paste0('Total, weight=1'))
-    ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(c(names(p$weights), 'total')), labels=legend) + theme(legend.position=c(0.5,1), legend.justification=c(0.5,1))
+    ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(c(rownames(p$emissionParams), 'total')), labels=legend) + theme(legend.position=c(0.5,1), legend.justification=c(0.5,1))
     return(ggplt)
 }
 

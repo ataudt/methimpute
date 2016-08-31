@@ -67,16 +67,18 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, 
     
     ### Construct result object ###
     ptm <- startTimedMessage("Compiling results ...")
-    names(hmm$weights) <- states
-    rownames(hmm$posteriors) <- states
-    data$posteriors <- t(hmm$posteriors)
-    data$state <- factor(states, levels=states)[apply(data$posteriors, 1, which.max)]
-    
     r <- list()
+    if (hmm$error == "") {
+        r$convergenceInfo <- hmm$convergenceInfo
+        names(hmm$weights) <- states
+        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParamsList=params$emissionParamsList, weights=hmm$weights)
+        r$params.initial <- params
+        # States and posteriors
+        rownames(hmm$posteriors) <- states
+        data$posteriors <- t(hmm$posteriors)
+        data$state <- factor(states, levels=states)[hmm$states+1]
+    }
     r$data <- data
-    r$convergenceInfo <- hmm$convergenceInfo
-    r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParamsList=params$emissionParamsList, weights=hmm$weights)
-    r$params.initial <- params
     stopTimedMessage(ptm)
     
     return(r)
@@ -182,16 +184,18 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
     
     ### Construct result object ###
     ptm <- startTimedMessage("Compiling results ...")
-    names(hmm$weights) <- states
-    rownames(hmm$posteriors) <- states
-    data$posteriors <- t(hmm$posteriors)
-    data$state <- factor(states, levels=states)[apply(data$posteriors, 1, which.max)]
-    
     r <- list()
+    if (hmm$error == "") {
+        r$convergenceInfo <- hmm$convergenceInfo
+        names(hmm$weights) <- states
+        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParams=hmm$emissionParams, weights=hmm$weights)
+        r$params.initial <- params
+        # States and posteriors
+        rownames(hmm$posteriors) <- states
+        data$posteriors <- t(hmm$posteriors)
+        data$state <- factor(states, levels=states)[hmm$states+1]
+    }
     r$data <- data
-    r$convergenceInfo <- hmm$convergenceInfo
-    r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParams=hmm$emissionParams, weights=hmm$weights)
-    r$params.initial <- params
     stopTimedMessage(ptm)
     
     return(r)
@@ -222,7 +226,7 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.tim
     }
   
     ### Assign variables ###
-    states <- c("UNmethylated", "Methylated", "Hemimethylated")
+    states <- c("UNmethylated", "Hemimethylated", "Methylated")
     numstates <- length(states)
     ratio <- data$ratio
     distances <- data$distance
@@ -242,8 +246,8 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.tim
     ### Initialization of emission distributions ###
     ep <- list()
     ep[["UNmethylated"]] <- data.frame(type='dbeta', a=1, b=4)
-    ep[["Methylated"]] <- data.frame(type='dbeta', a=4, b=1)
     ep[["Hemimethylated"]] <- data.frame(type='dbeta', a=10, b=10)
+    ep[["Methylated"]] <- data.frame(type='dbeta', a=4, b=1)
     ep <- do.call(rbind, ep)
     emissionParams_initial <- ep
   
@@ -284,16 +288,20 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.tim
     
     ### Construct result object ###
     ptm <- startTimedMessage("Compiling results ...")
-    names(hmm$weights) <- states
-    rownames(hmm$posteriors) <- states
-    data$posteriors <- t(hmm$posteriors)
-    data$state <- factor(states, levels=states)[apply(data$posteriors, 1, which.max)]
-    
     r <- list()
+    if (hmm$error == "") {
+        r$convergenceInfo <- hmm$convergenceInfo
+        names(hmm$weights) <- states
+        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParams=hmm$emissionParams, weights=hmm$weights)
+        r$params.initial <- params
+        # States and posteriors
+        rownames(hmm$posteriors) <- states
+        data$posteriors <- t(hmm$posteriors)
+        rownames(hmm$densities) <- states
+        data$densities <- t(hmm$densities)
+        data$state <- factor(states, levels=states)[hmm$states+1]
+    }
     r$data <- data
-    r$convergenceInfo <- hmm$convergenceInfo
-    r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParams=hmm$emissionParams, weights=hmm$weights)
-    r$params.initial <- params
     stopTimedMessage(ptm)
     
     return(r)

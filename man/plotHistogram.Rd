@@ -2,35 +2,7 @@
 % Please edit documentation in R/plotting.R
 \name{plotHistogram}
 \alias{plotHistogram}
-\title{#' Plot a ratio histogram
-#' 
-#' Plot a histogram of ratio values and fitted distributions.
-#' 
-plotHistogram <- function(hmm) {
-    
-    ratio <- hmm$bins$ratio
-    
-    ## Plot histogram
-    ggplt <- ggplot(data.frame(ratio)) + geom_histogram(aes_string(x='ratio', y='..density..'), binwidth=0.01, color='black', fill='white') + coord_cartesian(xlim=c(0,1)) + xlab("ratio")
-    
-    ## Add distributions
-    x <- c(seq(0, 0.1, by=0.001), seq(0, 0.9, by=0.01), seq(0.9, 1, by=0.001))
-    distr <- list(x=x)
-    for (irow in 1:nrow(hmm$emissionParams)) {
-        e <- hmm$emissionParams
-        distr[[rownames(hmm$emissionParams)[irow]]] <- hmm$weights[irow] * dbeta(x, e[irow,'a'], e[irow,'b'])
-    }
-    distr <- as.data.frame(distr)
-    distr$total <- rowSums(distr[,2:4])
-    # distr$mirror <- dbetaMirror(x, hmm$emissionParams, hmm$weights)
-    # distr$symmetric <- dbetaSymmetric(x, hmm$emissionParams, hmm$weights)
-    # distr$total <- distr$mirror + distr$symmetric
-    distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
-    ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
-    ggplt <- ggplt + scale_color_manual(values=getStateColors())
-    return(ggplt)
-}
-Plot a count histogram}
+\title{Plot a count histogram}
 \usage{
 plotHistogram(model)
 }

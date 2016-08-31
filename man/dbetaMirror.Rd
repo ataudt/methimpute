@@ -7,6 +7,8 @@
 dbetaMirror(x, emissionParams, weights)
 }
 \arguments{
+\item{x}{A vector of quantiles.}
+
 \item{emissionParams}{A matrix with emission parameters.}
 
 \item{weights}{A table giving the weights for the two components.}

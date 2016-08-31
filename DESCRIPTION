@@ -12,6 +12,7 @@ Depends:
     ggplot2
 Imports:
     Rcpp (>= 0.12.4.5),
+    methods,
     utils,
     grDevices,
     graphics,

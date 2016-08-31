@@ -14,6 +14,7 @@ ScaleHMM::ScaleHMM(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & 
 	this->verbosity = verbosity;
 	this->NDATA = obs.size();
 	this->NSTATES = startProbs_initial.size();
+	this->distances = distances;
 	this->scalefactoralpha = Rcpp::NumericVector(this->NDATA);
 	this->scalealpha = Rcpp::NumericMatrix(this->NDATA, this->NSTATES);
 	this->scalebeta = Rcpp::NumericMatrix(this->NDATA, this->NSTATES);
@@ -29,23 +30,13 @@ ScaleHMM::ScaleHMM(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & 
 	this->transExp = Rcpp::NumericVector(this->NDATA);
 	for (int t=0; t<this->NDATA; t++)
 	{
-		this->transExp[t] = exp(-this->distances[t] / transDist);
+		this->transExp[t] = exp(- this->distances[t] / transDist);
+		if (std::isnan(this->transExp[t]))
+		{
+			throw nan_detected;
+		}
 	}
 	this->startProbs = Rcpp::clone(startProbs_initial);
-
-	// Find intervals for observations
-	int numintervals = 20;
-	Rcpp::IntegerVector intervals = Rcpp::IntegerVector(this->NDATA);
-	int interval_temp;
-	for (int t=0; t<this->NDATA; t++)
-	{
-		interval_temp = ((int)(obs[t] * numintervals)) + 1;
-		if (interval_temp > numintervals)
-		{
-			interval_temp = numintervals;
-		}
-		intervals[t] = interval_temp;
-	}
 
 	// Make log version of observations for faster updating
 	this->logObs = Rcpp::NumericVector(this->NDATA);
@@ -77,11 +68,14 @@ ScaleHMM::ScaleHMM(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & 
 	Rcpp::CharacterVector emissionTypes = this->emissionParams["type"];
 	Rcpp::NumericVector a_s = Rcpp::as<Rcpp::NumericVector>(this->emissionParams["a"]);
 	Rcpp::NumericVector b_s = Rcpp::as<Rcpp::NumericVector>(this->emissionParams["b"]);
-	Beta_mirror * d0 = new Beta_mirror(obs, this->logObs, this->log1mObs, intervals, a_s[0], b_s[0], numintervals);
+	// UNmethylated
+	Beta_mirror * d0 = new Beta_mirror(obs, this->logObs, this->log1mObs, a_s[0], b_s[0]);
 	this->emissionDensities.push_back(d0);
-	Beta_mirror * d1 = new Beta_mirror(obs, this->logObs, this->log1mObs, intervals, a_s[1], b_s[1], numintervals);
+	// Hemimethylated
+	Beta_symmetric * d1 = new Beta_symmetric(obs, this->logObs, this->log1mObs, a_s[1], b_s[1]);
 	this->emissionDensities.push_back(d1);
-	Beta_symmetric * d2 = new Beta_symmetric(obs, this->logObs, this->log1mObs, intervals, a_s[2], b_s[2], numintervals);
+	// Methylated
+	Beta_mirror * d2 = new Beta_mirror(obs, this->logObs, this->log1mObs, a_s[2], b_s[2]);
 	this->emissionDensities.push_back(d2);
 }
 
@@ -89,10 +83,10 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs, const Rcpp::NumericVector & 
 {
 	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
 	this->xvariate = UNIVARIATE;
-	this->distances = distances;
 	this->verbosity = verbosity;
 	this->NDATA = obs.size();
 	this->NSTATES = startProbs_initial.size();
+	this->distances = distances;
 	this->scalefactoralpha = Rcpp::NumericVector(this->NDATA);
 	this->scalealpha = Rcpp::NumericMatrix(this->NDATA, this->NSTATES);
 	this->scalebeta = Rcpp::NumericMatrix(this->NDATA, this->NSTATES);
@@ -109,6 +103,10 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs, const Rcpp::NumericVector & 
 	for (int t=0; t<this->NDATA; t++)
 	{
 		this->transExp[t] = exp(-this->distances[t] / transDist);
+		if (std::isnan(this->transExp[t]))
+		{
+			throw nan_detected;
+		}
 	}
 	this->startProbs = Rcpp::clone(startProbs_initial);
 
@@ -127,11 +125,11 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerMatrix & multi_obs, const Rcpp::NumericVec
 {
 	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
 	this->xvariate = MULTIVARIATE;
-	this->distances = distances;
 	this->verbosity = verbosity;
 	this->NDATA = multi_obs.nrow();
 	this->NSTATES = startProbs_initial.size();
 	this->NMOD = multi_obs.ncol();
+	this->distances = distances;
 	this->transProbs = Rcpp::NumericMatrix(this->NSTATES, this->NSTATES);
 	this->scalefactoralpha = Rcpp::NumericVector(this->NDATA);
 	this->scalealpha = Rcpp::NumericMatrix(this->NDATA, this->NSTATES);
@@ -151,6 +149,10 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerMatrix & multi_obs, const Rcpp::NumericVec
 	for (int t=0; t<this->NDATA; t++)
 	{
 		this->transExp[t] = exp(-this->distances[t] / transDist);
+		if (std::isnan(this->transExp[t]))
+		{
+			throw nan_detected;
+		}
 	}
 	this->startProbs = Rcpp::clone(startProbs_initial);
 
@@ -235,6 +237,22 @@ Rcpp::List ScaleHMM::viterbi(double eps, double maxiter, double maxtime)
 	// Calculate posterior weights
 	Rcpp::NumericVector weights = this->calc_weights();
 
+	// Maximize over posteriors
+	Rcpp::IntegerVector imax(this->NDATA);
+	double maxgamma;
+	for (int t=0; t<this->NDATA; t++)
+	{
+		maxgamma = -1;
+		for (int i=0; i<this->NSTATES; i++)
+		{
+			if (this->gamma(i,t) > maxgamma)
+			{
+				maxgamma = this->gamma(i,t);
+				imax[t] = i;
+			}
+		}
+	}
+
 	// Convergence information
 	this->baumWelchTime_real = difftime(time(NULL),this->baumWelchStartTime_sec);
 	Rcpp::List convergenceInfo = Rcpp::List::create(Rcpp::Named("logliks") = this->loglik,
@@ -245,7 +263,8 @@ Rcpp::List ScaleHMM::viterbi(double eps, double maxiter, double maxtime)
 																				 Rcpp::Named("transProbs") = this->transProbs,
 																				 Rcpp::Named("startProbs") = this->startProbs,
 																				 Rcpp::Named("weights") = weights,
-																				 Rcpp::Named("posteriors") = this->gamma);
+																				 Rcpp::Named("posteriors") = this->gamma,
+																				 Rcpp::Named("states") = imax);
 
 	// Emission parameters
 	if (this->xvariate == UNIVARIATE)
@@ -361,6 +380,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 		}
 		
 		// Updating initial probabilities startProbs and transition matrix transProbs
+		if (this->verbosity>=2) Rprintf("%s\n", "  updating transition matrix");
 		for (int i=0; i<this->NSTATES; i++)
 		{
 			this->startProbs[i] = this->gamma(i,0);
@@ -384,14 +404,15 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 		if (this->xvariate == UNIVARIATE)
 		{
 			// Update the parameters of the distribution
+			if (this->verbosity>=2) Rprintf("%s\n", "  updating distribution parameters");
 			if (this->emissionDensities[0]->get_name() == BETA_MIRROR)
 			{
-				const int rows1[] = {0,1};
+				const int rows1[] = {0,2};
 				this->emissionDensities[0]->update(this->gamma, rows1);
-				this->emissionDensities[1]->set_a(this->emissionDensities[0]->get_b());
-				this->emissionDensities[1]->set_b(this->emissionDensities[0]->get_a());
-				const int rows2[] = {2};
-				this->emissionDensities[2]->update(this->gamma, rows2);
+				this->emissionDensities[2]->set_a(this->emissionDensities[0]->get_b());
+				this->emissionDensities[2]->set_b(this->emissionDensities[0]->get_a());
+				const int rows2[] = {1};
+				this->emissionDensities[1]->update(this->gamma, rows2);
 			}
 			else if (this->emissionDensities[0]->get_name() == NEGATIVE_BINOMIAL)
 			{ 
@@ -410,6 +431,22 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 	// Calculate posterior weights
 	Rcpp::NumericVector weights = this->calc_weights();
 
+	// Maximize over posteriors
+	Rcpp::IntegerVector imax(this->NDATA);
+	double maxgamma;
+	for (int t=0; t<this->NDATA; t++)
+	{
+		maxgamma = -1;
+		for (int i=0; i<this->NSTATES; i++)
+		{
+			if (this->gamma(i,t) > maxgamma)
+			{
+				maxgamma = this->gamma(i,t);
+				imax[t] = i;
+			}
+		}
+	}
+
 	// Convergence information
 	this->baumWelchTime_real = difftime(time(NULL),this->baumWelchStartTime_sec);
 	Rcpp::List convergenceInfo = Rcpp::List::create(Rcpp::Named("logliks") = logliks,
@@ -420,7 +457,9 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 																				 Rcpp::Named("transProbs") = this->transProbs,
 																				 Rcpp::Named("startProbs") = this->startProbs,
 																				 Rcpp::Named("weights") = weights,
-																				 Rcpp::Named("posteriors") = this->gamma);
+																				 Rcpp::Named("posteriors") = this->gamma,
+																				 Rcpp::Named("states") = imax,
+																				 Rcpp::Named("densities") = this->densities);
 
 	// Emission parameters
 	if (this->xvariate == UNIVARIATE)
@@ -602,8 +641,14 @@ void ScaleHMM::forward()
 				this->scalealpha(t,i) = alpha[i] / this->scalefactoralpha[t];
 				if(std::isnan(this->scalealpha(t,i)))
 				{
+					if (this->verbosity>=4) Rprintf("scalealpha(t=%d,i=%d) = %g, alpha[i=%d] = %g\n", t, i, scalealpha(t,i), i, alpha[i]);
+					if (this->verbosity>=4) Rprintf("scalefactoralpha[t=%d] = %g, scalefactoralpha[t-1=%d] = %g\n", t, scalefactoralpha[t], t-1, scalefactoralpha[t-1]);
+					if (this->verbosity>=4) Rprintf("densities(i=%d,t=%d) = %g, startProbs[i=%d] = %g\n", i, t, densities(i,t), i, startProbs[i]);
 					for (int j=0; j<this->NSTATES; j++)
 					{
+						if (this->verbosity>=4) Rprintf("  transProbs(j=%d,i=%d) = %g, transExp[t=%d] = %g, startProbs[j=%d] = %g\n", j, i, transProbs(j,i), t, transExp[t], j, startProbs[j]);
+						if (this->verbosity>=4) Rprintf("  densities(j=%d,t=%d) = %g, densities(j=%d,t-1=%d) = %g\n", j, t, densities(j,t), j, t-1, densities(j,t-1));
+						if (this->verbosity>=4) Rprintf("  scalealpha(t-1=%d,j=%d) = %g\n", t-1, j, scalealpha(t-1,j));
 					}
 					throw nan_detected;
 				}
@@ -781,6 +826,16 @@ void ScaleHMM::calc_sumgamma()
 		this->sumgamma[i] -= this->gamma(i,NDATA-1);
 	}
 
+	if (this->verbosity>=5)
+	{
+		for (int t=0; t<this->NDATA; t++)
+		{
+			for (int i=0; i<this->NSTATES; i++)
+			{
+				Rprintf("gamma(i=%d,t=%d) = %g, scalealpha(t=%d,i=%d) = %g, scalebeta(t=%d,i=%d) = %g, scalefactoralpha[t=%d] = %g, densities(i=%d,t=%d) = %g\n", i, t, gamma(i,t), t, i, scalealpha(t,i), t, i, scalebeta(t,i), t, scalefactoralpha[t], i, t, densities(i,t));
+			}
+		}
+	}
 // 	dtime = clock() - time;
 }
 

@@ -7,7 +7,7 @@
 getStateColors(states = NULL)
 }
 \arguments{
-\item{labels}{Any combination of \code{c("unmethylated","methylated","heterozygous", "total")}.}
+\item{states}{Any combination of \code{c("unmethylated","methylated","heterozygous", "total")}.}
 }
 \value{
 A character vector with colors.
