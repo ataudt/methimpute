@@ -264,7 +264,8 @@ Rcpp::List ScaleHMM::viterbi(double eps, double maxiter, double maxtime)
 																				 Rcpp::Named("startProbs") = this->startProbs,
 																				 Rcpp::Named("weights") = weights,
 																				 Rcpp::Named("posteriors") = this->gamma,
-																				 Rcpp::Named("states") = imax);
+																				 Rcpp::Named("states") = imax,
+																				 Rcpp::Named("densities") = this->densities);
 
 	// Emission parameters
 	if (this->xvariate == UNIVARIATE)
@@ -384,6 +385,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 		for (int i=0; i<this->NSTATES; i++)
 		{
 			this->startProbs[i] = this->gamma(i,0);
+			if (this->verbosity>=4) Rprintf("  startProbs[%d] = %g\n", i, startProbs[i]);
 			if (this->sumgamma[i] == 0)
 			{
 // 				Rprintf("Not reestimating transProbs(%d,x) because sumgamma[%d] = 0\n", i, i);

@@ -23,15 +23,15 @@ getStateColors <- function(states=NULL) {
 #'
 #' Plot a histogram of ratio values and fitted distributions.
 #'
-plotHistogramRatio <- function(hmm, num.intervals=20) {
+plotRatioHistogram <- function(model, num.intervals=20) {
 
     ## Plot histogram
-    ggplt <- ggplot(data.frame(ratio=hmm$data$ratio)) + geom_histogram(aes_string(x='ratio', y='..density..'), breaks=seq(0, 1, length.out = num.intervals+1), color='black', fill='white') + coord_cartesian(xlim=c(0,1)) + xlab("ratio")
+    ggplt <- ggplot(data.frame(ratio=model$data$ratio)) + geom_histogram(aes_string(x='ratio', y='..density..'), breaks=seq(0, 1, length.out = num.intervals+1), color='black', fill='white') + coord_cartesian(xlim=c(0,1)) + xlab("ratio")
 
     ## Add distributions
     x <- c(seq(0, 0.1, by=0.001), seq(0.1, 0.9, by=0.01), seq(0.9, 1, by=0.001))
     distr <- list(x=x)
-    p <- hmm$params
+    p <- model$params
     for (irow in 1:nrow(p$emissionParams)) {
         e <- p$emissionParams
         distr[[rownames(p$emissionParams)[irow]]] <- p$weights[irow] * dbeta(x, e[irow,'a'], e[irow,'b'])
@@ -48,6 +48,16 @@ plotHistogramRatio <- function(hmm, num.intervals=20) {
     ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(c(rownames(p$emissionParams), 'total')), labels=legend) + theme(legend.position=c(0.5,1), legend.justification=c(0.5,1))
     return(ggplt)
 }
+
+
+plotRatioBoxplot <- function(model) {
+  
+    df <- data.frame(state=model$data$state, ratio=model$data$ratio)
+    ggplt <- ggplot(df) + geom_boxplot(aes_string(x='state', y='ratio'))
+    return(ggplt)
+    
+}
+
 
 #' Plot a count histogram
 #' 

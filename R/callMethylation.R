@@ -273,7 +273,7 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.tim
         hmm <- fitHMMratio(ratio=ratio, distances=distances, params=params, algorithm=1)
         ratio <- data$ratio
         params2 <- list()
-        params2$startProbs_initial <- hmm$startProbs
+        params2$startProbs_initial <- startProbs_initial # do not assign fitted startProbs because we don't know if the old first bin is also the new first bin
         params2$transProbs_initial <- hmm$transProbs
         params2$emissionParams_initial <- hmm$emissionParams
         params2$transDist <- transDist
