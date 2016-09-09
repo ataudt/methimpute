@@ -1,13 +1,46 @@
+#' Import a Rene methylation extractor file
+#' 
+#' Import a Rene methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
+#' 
+#' @param file The file to import.
+#' @param chrom.lengths A named vector containing the chromosome lengths.
+#' @param temp.store A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.
+#' @return A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'methylated' and 'context'.
+#' 
+importRene <- function(file, chrom.lengths=NULL, temp.store=tempfile("importRene")) {
+  
+  	classes <- c('character', 'numeric', 'character', 'NULL', 'character', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric')
+    ptm <- startTimedMessage("Reading file ", file, " ...")
+	  data.raw <- read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
+  	data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand="*", methylated=data.raw$V10, context=data.raw$V5, unmeth.counts=data.raw$V7-data.raw$V6, meth.counts=data.raw$V6)
+  	# rm(data.raw)
+  	stopTimedMessage(ptm)
+  	
+  	## Assign seqlengths
+  	if (!is.null(chrom.lengths)) {
+      	seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
+  	}
+  	
+  	## Add ratio and distance
+  	ptm <- startTimedMessage("Adding ratio and distance ...")
+  	data$ratio <- data$meth.counts / (data$unmeth.counts + data$meth.counts)
+  	data <- data[!is.na(data$ratio)]
+    data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
+    data$distance[data$distance < 0] <- Inf 
+    stopTimedMessage(ptm)
+  	return(data)
+}
+  
 #' Import a Bismarck methylation extractor file
 #' 
 #' Import a Bismarck methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 #' 
 #' @param files The files to import.
-#' @param chrom.lengths.df A data.frame obtained with \code{\link[GenomeInfoDb]{fetchExtendedChromInfoFromUCSC}} for the seqlengths.
+#' @param chrom.lengths A named vector containing the chromosome lengths.
 #' @param temp.store A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.
 #' @return A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'methylated' and 'context'.
 #' 
-importBismarck2 <- function(files, chrom.lengths.df, temp.store=tempfile("importBismarck")) {
+importBismarck <- function(files, chrom.lengths=NULL, temp.store=tempfile("importBismarck")) {
   
   	classes <- c('NULL', 'character', 'character', 'numeric', 'character')
   	datas <- GRangesList()
@@ -19,7 +52,7 @@ importBismarck2 <- function(files, chrom.lengths.df, temp.store=tempfile("import
       	}
 	  }
   	
-  	### Do each file at a time to avoid memory overflow ###kk
+  	### Do each file at a time to avoid memory overflow ###
   	data.dedups <- GRangesList()
   	for (i1 in 1:length(files)) {
   	    file <- files[i1]
@@ -89,13 +122,9 @@ importBismarck2 <- function(files, chrom.lengths.df, temp.store=tempfile("import
   	rm(data.dedups, data.dedup)
   
   	## Assign seqlengths
-  	chrom.lengths <- chrom.lengths.df$UCSC_seqlength
-  	if (grepl('^chr',seqlevels(data)[1])) {
-  		names(chrom.lengths) <- chrom.lengths.df$UCSC_seqlevel
-  	} else {
-  		names(chrom.lengths) <- chrom.lengths.df$NCBI_seqlevel
+  	if (!is.null(chrom.lengths)) {
+      	seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
   	}
-  	seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
   	
   	## Add ratio and distance
   	data$ratio <- data$meth.counts / (data$unmeth.counts + data$meth.counts)
@@ -114,7 +143,7 @@ importBismarck2 <- function(files, chrom.lengths.df, temp.store=tempfile("import
 #' @param temp.store A folder where to save temporary files on disk. Set to \code{TRUE} if memory is limiting.
 #' @return A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'methylated' and 'context'.
 #' 
-importBismarck1 <- function(files, chrom.lengths.df, temp.store=NULL) {
+importBismarck_old <- function(files, chrom.lengths.df, temp.store=NULL) {
   
   	classes <- c('NULL', 'character', 'character', 'numeric', 'character')
   	datas <- GRangesList()
@@ -201,3 +230,4 @@ importBismarck1 <- function(files, chrom.lengths.df, temp.store=NULL) {
     data.dedup$distance[data.dedup$distance < 0] <- Inf 
   	return(data.dedup)
 }
+

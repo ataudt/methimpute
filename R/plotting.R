@@ -10,7 +10,7 @@
 #'cols <- getStateColors()
 #'pie(1:length(cols), col=cols, labels=names(cols))
 getStateColors <- function(states=NULL) {
-    state.colors <- c("UNmethylated" = "red","Methylated" = "blue","Hemimethylated" = "green", "total" = "black", "background" = "gray", "signal" = "red")
+    state.colors <- c("Background" = "gray", "UNmethylated" = "red","Methylated" = "blue","Hemimethylated" = "green", "total" = "black", "background" = "gray", "signal" = "red")
     if (is.null(states)) {
         return(state.colors)
     } else {
@@ -96,4 +96,29 @@ plotHistogram <- function(model) {
     }
     
     return(ggplt)
+}
+
+
+plotBoxplot <- function(model) {
+  
+    df <- data.frame(state=model$data$state, observable=model$data$observable)
+    ggplt <- ggplot(df) + geom_boxplot(aes_string(x='state', y='observable'))
+    return(ggplt)
+    
+}
+
+
+plotScatter <- function(model) {
+  
+    ## Find sensible limits
+    xmax <- quantile(model$data$unmeth.counts, 0.99)
+    ymax <- quantile(model$data$meth.counts, 0.99)
+    df <- data.frame(state=model$data$state, unmeth=model$data$unmeth.counts, meth=model$data$meth.counts)
+    ggplt <- ggplot(df) + geom_point(aes_string(x='unmeth', y='meth', col='state'))
+    ggplt <- ggplt + scale_color_manual(values=getStateColors(names(model$params$weights)))
+    ggplt <- ggplt + xlab('unmethylated counts') + ylab('methylated counts')
+    ggplt <- ggplt + coord_cartesian(xlim=c(0,xmax), ylim=c(0,ymax))
+    
+    return(ggplt)
+    
 }
