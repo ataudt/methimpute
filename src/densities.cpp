@@ -20,6 +20,47 @@ ZiNB::ZiNB(const Rcpp::IntegerVector & obs, double size, double prob, double w)
 	{
 		this->lxfactorials[j] = this->lxfactorials[j-1] + log(j);
 	}
+
+	// Make vector of positions of unique observations for faster updating
+	this->obs_unique = Rcpp::unique(obs);
+	this->obs_unique.sort();
+	Rcpp::IntegerVector uobsind_per_obs = Rcpp::IntegerVector(this->obs_unique[this->obs_unique.size()-1]+1);
+	int i = 0;
+	for (int j=0; j<uobsind_per_obs.size(); j++)
+	{
+		if (this->obs_unique[i] = j)
+		{
+			uobsind_per_obs[j] = i;
+			i += 1;
+		}
+	}
+	// Get the index for each observation
+	this->uobsind_per_t = Rcpp::IntegerVector(this->obs.size());
+	for (int t=0; t<this->obs.size(); t++)
+	{
+		this->uobsind_per_t[t] = uobsind_per_obs[this->obs[t]];
+	}
+
+}
+
+ZiNB::ZiNB(const Rcpp::IntegerVector & obs, const Rcpp::IntegerVector & obs_unique, const Rcpp::IntegerVector & uobsind_per_t, double size, double prob, double w)
+{
+	this->obs = obs;
+	this->obs_unique = obs_unique;
+	this->uobsind_per_t = uobsind_per_t;
+	this->prob = prob;
+	this->size = size;
+	this->w = w;
+	this->lxfactorials = NULL;
+	this->max_obs = Rcpp::max(this->obs);
+	this->lxfactorials = Rcpp::NumericVector(max_obs+1);
+	this->lxfactorials[0] = 0.0;	// Not necessary, already 0 because of Calloc
+	this->lxfactorials[1] = 0.0;
+	for (int j=2; j<=max_obs; j++)
+	{
+		this->lxfactorials[j] = this->lxfactorials[j-1] + log(j);
+	}
+
 }
 
 ZiNB::~ZiNB()
@@ -32,19 +73,27 @@ void ZiNB::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR,lGammaRplusX,lxfactorial;
-	lGammaR=lgamma(this->size);
-	// Select strategy for computing gammas
-	if (this->max_obs <= this->obs.size())
+	double obs_j;
+	lGammaR = lgamma(this->size);
+	// Select strategy for computing gammas, redundant since obs_unique.size() always < obs.size()
+	if (this->obs_unique.size() <= this->obs.size())
 	{
-		std::vector<double> logdens_per_read(this->max_obs+1);
-		logdens_per_read[0] = log( this->w + (1-this->w) * exp( lgamma(this->size + 0) - lGammaR - lxfactorials[0] + this->size * logp + 0 * log1minusp ) );
-		for (int j=1; j<=this->max_obs; j++)
+		std::vector<double> logdens_per_uobs(this->obs_unique.size());
+		for (int j=0; j<=this->obs_unique.size(); j++)
 		{
-			logdens_per_read[j] = log(1-this->w) + lgamma(this->size + j) - lGammaR - lxfactorials[j] + this->size * logp + j * log1minusp;
+			obs_j = this->obs_unique[j];
+			if (obs_j == 0)
+			{
+				logdens_per_uobs[j] = log( this->w + (1-this->w) * exp( lgamma(this->size + 0) - lGammaR - lxfactorials[0] + this->size * logp + 0 * log1minusp ) );
+			}
+			else
+			{
+				logdens_per_uobs[j] = log(1-this->w) + lgamma(this->size + obs_j) - lGammaR - lxfactorials[obs_j] + this->size * logp + obs_j * log1minusp;
+			}
 		}
 		for (int t=0; t<this->obs.size(); t++)
 		{
-			logdens[t] = logdens_per_read[(int) this->obs[t]];
+			logdens[t] = logdens_per_uobs[this->uobsind_per_t[t]];
 			if (std::isnan(logdens[t]))
 			{
 				throw nan_detected;
@@ -78,19 +127,27 @@ void ZiNB::calc_densities(Rcpp::NumericMatrix::Row & dens)
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR,lGammaRplusX,lxfactorial;
+	double obs_j;
 	lGammaR = lgamma(this->size);
-	// Select strategy for computing gammas
-	if (this->max_obs <= this->obs.size())
+	// Select strategy for computing gammas, redundant since obs_unique.size() always < obs.size()
+	if (this->obs_unique.size() <= this->obs.size())
 	{
-		std::vector<double> dens_per_read(this->max_obs+1);
-		dens_per_read[0] = this->w + (1-this->w) * exp( lgamma(this->size + 0) - lGammaR - lxfactorials[0] + this->size * logp + 0 * log1minusp );
-		for (int j=1; j<=this->max_obs; j++)
+		std::vector<double> dens_per_uobs(this->obs_unique.size());
+		for (int j=0; j<=this->obs_unique.size(); j++)
 		{
-			dens_per_read[j] = (1-this->w) * exp( lgamma(this->size + j) - lGammaR - lxfactorials[j] + this->size * logp + j * log1minusp );
+			obs_j = this->obs_unique[j];
+			if (obs_j == 0)
+			{
+				dens_per_uobs[j] = this->w + (1-this->w) * exp( lgamma(this->size + 0) - lGammaR - lxfactorials[0] + this->size * logp + 0 * log1minusp );
+			}
+			else
+			{
+				dens_per_uobs[j] = (1-this->w) * exp( lgamma(this->size + obs_j) - lGammaR - lxfactorials[obs_j] + this->size * logp + obs_j * log1minusp );
+			}
 		}
 		for (int t=0; t<this->obs.size(); t++)
 		{
-			dens[t] = dens_per_read[(int) this->obs[t]];
+			dens[t] = dens_per_uobs[this->uobsind_per_t[t]];
 			if (std::isnan(dens[t]))
 			{
 				throw nan_detected;
@@ -290,6 +347,46 @@ NegativeBinomial::NegativeBinomial(const Rcpp::IntegerVector & obs, double size,
 	{
 		this->lxfactorials[j] = this->lxfactorials[j-1] + log(j);
 	}
+
+	// Make vector of positions of unique observations for faster updating
+	this->obs_unique = Rcpp::unique(obs);
+	this->obs_unique.sort();
+	Rcpp::IntegerVector uobsind_per_obs = Rcpp::IntegerVector(this->obs_unique[this->obs_unique.size()-1]+1);
+	int i = 0;
+	for (int j=0; j<uobsind_per_obs.size(); j++)
+	{
+		if (this->obs_unique[i] == j)
+		{
+			uobsind_per_obs[j] = i;
+			i += 1;
+		}
+	}
+	// Get the index for each observation
+	this->uobsind_per_t = Rcpp::IntegerVector(this->obs.size());
+	for (int t=0; t<this->obs.size(); t++)
+	{
+		this->uobsind_per_t[t] = uobsind_per_obs[this->obs[t]];
+	}
+
+}
+
+NegativeBinomial::NegativeBinomial(const Rcpp::IntegerVector & obs, const Rcpp::IntegerVector & obs_unique, const Rcpp::IntegerVector & uobsind_per_t, double size, double prob)
+{
+	this->obs = obs;
+	this->obs_unique = obs_unique;
+	this->uobsind_per_t = uobsind_per_t;
+	this->size = size;
+	this->prob = prob;
+	this->lxfactorials = NULL;
+	// Precompute the lxfactorials that are used in computing the densities
+	this->max_obs = Rcpp::max(obs);
+	this->lxfactorials = Rcpp::NumericVector(max_obs+1);
+	this->lxfactorials[0] = 0.0;	// Not necessary, already 0 because of Calloc
+	this->lxfactorials[1] = 0.0;
+	for (int j=2; j<=max_obs; j++)
+	{
+		this->lxfactorials[j] = this->lxfactorials[j-1] + log(j);
+	}
 }
 
 NegativeBinomial::~NegativeBinomial()
@@ -302,18 +399,20 @@ void NegativeBinomial::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR,lGammaRplusX,lxfactorial;
+	double obs_j;
 	lGammaR = lgamma(this->size);
-	// Select strategy for computing gammas
-	if (this->max_obs <= this->obs.size())
+	// Select strategy for computing gammas, redundant since obs_unique.size() always < obs.size()
+	if (this->obs_unique.size() <= this->obs.size())
 	{
-		std::vector<double> logdens_per_read(this->max_obs+1);
-		for (int j=0; j<=this->max_obs; j++)
+		std::vector<double> logdens_per_uobs(this->obs_unique.size());
+		for (int j=0; j<this->obs_unique.size(); j++)
 		{
-			logdens_per_read[j] = lgamma(this->size + j) - lGammaR - lxfactorials[j] + this->size * logp + j * log1minusp;
+			obs_j = this->obs_unique[j];
+			logdens_per_uobs[j] = lgamma(this->size + obs_j) - lGammaR - this->lxfactorials[obs_j] + this->size * logp + obs_j * log1minusp;
 		}
 		for (int t=0; t<this->obs.size(); t++)
 		{
-			logdens[t] = logdens_per_read[(int) this->obs[t]];
+			logdens[t] = logdens_per_uobs[this->uobsind_per_t[t]];
 			if (std::isnan(logdens[t]))
 			{
 				throw nan_detected;
@@ -340,18 +439,24 @@ void NegativeBinomial::calc_densities(Rcpp::NumericMatrix::Row & dens)
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR,lGammaRplusX,lxfactorial;
-	lGammaR=lgamma(this->size);
-	// Select strategy for computing gammas
-	if (this->max_obs <= this->obs.size())
+	double obs_j;
+	lGammaR = lgamma(this->size);
+	// Select strategy for computing gammas, redundant since obs_unique.size() always < obs.size()
+	if (this->obs_unique.size() <= this->obs.size())
 	{
-		std::vector<double> dens_per_read(this->max_obs+1);
-		for (int j=0; j<=this->max_obs; j++)
+// clock_t clocktime = clock(), dtime;
+		std::vector<double> dens_per_uobs(this->obs_unique.size());
+		for (int j=0; j<this->obs_unique.size(); j++)
 		{
-			dens_per_read[j] = exp( lgamma(this->size + j) - lGammaR - lxfactorials[j] + this->size * logp + j * log1minusp );
+			obs_j = this->obs_unique[j];
+// 			dens_per_uobs[j] = R::dnbinom(obs_j, this->size, this->prob, 0); // TOO SLOW!!
+			dens_per_uobs[j] = exp( lgamma(this->size + obs_j) - lGammaR - this->lxfactorials[obs_j] + this->size * logp + obs_j * log1minusp );
 		}
+// dtime = clock() - clocktime;
+// Rprintf("dtime = %Lg\n", (long double)dtime);
 		for (int t=0; t<this->obs.size(); t++)
 		{
-			dens[t] = dens_per_read[(int) this->obs[t]];
+			dens[t] = dens_per_uobs[this->uobsind_per_t[t]];
 			if (std::isnan(dens[t]))
 			{
 				throw nan_detected;
@@ -757,25 +862,40 @@ void Beta::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 
 void Beta::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
+	double cutoff = 1e10;
 	for (int t=0; t<this->obs.size(); t++)
 	{
 		dens[t] = R::dbeta(this->obs[t], this->a, this->b, 0);
+		if (dens[t] > cutoff)
+		{
+			dens[t] = cutoff;
+		}
 	}
 } 
 
 void Beta_mirror::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
+	double cutoff = 1e10;
 	for (int t=0; t<this->obs.size(); t++)
 	{
 		dens[t] = R::dbeta(this->obs[t], this->a, this->b, 0);
+		if (dens[t] > cutoff)
+		{
+			dens[t] = cutoff;
+		}
 	}
 } 
 
 void Beta_symmetric::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
+	double cutoff = 1e10;
 	for (int t=0; t<this->obs.size(); t++)
 	{
 		dens[t] = R::dbeta(this->obs[t], this->a, this->b, 0);
+		if (dens[t] > cutoff)
+		{
+			dens[t] = cutoff;
+		}
 	}
 } 
 
@@ -796,49 +916,46 @@ void Beta_mirror::update(const Rcpp::NumericMatrix & weights, const int * rows)
 	// Updates with Newton-Raphson
 	double eps = 1e-4;
 	double kmax = 20;
-	double a0, b0;
 	double DiC, TriC;
 	double F, dFdx, FdivM;
+	double a0 = this->get_a();
+	double b0 = this->get_b();
 
-// Update only B to keep A fixed at 1
-// 	// A
-// 	a0 = this->get_a();
-// 	b0 = this->get_b();
-// 	for (int k=0; k<kmax; k++)
-// 	{
-// 		F = dFdx = 0.0;
-// 		DiC = - R::digamma(a0) + R::digamma(a0+b0);
-// 		TriC = - R::trigamma(a0) + R::trigamma(a0+b0);
-// 		for(int t=0; t<this->obs.size(); t++)
-// 		{
-// 			F += weights(rows[0],t) * ( DiC + this->logObs[t] );
-// 			F += weights(rows[1],t) * ( DiC + this->log1mObs[t] );
-// 			dFdx += ( weights(rows[0],t) + weights(rows[1],t) ) * TriC;
-// 		}
-// 		FdivM = F/dFdx;
-// 		if (FdivM < a0)
-// 		{
-// 			a0 = a0-FdivM;
-// 		}
-// 		else if (FdivM >= a0)
-// 		{
-// 			a0 = a0/2.0;
-// 		}
-// 		if(fabs(F)<eps)
-// 		{
-// 			break;
-// 		}
-// 	}
-// 	// Artificially restrict to values >= 1 to avoid Inf when obs=0 or 1
-// 	if (a0 < 1)
-// 	{
-// 		a0 = 1;
-// 	}
-// 	this->a = a0;
+	// A
+	for (int k=0; k<kmax; k++)
+	{
+		F = dFdx = 0.0;
+		DiC = - R::digamma(a0) + R::digamma(a0+b0);
+		TriC = - R::trigamma(a0) + R::trigamma(a0+b0);
+		for(int t=0; t<this->obs.size(); t++)
+		{
+			F += weights(rows[0],t) * ( DiC + this->logObs[t] );
+			F += weights(rows[1],t) * ( DiC + this->log1mObs[t] );
+			dFdx += ( weights(rows[0],t) + weights(rows[1],t) ) * TriC;
+		}
+		FdivM = F/dFdx;
+		if (FdivM < a0)
+		{
+			a0 = a0-FdivM;
+		}
+		else if (FdivM >= a0)
+		{
+			a0 = a0/2.0;
+		}
+		if(fabs(F)<eps)
+		{
+// Rprintf("k(a0) = %d\n", k);
+			break;
+		}
+	}
+	// Artificially restrict to values <= 1 to avoid Inf when obs=0 or 1
+// 	Rprintf("a0 = %g\n", a0);
+	if (a0 > 1)
+	{
+		a0 = 1;
+	}
 
 	// B
-	a0 = this->get_a();
-	b0 = this->get_b();
 	for (int k=0; k<kmax; k++)
 	{
 		F = dFdx = 0.0;
@@ -861,14 +978,18 @@ void Beta_mirror::update(const Rcpp::NumericMatrix & weights, const int * rows)
 		}
 		if(fabs(F)<eps)
 		{
+// Rprintf("k(b0) = %d\n", k);
 			break;
 		}
 	}
+// 	Rprintf("b0 = %g\n", b0);
 	// Artificially restrict to values >= 1 to avoid Inf when obs=0 or 1
 	if (b0 < 1)
 	{
 		b0 = 1;
 	}
+
+	this->a = a0;
 	this->b = b0;
 
 }
@@ -878,12 +999,11 @@ void Beta_symmetric::update(const Rcpp::NumericMatrix & weights, const int * row
 	// Updates with Newton-Raphson
 	double eps = 1e-4;
 	double kmax = 20;
-	double a0;
 	double DiC, TriC;
 	double F, dFdx, FdivM;
 	double logObs, log1mObs;
+	double a0 = this->get_a();
 
-	a0 = this->get_a();
 	for (int k=0; k<kmax; k++)
 	{
 		F = dFdx = 0.0;
@@ -913,6 +1033,7 @@ void Beta_symmetric::update(const Rcpp::NumericMatrix & weights, const int * row
 	{
 		a0 = 1;
 	}
+
 	this->a = a0;
 	this->b = a0;
 
@@ -1022,8 +1143,8 @@ MVCopulaApproximation::MVCopulaApproximation(const Rcpp::IntegerMatrix & obs, co
 	this->cor_matrix_inv = cor_matrix_inv;
 	this->cor_matrix_det = cor_matrix_det;
 	// Create marginal distributions
-	int ndist = emissionParamsList.size();
-	for (int imod=0; imod<ndist; imod++)
+	int ndistr = emissionParamsList.size();
+	for (int imod=0; imod<ndistr; imod++)
 	{
 		Rcpp::IntegerMatrix::Column iobs = this->obs(Rcpp::_, imod);
 		Rcpp::DataFrame emissionParams = Rcpp::as<Rcpp::DataFrame>(emissionParamsList[imod]);
@@ -1037,7 +1158,7 @@ MVCopulaApproximation::MVCopulaApproximation(const Rcpp::IntegerMatrix & obs, co
 
 MVCopulaApproximation::~MVCopulaApproximation()
 {
-	for (int imod=0; imod<this->obs.ncol(); imod++)
+	for (int imod=0; imod<this->marginals.size(); imod++)
 	{
 		delete this->marginals[imod];
 	}

@@ -12,7 +12,7 @@ importRene <- function(file, chrom.lengths=NULL, temp.store=tempfile("importRene
   	classes <- c('character', 'numeric', 'character', 'NULL', 'character', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric')
     ptm <- startTimedMessage("Reading file ", file, " ...")
 	  data.raw <- read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
-  	data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand="*", methylated=data.raw$V10, context=data.raw$V5, unmeth.counts=data.raw$V7-data.raw$V6, meth.counts=data.raw$V6)
+  	data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand="*", methylated=data.raw$V10, context=data.raw$V5, counts.unmethylated=data.raw$V7-data.raw$V6, counts.methylated=data.raw$V6)
   	# rm(data.raw)
   	stopTimedMessage(ptm)
   	
@@ -23,7 +23,7 @@ importRene <- function(file, chrom.lengths=NULL, temp.store=tempfile("importRene
   	
   	## Add ratio and distance
   	ptm <- startTimedMessage("Adding ratio and distance ...")
-  	data$ratio <- data$meth.counts / (data$unmeth.counts + data$meth.counts)
+  	data$ratio <- data$counts.methylated / (data$counts.unmethylated + data$counts.methylated)
   	data <- data[!is.na(data$ratio)]
     data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
     data$distance[data$distance < 0] <- Inf 
@@ -88,8 +88,8 @@ importBismarck <- function(files, chrom.lengths=NULL, temp.store=tempfile("impor
       	data$meth.sum <- rev(cumsum(rev(data$methylated)))
       	data.dedup <- data[!data$mask.dup]
       	rm(data)
-      	data.dedup$unmeth.counts <- -diff(c(data.dedup$unmeth.sum, 0))
-      	data.dedup$meth.counts <- -diff(c(data.dedup$meth.sum, 0))
+      	data.dedup$counts.unmethylated <- -diff(c(data.dedup$unmeth.sum, 0))
+      	data.dedup$counts.methylated <- -diff(c(data.dedup$meth.sum, 0))
       	data.dedup$methylated <- NULL
       	data.dedup$mask.dup <- NULL
       	data.dedup$unmeth.sum <- NULL
@@ -104,12 +104,12 @@ importBismarck <- function(files, chrom.lengths=NULL, temp.store=tempfile("impor
           	data <- sort(data)
           	rm(data.dedups)
           	data$mask.dup <- c(FALSE, as.logical(data@seqnames[-1] == data@seqnames[-length(data)])) & c(FALSE, as.logical(data@ranges@start[-1] == data@ranges@start[-length(data)]))
-          	data$unmeth.sum <- rev(cumsum(rev(data$unmeth.counts)))
-          	data$meth.sum <- rev(cumsum(rev(data$meth.counts)))
+          	data$unmeth.sum <- rev(cumsum(rev(data$counts.unmethylated)))
+          	data$meth.sum <- rev(cumsum(rev(data$counts.methylated)))
           	data.dedup <- data[!data$mask.dup]
           	rm(data)
-          	data.dedup$unmeth.counts <- -diff(c(data.dedup$unmeth.sum, 0))
-          	data.dedup$meth.counts <- -diff(c(data.dedup$meth.sum, 0))
+          	data.dedup$counts.unmethylated <- -diff(c(data.dedup$unmeth.sum, 0))
+          	data.dedup$counts.methylated <- -diff(c(data.dedup$meth.sum, 0))
           	data.dedup$mask.dup <- NULL
           	data.dedup$unmeth.sum <- NULL
           	data.dedup$meth.sum <- NULL
@@ -127,7 +127,7 @@ importBismarck <- function(files, chrom.lengths=NULL, temp.store=tempfile("impor
   	}
   	
   	## Add ratio and distance
-  	data$ratio <- data$meth.counts / (data$unmeth.counts + data$meth.counts)
+  	data$ratio <- data$counts.methylated / (data$counts.unmethylated + data$counts.methylated)
     data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
     data$distance[data$distance < 0] <- Inf 
   	return(data)
@@ -215,8 +215,8 @@ importBismarck_old <- function(files, chrom.lengths.df, temp.store=NULL) {
   	data$unmeth.sum <- rev(cumsum(rev(!data$methylated)))
   	data$meth.sum <- rev(cumsum(rev(data$methylated)))
   	data.dedup <- data[!data$mask.dup]
-  	data.dedup$unmeth.counts <- -diff(c(data.dedup$unmeth.sum, 0))
-  	data.dedup$meth.counts <- -diff(c(data.dedup$meth.sum, 0))
+  	data.dedup$counts.unmethylated <- -diff(c(data.dedup$unmeth.sum, 0))
+  	data.dedup$counts.methylated <- -diff(c(data.dedup$meth.sum, 0))
   	stopTimedMessage(ptm)
   	
   	data.dedup$methylated <- NULL
@@ -225,7 +225,7 @@ importBismarck_old <- function(files, chrom.lengths.df, temp.store=NULL) {
   	data.dedup$meth.sum <- NULL
   	
   	## Add ratio and distance
-  	data.dedup$ratio <- data.dedup$meth.counts / (data.dedup$unmeth.counts + data.dedup$meth.counts)
+  	data.dedup$ratio <- data.dedup$counts.methylated / (data.dedup$counts.unmethylated + data.dedup$counts.methylated)
     data.dedup$distance <- c(-1, start(data.dedup)[-1] - end(data.dedup)[-length(data.dedup)] - 1)
     data.dedup$distance[data.dedup$distance < 0] <- Inf 
   	return(data.dedup)

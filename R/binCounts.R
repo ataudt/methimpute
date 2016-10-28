@@ -2,7 +2,7 @@
 #' 
 #' Bin counts from unmethylated and methylated cytosines in equidistant bins.
 #' 
-#' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'unmeth.counts' and 'meth.counts'.
+#' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'counts.unmethylated' and 'counts.methylated'.
 #' @param binsize The window size used for binning.
 #' @return A \code{\link[GenomicRanges]{GRanges}} object.
 #' 
@@ -20,15 +20,15 @@ binCounts <- function(data, binsize) {
     
     ptm <- startTimedMessage("Aggregating counts ...")
     ind <- findOverlaps(data, bins, select='first')
-    df <- aggregate(as.data.frame(mcols(data)[,c('unmeth.counts', 'meth.counts')]), by=list(ind), FUN=sum)
-    bins$unmeth.counts <- 0
-    bins$meth.counts <- 0
-    bins$unmeth.counts[df$Group.1] <- df$unmeth.counts
-    bins$meth.counts[df$Group.1] <- df$meth.counts
+    df <- aggregate(as.data.frame(mcols(data)[,c('counts.unmethylated', 'counts.methylated')]), by=list(ind), FUN=sum)
+    bins$counts.unmethylated <- 0
+    bins$counts.methylated <- 0
+    bins$counts.unmethylated[df$Group.1] <- df$counts.unmethylated
+    bins$counts.methylated[df$Group.1] <- df$counts.methylated
     stopTimedMessage(ptm)
     
     ptm <- startTimedMessage("Adding ratio and distance ...")
-    bins$ratio <- bins$meth.counts / (bins$meth.counts + bins$unmeth.counts)
+    bins$ratio <- bins$counts.methylated / (bins$counts.methylated + bins$counts.unmethylated)
     bins <- bins[!is.na(bins$ratio)]
     bins$distance <- c(-1, start(bins)[-1] - end(bins)[-length(bins)] - 1)
     bins$distance[bins$distance < 0] <- Inf 

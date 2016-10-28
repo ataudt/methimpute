@@ -2,12 +2,12 @@
 #' 
 #' Call methylated, unmethylated and hemimethylated regions by fitting a multivariate Hidden Markov Model to the data.
 #' 
-#' In a first step, the function will use \code{\link{fitSignalBackground}} to obtain the distribution parameters for a signal-background model for methylated and unmethylated read counts, respectively. The resulting distributions are used to fit a multivariate HMM with states \code{c("Background", "Methylated", "UNmethylated", "Hemimethylated")}.
+#' In a first step, the function will use \code{\link{fitSignalBackground}} to obtain the distribution parameters for a signal-background model for methylated and unmethylated read counts, respectively. The resulting distributions are used in a second step to fit a multivariate HMM with states \code{c("Background", "Methylated", "UNmethylated", "Hemimethylated")}.
 #' 
 #' @inheritParams fitSignalBackground
 #' @return A list with fitted parameters, posteriors and input parameters.
 #' 
-callMethylation <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=1000, verbosity=1) {
+callMethylation <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=0.999, states=c("Background", "Methylated", "UNmethylated", "Hemimethylated"), verbosity=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -18,19 +18,21 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, 
     }
   
     ### Assign variables ###
-    modelnames <- c('minus', 'plus')
+    modelnames <- c('unmethylated', 'methylated')
     components <- c('background', 'signal')
-    states <- c("Background", "Methylated", "UNmethylated", "Hemimethylated")
+    states.full <- c("Background", "Methylated", "UNmethylated", "Hemimethylated")
     numstates <- length(states)
     
     ### State definition and mapping ###
     statedef <- permute(components, modelnames)
-    rownames(statedef) <- states
+    rownames(statedef) <- states.full
+    statedef <- statedef[states,]
     
     ### Fit HMMs for p- and m-counts ###
-    messageU("Fitting two-component HMM", underline="=", overline='=')
-    mhmm <- fitSignalBackground(data, observable='mcounts', fit.on.chrom=fit.on.chrom, transDist=transDist, eps=eps, max.time=max.time, max.iter=max.iter, count.cutoff=count.cutoff, verbosity=verbosity)
-    phmm <- fitSignalBackground(data, observable='pcounts', fit.on.chrom=fit.on.chrom, transDist=transDist, eps=eps, max.time=max.time, max.iter=max.iter, count.cutoff=count.cutoff, verbosity=verbosity)
+    messageU("Fitting two-component HMM: unmethylated counts", underline="=", overline='=')
+    mhmm <- fitSignalBackground(data, observable='counts.unmethylated', fit.on.chrom=fit.on.chrom, transDist=transDist, eps=eps, max.time=max.time, max.iter=max.iter, quantile.cutoff=quantile.cutoff, verbosity=verbosity)
+    messageU("Fitting two-component HMM: methylated counts", underline="=", overline='=')
+    phmm <- fitSignalBackground(data, observable='counts.methylated', fit.on.chrom=fit.on.chrom, transDist=transDist, eps=eps, max.time=max.time, max.iter=max.iter, quantile.cutoff=quantile.cutoff, verbosity=verbosity)
     hmms <- list(mhmm, phmm)
     names(hmms) <- modelnames
     
@@ -42,7 +44,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, 
     names(startProbs_initial) <- states
     
     ### Prepare the bivariate HMM ###
-    messageU("Multivariate HMM", underline="=", overline="=")
+    messageU("Multivariate HMM: integrating methylated and unmethylated counts", underline="=", overline="=")
     cormat <- prepareMultivariate(data=data, hmms=hmms, statedef=statedef)
     data$observable <- cormat$observable
     
@@ -97,11 +99,11 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, 
 #' @param eps Convergence threshold for the Baum-Welch algorithm.
 #' @param max.time Maximum running time in seconds for the Baum-Welch algorithm.
 #' @param max.iter Maximum number of iterations for the Baum-Welch algorithm.
-#' @param count.cutoff \code{counts} > \code{count.cutoff} will be set to \code{count.cutoff}. The purpose is to increase the speed of the Baum-Welch algorithm, which is slowed down by huge values in \code{counts}.
+#' @param quantile.cutoff A quantile (between 0 and 1) serving as cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to 1 to disable this filtering.
 #' @param verbosity Integer from c(0,1) specifying the verbosity of the fitting procedure.
 #' @return A list with fitted parameters, posteriors, and the input parameters.
 #' 
-fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=1000, verbosity=1) {
+fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=0.999, verbosity=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -118,8 +120,10 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
     distances <- data$distance
     
     ## Filter counts by cutoff
+    count.cutoff <- as.integer(quantile(counts, quantile.cutoff))
     counts[counts > count.cutoff] <- count.cutoff
-    data$observable <- counts # assign it now to have filtered values in there
+    data$observable <- matrix(counts) # assign it now to have filtered values in there
+    colnames(data$observable) <- observable
     
     ## Subset by chromosomes
     if (!is.null(fit.on.chrom)) {
@@ -142,7 +146,7 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
     ep[["signal"]] <- data.frame(type='dnbinom', mu=mean.counts*1.5, var=var.counts*2)
     ep <- do.call(rbind, ep)
     # Make sure variance is bigger than mean for negative binomial
-    ep$var[ep$mu >= ep$var] <- ep$mu + 1
+    ep$var[ep$mu >= ep$var] <- ep$mu[ep$mu >= ep$var] + 1
     ep$size <- dnbinom.size(ep$mu, ep$var)
     ep$prob <- dnbinom.prob(ep$mu, ep$var)
     emissionParams_initial <- ep
@@ -161,13 +165,17 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
     ### Call the C function ###
     on.exit(cleanup())
     if (is.null(fit.on.chrom)) {
-        message("Baum-Welch: Fitting HMM parameters")
+        ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
         hmm <- fitHMM(counts=counts, distances=distances, params=params, algorithm=1)
+        message("Time spent in Baum-Welch:", appendLF=FALSE)
+        stopTimedMessage(ptm)
     } else {
-        message("Baum-Welch: Fitting HMM parameters")
+        ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
         message(" ... on chromosomes ", paste0(fit.on.chrom, collapse=', '))
         hmm <- fitHMM(counts=counts, distances=distances, params=params, algorithm=1)
-        counts <- data$observable
+        message("Time spent in Baum-Welch:", appendLF=FALSE)
+        stopTimedMessage(ptm)
+        counts <- as.integer(data$observable)
         params2 <- list()
         params2$startProbs_initial <- hmm$startProbs
         params2$transProbs_initial <- hmm$transProbs
@@ -177,9 +185,11 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
         params2$maxtime <- max.time
         params2$maxiter <- max.iter
         params2$verbosity <- verbosity
-        message("Viterbi: Obtaining state sequence")
+        ptm <- startTimedMessage("Viterbi: Obtaining state sequence\n")
         message(" ... on all chromosomes")
         hmm <- fitHMM(counts=counts, distances=distances, params=params2, algorithm=2)
+        message("Time spent in Viterbi:", appendLF=FALSE)
+        stopTimedMessage(ptm)
     }
     
     ### Construct result object ###

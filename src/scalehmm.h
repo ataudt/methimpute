@@ -50,6 +50,8 @@ class ScaleHMM  {
 		int NMOD; ///< number of modifications / marks
 		Rcpp::NumericVector logObs; ///< vector [NDATA] of log(observations)
 		Rcpp::NumericVector log1mObs; ///< vector [NDATA] of log(1-observations)
+		Rcpp::IntegerVector obs_unique; ///< vector [?] of unique observations
+		Rcpp::IntegerVector uobsind_per_t; ///< vector [NDATA] of indices of unique observations for each element in obs
 		Rcpp::NumericMatrix transProbs; ///< matrix [NSTATES x NSTATES] of transition probabilities
 		Rcpp::NumericVector transExp; ///< vector [NDATA] with exponential factors for decay of transition probabilities
 // 		double transDist; ///< characteristic decaying constant for the transition probabilities

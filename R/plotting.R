@@ -71,6 +71,7 @@ plotHistogram <- function(model) {
     
     ## Plot histogram
     ggplt <- ggplot(data.frame(counts)) + geom_histogram(aes_string(x='counts', y='..density..'), binwidth=1, color='black', fill='white') + xlab("counts")
+    ggplt <- ggplt + coord_cartesian(xlim=c(0,quantile(counts, 0.995)))
     ggplt <- ggplt + theme_bw()
     
     ## Add distributions
@@ -102,7 +103,18 @@ plotHistogram <- function(model) {
 plotBoxplot <- function(model) {
   
     df <- data.frame(state=model$data$state, observable=model$data$observable)
-    ggplt <- ggplot(df) + geom_boxplot(aes_string(x='state', y='observable'))
+    df <- suppressMessages( reshape2::melt(df) )
+    names(df) <- c('state', 'status', 'observable')
+    ggplt <- ggplot(df) + geom_boxplot(aes_string(x='state', y='observable', fill='status'))
+    return(ggplt)
+    
+}
+
+
+plotBoxplotRatio <- function(model) {
+  
+    df <- data.frame(state=model$data$state, ratio=model$data$ratio)
+    ggplt <- ggplot(df) + geom_boxplot(aes_string(x='state', y='ratio'))
     return(ggplt)
     
 }
@@ -111,9 +123,9 @@ plotBoxplot <- function(model) {
 plotScatter <- function(model) {
   
     ## Find sensible limits
-    xmax <- quantile(model$data$unmeth.counts, 0.99)
-    ymax <- quantile(model$data$meth.counts, 0.99)
-    df <- data.frame(state=model$data$state, unmeth=model$data$unmeth.counts, meth=model$data$meth.counts)
+    xmax <- quantile(model$data$counts.unmethylated, 0.99)
+    ymax <- quantile(model$data$counts.methylated, 0.99)
+    df <- data.frame(state=model$data$state, unmeth=model$data$counts.unmethylated, meth=model$data$counts.methylated)
     ggplt <- ggplot(df) + geom_point(aes_string(x='unmeth', y='meth', col='state'))
     ggplt <- ggplt + scale_color_manual(values=getStateColors(names(model$params$weights)))
     ggplt <- ggplt + xlab('unmethylated counts') + ylab('methylated counts')

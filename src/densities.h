@@ -47,6 +47,7 @@ class ZiNB : public Density {
 		// Constructor and Destructor
 		ZiNB();
 		ZiNB(const Rcpp::IntegerVector & obs, double size, double prob, double w);
+		ZiNB(const Rcpp::IntegerVector & obs, const Rcpp::IntegerVector & obs_unique, const Rcpp::IntegerVector & uobsind_per_obs, double size, double prob, double w);
 		~ZiNB();
 	
 		// Methods
@@ -71,6 +72,8 @@ class ZiNB : public Density {
 		double prob; ///< parameter of the distribution
 		double w; ///< parameter of the distribution
 		Rcpp::IntegerVector obs; ///< vector [NDATA] of observations
+		Rcpp::IntegerVector obs_unique; ///< vector [?] of unique observations
+		Rcpp::IntegerVector uobsind_per_t; ///< index of unique observations for each element in obs
 		Rcpp::NumericVector weight; ///< temporary storage for weights in update()
 		int max_obs; ///< maximum value in obs
 		Rcpp::NumericVector lxfactorials; ///< vector [max_obs] of precomputed factorials (x!)
@@ -81,6 +84,7 @@ class NegativeBinomial : public Density {
 		// Constructor and Destructor
 		NegativeBinomial();
 		NegativeBinomial(const Rcpp::IntegerVector & obs, double size, double prob);
+		NegativeBinomial(const Rcpp::IntegerVector & obs, const Rcpp::IntegerVector & obs_unique, const Rcpp::IntegerVector & uobsind_per_obs, double size, double prob);
 		~NegativeBinomial();
 
 		// Methods
@@ -104,6 +108,8 @@ class NegativeBinomial : public Density {
 		double size; ///< parameter of the distribution
 		double prob; ///< parameter of the distribution
 		Rcpp::IntegerVector obs; ///< vector [NDATA] of observations
+		Rcpp::IntegerVector obs_unique; ///< vector [?] of unique observations
+		Rcpp::IntegerVector uobsind_per_t; ///< index of unique observations for each element in obs
 		int max_obs; ///< maximum value in obs
 		Rcpp::NumericVector lxfactorials; ///< vector [max_obs] of precomputed factorials (x!)
 };

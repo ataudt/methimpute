@@ -4,13 +4,12 @@
 \alias{importRene}
 \title{Import a Rene methylation extractor file}
 \usage{
-importRene(file, chrom.lengths.df = NULL,
-  temp.store = tempfile("importRene"))
+importRene(file, chrom.lengths = NULL, temp.store = tempfile("importRene"))
 }
 \arguments{
 \item{file}{The file to import.}
 
-\item{chrom.lengths.df}{A data.frame obtained with \code{\link[GenomeInfoDb]{fetchExtendedChromInfoFromUCSC}} for the seqlengths.}
+\item{chrom.lengths}{A named vector containing the chromosome lengths.}
 
 \item{temp.store}{A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.}
 }

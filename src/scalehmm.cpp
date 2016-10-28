@@ -110,14 +110,37 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs, const Rcpp::NumericVector & 
 	}
 	this->startProbs = Rcpp::clone(startProbs_initial);
 
+	// Make vector of positions of unique observations for faster updating
+	this->obs_unique = Rcpp::unique(obs);
+	this->obs_unique.sort();
+	Rcpp::IntegerVector uobsind_per_obs = Rcpp::IntegerVector(this->obs_unique[this->obs_unique.size()-1]+1);
+	int i = 0;
+	for (int j=0; j<uobsind_per_obs.size(); j++)
+	{
+		if (this->obs_unique[i] == j)
+		{
+			uobsind_per_obs[j] = i;
+			i += 1;
+		}
+		if (this->verbosity>=5) Rprintf("uobsind_per_obs[j=%d] = %d\n", j, uobsind_per_obs[j]);
+	}
+	// Get the index for each observation
+	this->uobsind_per_t = Rcpp::IntegerVector(obs.size());
+	for (int t=0; t<obs.size(); t++)
+	{
+		this->uobsind_per_t[t] = uobsind_per_obs[obs[t]];
+	}
+
 	// Emission densities
 	this->emissionParams = Rcpp::clone(emissionParams_initial);
 	Rcpp::CharacterVector emissionTypes = this->emissionParams["type"];
 	Rcpp::NumericVector sizes = Rcpp::as<Rcpp::NumericVector>(this->emissionParams["size"]);
 	Rcpp::NumericVector probs = Rcpp::as<Rcpp::NumericVector>(this->emissionParams["prob"]);
-	NegativeBinomial * d0 = new NegativeBinomial(obs, sizes[0], probs[0]);
+	NegativeBinomial * d0 = new NegativeBinomial(obs, this->obs_unique, this->uobsind_per_t, sizes[0], probs[0]);
+// 	Rcpp::NumericVector ws = Rcpp::as<Rcpp::NumericVector>(this->emissionParams["w"]);
+// 	NegativeBinomial * d0 = new ZiNB(obs, this->obs_unique, this->uobsind_per_t, sizes[0], probs[0], w[0]);
 	this->emissionDensities.push_back(d0);
-	NegativeBinomial * d1 = new NegativeBinomial(obs, sizes[1], probs[1]);
+	NegativeBinomial * d1 = new NegativeBinomial(obs, this->obs_unique, this->uobsind_per_t, sizes[1], probs[1]);
 	this->emissionDensities.push_back(d1);
 }
 
@@ -157,13 +180,13 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerMatrix & multi_obs, const Rcpp::NumericVec
 	this->startProbs = Rcpp::clone(startProbs_initial);
 
 	// Emission densities
-	int ndist = emissionParamsList.size();
+	int ndistr = emissionParamsList.size();
 	Rcpp::IntegerVector state_def;
 	this->emissionParamsList = emissionParamsList;
 	for (int i=0; i<this->NSTATES; i++)
 	{
 		// Get row of state definition
-		for (int j=0; j<ndist; j++)
+		for (int j=0; j<ndistr; j++)
 		{
 			Rcpp::IntegerVector jcol = statedef[j];
 			state_def[j] = jcol[i];
@@ -177,7 +200,7 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerMatrix & multi_obs, const Rcpp::NumericVec
 ScaleHMM::~ScaleHMM()
 {
 	if (this->verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
-	for (int i=0; i<this->emissionParams.nrows(); i++)
+	for (int i=0; i<this->emissionDensities.size(); i++)
 	{
 		delete this->emissionDensities[i];
 	}
@@ -381,7 +404,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 		}
 		
 		// Updating initial probabilities startProbs and transition matrix transProbs
-		if (this->verbosity>=2) Rprintf("%s\n", "  updating transition matrix");
+		if (this->verbosity>=2) Rprintf("  updating transition matrix\n");
 		for (int i=0; i<this->NSTATES; i++)
 		{
 			this->startProbs[i] = this->gamma(i,0);
@@ -406,7 +429,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 		if (this->xvariate == UNIVARIATE)
 		{
 			// Update the parameters of the distribution
-			if (this->verbosity>=2) Rprintf("%s\n", "  updating distribution parameters");
+			if (this->verbosity>=2) Rprintf("  updating distribution parameters\n");
 			if (this->emissionDensities[0]->get_name() == BETA_MIRROR)
 			{
 				const int rows1[] = {0,2};
@@ -828,7 +851,7 @@ void ScaleHMM::calc_sumgamma()
 		this->sumgamma[i] -= this->gamma(i,NDATA-1);
 	}
 
-	if (this->verbosity>=5)
+	if (this->verbosity>=6)
 	{
 		for (int t=0; t<this->NDATA; t++)
 		{

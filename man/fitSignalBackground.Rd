@@ -6,7 +6,7 @@
 \usage{
 fitSignalBackground(data, observable = "counts", fit.on.chrom = NULL,
   transDist = 10000, eps = 0.01, max.time = Inf, max.iter = Inf,
-  count.cutoff = 1000, verbosity = 1)
+  quantile.cutoff = 0.999, verbosity = 1)
 }
 \arguments{
 \item{data}{A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'distance' and 'counts'.}
@@ -23,7 +23,7 @@ fitSignalBackground(data, observable = "counts", fit.on.chrom = NULL,
 
 \item{max.iter}{Maximum number of iterations for the Baum-Welch algorithm.}
 
-\item{count.cutoff}{\code{counts} > \code{count.cutoff} will be set to \code{count.cutoff}. The purpose is to increase the speed of the Baum-Welch algorithm, which is slowed down by huge values in \code{counts}.}
+\item{quantile.cutoff}{A quantile (between 0 and 1) serving as cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to 1 to disable this filtering.}
 
 \item{verbosity}{Integer from c(0,1) specifying the verbosity of the fitting procedure.}
 }
