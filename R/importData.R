@@ -13,7 +13,7 @@ importRene <- function(file, chrom.lengths=NULL, temp.store=tempfile("importRene
     ptm <- startTimedMessage("Reading file ", file, " ...")
 	  data.raw <- read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
   	data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand="*", methylated=data.raw$V10, context=data.raw$V5, counts.unmethylated=data.raw$V7-data.raw$V6, counts.methylated=data.raw$V6)
-  	# rm(data.raw)
+  	rm(data.raw)
   	stopTimedMessage(ptm)
   	
   	## Assign seqlengths

@@ -7,7 +7,7 @@
 #' @inheritParams fitSignalBackground
 #' @return A list with fitted parameters, posteriors and input parameters.
 #' 
-callMethylation <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=0.999, states=c("Background", "Methylated", "UNmethylated", "Hemimethylated"), verbosity=1) {
+callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=0.999, states=c("Background", "Methylated", "UNmethylated", "Hemimethylated"), verbosity=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -70,6 +70,8 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, 
     ### Construct result object ###
     ptm <- startTimedMessage("Compiling results ...")
     r <- list()
+    class(r) <- 'binnedMethylome'
+    r$ID <- ID
     if (hmm$error == "") {
         r$convergenceInfo <- hmm$convergenceInfo
         names(hmm$weights) <- states
@@ -79,10 +81,20 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, 
         rownames(hmm$posteriors) <- states
         data$posteriors <- t(hmm$posteriors)
         data$state <- factor(states, levels=states)[hmm$states+1]
+        ## Make segmentation
+        df <- as.data.frame(data)
+        df <- df[, c(names(df)[1:5], 'state')]
+        segments <- suppressMessages( collapseBins(df, column2collapseBy = 'state') )
+        segments <- methods::as(segments, 'GRanges')
+        seqlevels(segments) <- seqlevels(data)
+        seqlengths(segments) <- seqlengths(data)[seqlevels(segments)]
     }
+    r$segments <- segments
     r$data <- data
     stopTimedMessage(ptm)
     
+    r$mhmm <- mhmm
+    r$phmm <- phmm
     return(r)
 }
 
@@ -120,8 +132,10 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
     distances <- data$distance
     
     ## Filter counts by cutoff
-    count.cutoff <- as.integer(quantile(counts, quantile.cutoff))
-    counts[counts > count.cutoff] <- count.cutoff
+    count.cutoff.upper <- as.integer(quantile(counts, quantile.cutoff))
+    counts[counts > count.cutoff.upper] <- count.cutoff.upper
+    count.cutoff.lower <- as.integer(quantile(counts, 1-quantile.cutoff))
+    counts[counts < count.cutoff.lower] <- count.cutoff.lower
     data$observable <- matrix(counts) # assign it now to have filtered values in there
     colnames(data$observable) <- observable
     

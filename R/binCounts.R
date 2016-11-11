@@ -8,7 +8,7 @@
 #' 
 binCounts <- function(data, binsize) {
   
-    ptm <- startTimedMessage("Making fixed-width bins ...")
+    ptm <- startTimedMessage("Making fixed-width bins with ", binsize, "bp ...")
     chrom.lengths.floor <- floor(seqlengths(data) / binsize) * binsize
     tiles <- GenomicRanges::tileGenome(chrom.lengths.floor, tilewidth=binsize)
     bins <- unlist(GenomicRanges::tileGenome(chrom.lengths.floor, tilewidth=binsize), use.names=FALSE)
