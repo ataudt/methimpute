@@ -14,6 +14,11 @@ getStateColors <- function(states=NULL) {
     if (is.null(states)) {
         return(state.colors)
     } else {
+        states.other <- setdiff(states, names(state.colors))
+        if (length(states.other) > 0) {
+            state.colors.other <- getDistinctColors(states.other)
+            state.colors <- c(state.colors, state.colors.other)
+        }
         return(state.colors[states])
     }
 }
@@ -79,7 +84,7 @@ plotRatioBoxplot <- function(model) {
 #' 
 #' Plot a histogram of count values and fitted distributions.
 #' 
-plotHistogram <- function(model, binwidth=1) {
+plotHistogram <- function(model, binwidth=10) {
     
     ## Assign variables
     counts <- model$data$observable
@@ -96,11 +101,18 @@ plotHistogram <- function(model, binwidth=1) {
         distr <- list(x=x)
         for (irow in 1:nrow(model$params$emissionParams)) {
             e <- model$params$emissionParams
-            distr[[rownames(model$params$emissionParams)[irow]]] <- model$params$weights[irow] * dnbinom(x, size=e[irow,'size'], prob=e[irow,'prob'])
+            if (e$type[irow] == 'delta') {
+                distr[[rownames(model$params$emissionParams)[irow]]] <- rep(0, length(x))
+                distr[[rownames(model$params$emissionParams)[irow]]][1] <- model$params$weights[irow]
+            } else if (e$type[irow] == 'dnbinom') {
+                distr[[rownames(model$params$emissionParams)[irow]]] <- model$params$weights[irow] * dnbinom(x, size=e[irow,'size'], prob=e[irow,'prob'])
+            }
         }
         distr <- as.data.frame(distr)
         distr$total <- rowSums(distr[,2:(1+nrow(model$params$emissionParams))])
         distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
+        distr$components <- sub('^X', '', distr$components)
+        distr$components <- factor(distr$components, levels=c(levels(model$data$state), 'total'))
         ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
         
         ## Make legend
@@ -109,7 +121,7 @@ plotHistogram <- function(model, binwidth=1) {
         lweights <- round(model$params$weights, 2)
         legend <- paste0(rownames(model$params$emissionParams), ", mean=", lmeans, ", var=", lvars, ", weight=", lweights)
         legend <- c(legend, paste0('total, mean=', round(mean(counts),2), ', var=', round(var(counts),2)))
-        ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(c('background','signal','total')), labels=legend) + theme(legend.position=c(1,1), legend.justification=c(1,1))
+        ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(c(rownames(model$params$emissionParams),'total')), labels=legend) + theme(legend.position=c(1,1), legend.justification=c(1,1))
     }
     
     return(ggplt)
@@ -136,21 +148,20 @@ plotBoxplotRatio <- function(model) {
 }
 
 
-plotScatter <- function(model, datapoints='all') {
+plotScatter <- function(model, xcol, ycol, datapoints='all') {
   
     ## Find sensible limits
     xmax <- quantile(model$data$counts.unmethylated, 0.99)
     ymax <- quantile(model$data$counts.methylated, 0.99)
-    df <- data.frame(state=model$data$state, unmeth=model$data$counts.unmethylated, meth=model$data$counts.methylated)
+    df <- data.frame(state=model$data$state, counts.unmethylated=model$data$counts.unmethylated, counts.methylated=model$data$counts.methylated)
     if (is.numeric(datapoints)) {
         df <- df[sample(1:nrow(df), datapoints, replace = FALSE), ]
     }
     
-    ggplt <- ggplot(df, aes_string(x='unmeth', y='meth', col='state')) + theme_bw()
-    ggplt <- ggplt + geom_point()
+    ggplt <- ggplot(df, aes_string(x='counts.methylated', y='counts.unmethylated', col='state')) + theme_bw()
+    ggplt <- ggplt + geom_point(alpha=0.1)
     # ggplt <- ggplt + geom_density2d()
     ggplt <- ggplt + scale_color_manual(values=getStateColors(names(model$params$weights)))
-    ggplt <- ggplt + xlab('unmethylated counts') + ylab('methylated counts')
     ggplt <- ggplt + coord_cartesian(xlim=c(0,xmax), ylim=c(0,ymax))
     
     return(ggplt)
@@ -337,3 +348,92 @@ heatmapGenomewide <- function(models, ylabels=NULL, classes=NULL, reorder.by.cla
 
 }
 
+
+#' Heatmap of transition probabilities
+#'
+#' Plot a heatmap of transition probabilities for a \code{\link{multiHMM}} model.
+#'
+#' @param model A \code{\link{multiHMM}} object or file that contains such an object.
+#' @param order Set to \code{TRUE} if you want to order the heatmap.
+#' @return A \code{\link[ggplot2]{ggplot}} object.
+#' @importFrom reshape2 melt
+#' @seealso \code{\link{plotting}}
+#' @export
+heatmapTransitionProbs <- function(model, order=FALSE) {
+  
+    # model <- suppressMessages( loadFromFiles(model, check.class=class.univariate.hmm)[[1]] )
+    A <- reshape2::melt(model$params$transProbs, varnames=c('from','to'), value.name='prob')
+    if (order) {
+        stateorder <- stateorderByTransition(model$params$transProbs)
+        A$from <- factor(A$from, levels=stateorder)
+        A$to <- factor(A$to, levels=stateorder)
+    } else {
+        A$from <- factor(A$from)
+        A$to <- factor(A$to)
+    }
+    ggplt <- ggplot(data=A) + geom_tile(aes_string(x='to', y='from', fill='prob')) + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) + scale_fill_gradient(low="white", high="blue") + theme_bw()
+    
+    return(ggplt)
+  
+}
+
+
+#' Histograms faceted by state
+#' 
+#' Make histograms of variables in \code{bins} faceted by state in \code{segmentation}.
+#' 
+#' @param segmentation A segmentation with metadata column 'state'.
+#' @param bins A \code{\link{binnedMethylome}}.
+#' @param plotcol A character vector specifying the meta-data columns for which to produce the faceted plot.
+#' @param binwidth Bin width for the histogram.
+#' @return A \code{\link[ggplot2]{ggplot}}.
+#' @importFrom reshape2 melt
+plotStateHistograms <- function(segmentation, bins, plotcol, binwidth) {
+  
+    states <- levels(segmentation$state)
+    segmentation.split <- split(segmentation, segmentation$state)
+    mind <- findOverlaps(bins, segmentation.split, select='first')
+    bins$state <- factor(names(segmentation.split)[mind], levels=states)
+    
+    df <- data.frame(state=bins$state, mcols(bins)[,plotcol])
+    names(df)[2:ncol(df)] <- plotcol
+    dfm <- reshape2::melt(df, id.vars = 'state', measure.vars = plotcol, variable.name = 'plotcol')
+    ggplt <- ggplot(dfm) + geom_freqpoly(aes_string(x='value', y='..density..', col='plotcol'), binwidth = binwidth)
+    ggplt <- ggplt + theme_bw()
+    ggplt <- ggplt + facet_wrap(~ state)
+    
+    return(ggplt)
+}
+
+
+#' Scatter plots faceted by state
+#' 
+#' Make scatter plots of two variables in \code{bins} faceted by state in \code{segmentation}.
+#' 
+#' @param segmentation A segmentation with metadata column 'state'.
+#' @param bins A \code{\link{binnedMethylome}}.
+#' @param x A character specifying the meta-data column that should go on the x-axis.
+#' @param y A character specifying the meta-data column that should go on the y-axis.
+#' @param col A character specifying the meta-data column that should be used for coloring.
+#' @return A \code{\link[ggplot2]{ggplot}}.
+plotStateScatter <- function(segmentation, bins, x, y, col=NULL, datapoints=1000) {
+  
+    states <- levels(segmentation$state)
+    segmentation.split <- split(segmentation, segmentation$state)
+    mind <- findOverlaps(bins, segmentation.split, select='first')
+    bins$seg.state <- factor(names(segmentation.split)[mind], levels=states)
+    
+    df <- data.frame(state = bins$seg.state, x = mcols(bins)[,x], y = mcols(bins)[,y], color=mcols(bins)[,col])
+    df <- df[sample(1:nrow(df), size=datapoints, replace=FALSE),]
+    if (!is.null(col)) {
+        ggplt <- ggplot(df) + geom_jitter(aes_string(x='x', y='y', col='color'), alpha=0.1)
+    } else {
+        ggplt <- ggplot(df) + geom_jitter(aes_string(x='x', y='y'), alpha=0.1)
+    }
+    ggplt <- ggplt + theme_bw()
+    ggplt <- ggplt + xlab(x) + ylab(y)
+    ggplt <- ggplt + facet_wrap(~ state)
+    ggplt <- ggplt + scale_color_manual(values=getDistinctColors(levels(df$color)))
+    
+    return(ggplt)
+}

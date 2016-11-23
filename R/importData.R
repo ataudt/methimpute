@@ -21,13 +21,9 @@ importRene <- function(file, chrom.lengths=NULL, temp.store=tempfile("importRene
       	seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
   	}
   	
-  	## Add ratio and distance
-  	ptm <- startTimedMessage("Adding ratio and distance ...")
-  	data$ratio <- data$counts.methylated / (data$counts.unmethylated + data$counts.methylated)
-  	data <- data[!is.na(data$ratio)]
-    data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
-    data$distance[data$distance < 0] <- Inf 
-    stopTimedMessage(ptm)
+    ## Make factors
+    data$context <- factor(data$context)
+    
   	return(data)
 }
   
@@ -126,10 +122,9 @@ importBismarck <- function(files, chrom.lengths=NULL, temp.store=tempfile("impor
       	seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
   	}
   	
-  	## Add ratio and distance
-  	data$ratio <- data$counts.methylated / (data$counts.unmethylated + data$counts.methylated)
-    data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
-    data$distance[data$distance < 0] <- Inf 
+    ## Make factors
+    data$context <- factor(data$context)
+    
   	return(data)
 }
 
@@ -228,6 +223,10 @@ importBismarck_old <- function(files, chrom.lengths.df, temp.store=NULL) {
   	data.dedup$ratio <- data.dedup$counts.methylated / (data.dedup$counts.unmethylated + data.dedup$counts.methylated)
     data.dedup$distance <- c(-1, start(data.dedup)[-1] - end(data.dedup)[-length(data.dedup)] - 1)
     data.dedup$distance[data.dedup$distance < 0] <- Inf 
+    
+    ## Make factors
+    data.dedup$context <- factor(data.dedup$context)
+    
   	return(data.dedup)
 }
 

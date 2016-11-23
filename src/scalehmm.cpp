@@ -136,12 +136,23 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs, const Rcpp::NumericVector & 
 	Rcpp::CharacterVector emissionTypes = this->emissionParams["type"];
 	Rcpp::NumericVector sizes = Rcpp::as<Rcpp::NumericVector>(this->emissionParams["size"]);
 	Rcpp::NumericVector probs = Rcpp::as<Rcpp::NumericVector>(this->emissionParams["prob"]);
-	NegativeBinomial * d0 = new NegativeBinomial(obs, this->obs_unique, this->uobsind_per_t, sizes[0], probs[0]);
-// 	Rcpp::NumericVector ws = Rcpp::as<Rcpp::NumericVector>(this->emissionParams["w"]);
-// 	NegativeBinomial * d0 = new ZiNB(obs, this->obs_unique, this->uobsind_per_t, sizes[0], probs[0], w[0]);
-	this->emissionDensities.push_back(d0);
-	NegativeBinomial * d1 = new NegativeBinomial(obs, this->obs_unique, this->uobsind_per_t, sizes[1], probs[1]);
-	this->emissionDensities.push_back(d1);
+	for (int i=0; i<this->NSTATES; i++)
+	{
+		std::string dtype = Rcpp::as<std::string>(emissionTypes[i]);
+		if (dtype.compare("delta") == 0)
+		{
+			// Zero Inflation
+			ZeroInflation * d = new ZeroInflation(obs);
+			this->emissionDensities.push_back(d);
+		}
+		else if (dtype.compare("dnbinom") == 0)
+		{
+			// Negative Binomial
+			NegativeBinomial * d = new NegativeBinomial(obs, this->obs_unique, this->uobsind_per_t, sizes[i], probs[i]);
+			this->emissionDensities.push_back(d);
+		}
+	}
+
 }
 
 ScaleHMM::ScaleHMM(const Rcpp::IntegerMatrix & multi_obs, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::List emissionParamsList, int verbosity, const Rcpp::List & cor_mat_inv, const Rcpp::NumericVector & determinant, const Rcpp::DataFrame & statedef)
@@ -439,12 +450,13 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 				const int rows2[] = {1};
 				this->emissionDensities[1]->update(this->gamma, rows2);
 			}
-			else if (this->emissionDensities[0]->get_name() == NEGATIVE_BINOMIAL)
+			else if ((this->emissionDensities[0]->get_name() == NEGATIVE_BINOMIAL) | (this->emissionDensities[0]->get_name() == ZERO_INFLATION))
 			{ 
-				const int rows0[] = {0};
-				this->emissionDensities[0]->update(this->gamma, rows0);
-				const int rows1[] = {1};
-				this->emissionDensities[1]->update(this->gamma, rows1);
+				for (int i=0; i<this->NSTATES; i++)
+				{
+					const int rows[] = {i};
+					this->emissionDensities[i]->update(this->gamma, rows);
+				}
 			}
 			R_CheckUserInterrupt();
 		}
@@ -505,7 +517,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 		 		}
 			}
 		}
-		else if (this->emissionDensities[0]->get_name() == NEGATIVE_BINOMIAL)
+		else if ((this->emissionDensities[0]->get_name() == NEGATIVE_BINOMIAL) | (this->emissionDensities[0]->get_name() == ZERO_INFLATION))
 		{ 
 			Rcpp::NumericVector sizes = this->emissionParams["size"];
 			Rcpp::NumericVector probs = this->emissionParams["prob"];

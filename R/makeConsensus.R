@@ -29,6 +29,8 @@ makeConsensus <- function(models) {
   			segments <- segments.list[[i1]]
   			splt <- split(segments, mcols(segments)$state)
   			mind <- as.matrix(findOverlaps(consensus, splt, select='first'))
+  			# Assign Background state to NAs
+  			mind[is.na(mind)] <- 1
   			constates[,i1] <- mind
 		}
 		consensus$states <- constates

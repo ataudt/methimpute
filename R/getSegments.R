@@ -31,18 +31,10 @@ getSegments <- function(hmms, cluster=TRUE, classes=NULL) {
   	## Clustering
   	if (cluster) {
     		ptm <- startTimedMessage("Making consensus template ...")
-    		consensus <- disjoin(unlist(grlred, use.names=FALSE))
-    		constates <- matrix(NA, ncol=length(grlred), nrow=length(consensus))
-    		for (i1 in 1:length(grlred)) {
-      			grred <- grlred[[i1]]
-      			splt <- split(grred, mcols(grred)$state)
-      			mind <- as.matrix(findOverlaps(consensus, splt, select='first'))
-      			constates[,i1] <- mind
-    		}
-    		meanstates <- apply(constates, 1, mean, na.rm=TRUE)
-    		mcols(consensus)$meanstate <- meanstates
+    		consensus <- suppressMessages( makeConsensus(hmms) )
+    		constates <- consensus$states
     		stopTimedMessage(ptm)
-    
+    		
     		# Distance measure
     		# Use covariance instead of correlation to avoid NaNs for which the hclust fails with error
     		ptm <- startTimedMessage("Clustering ...")
@@ -61,6 +53,17 @@ getSegments <- function(hmms, cluster=TRUE, classes=NULL) {
     		}
     		# Reorder samples
     		grlred <- grlred[hc$order]
+    		
+    		# Remove bins that fall into boundary effects
+    		boundary <- consensus[width(consensus) < 300]
+    		mcols(boundary) <- NULL
+    		for (i1 in 1:length(grlred)) {
+    		    gr <- grlred[[i1]]
+    		    mcols(gr) <- NULL
+    		    gr.diff <- setdiff(gr, boundary)
+    		    gr.diff$state <- grlred[[i1]]$state[findOverlaps(gr.diff, grlred[[i1]], select='first')]
+    		    grlred[[i1]] <- gr.diff
+    		}
     
     		return(list(segments=grlred, clustering=hc, dist=dist))
   	}

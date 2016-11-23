@@ -4,13 +4,13 @@
 \alias{callMethylation}
 \title{Call methylated regions}
 \usage{
-callMethylation(data, fit.on.chrom = NULL, transDist = 10000, eps = 0.01,
-  max.time = Inf, max.iter = Inf, quantile.cutoff = 0.999,
+callMethylation(data, ID, fit.on.chrom = NULL, transDist = 10000,
+  eps = 0.01, max.time = Inf, max.iter = Inf, quantile.cutoff = 0.999,
   states = c("Background", "Methylated", "UNmethylated", "Hemimethylated"),
   verbosity = 1)
 }
 \arguments{
-\item{data}{A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'distance' and 'counts'.}
+\item{data}{A \code{\link[GenomicRanges]{GRanges}} object with metadata column 'counts' (or any other column specified as \code{observable}).}
 
 \item{fit.on.chrom}{A character vector giving the chromosomes on which the HMM will be fitted.}
 

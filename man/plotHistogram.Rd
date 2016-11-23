@@ -4,7 +4,7 @@
 \alias{plotHistogram}
 \title{Plot a count histogram}
 \usage{
-plotHistogram(model)
+plotHistogram(model, binwidth = 10)
 }
 \description{
 Plot a histogram of count values and fitted distributions.

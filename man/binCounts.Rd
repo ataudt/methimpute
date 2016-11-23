@@ -7,7 +7,7 @@
 binCounts(data, binsize)
 }
 \arguments{
-\item{data}{A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'unmeth.counts' and 'meth.counts'.}
+\item{data}{A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'counts.unmethylated' and 'counts.methylated'.}
 
 \item{binsize}{The window size used for binning.}
 }

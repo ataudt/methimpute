@@ -125,7 +125,7 @@ class ZeroInflation : public Density {
 		// Methods
 		void calc_logdensities(Rcpp::NumericMatrix::Row & logdens);
 		void calc_densities(Rcpp::NumericMatrix::Row & dens);
-		void update(const Rcpp::NumericVector & weight);
+		void update(const Rcpp::NumericMatrix & weights, const int * rows);
 		void copy(Density* other);
 		double getLogDensityAt(int x);
 

@@ -774,7 +774,7 @@ void ZeroInflation::calc_densities(Rcpp::NumericMatrix::Row & dens)
 
 void ZeroInflation::copy(Density*) {}
 
-void ZeroInflation::update(const Rcpp::NumericVector &)
+void ZeroInflation::update(const Rcpp::NumericMatrix &, const int *)
 {
 }
 
