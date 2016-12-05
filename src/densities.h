@@ -5,7 +5,7 @@
 #ifndef DENSITIES_H
 #define DENSITIES_H
 
-enum DensityName {ZERO_INFLATION, NEGATIVE_BINOMIAL, ZERO_INFLATED_NEGATIVE_BINOMIAL, BETA, BETA_MIRROR, BETA_SYMMETRIC, OTHER};
+enum DensityName {ZERO_INFLATION, BINOMIAL_TEST, NEGATIVE_BINOMIAL, ZERO_INFLATED_NEGATIVE_BINOMIAL, BETA, BETA_MIRROR, BETA_SYMMETRIC, OTHER};
 
 /* custom error handling class */
 static class exception_nan: public std::exception
@@ -26,7 +26,6 @@ class Density {
 		virtual void calc_logCDFs(Rcpp::NumericMatrix::Row &) {};
 		virtual void calc_CDFs(Rcpp::NumericMatrix::Row &) {};
 		virtual void update(const Rcpp::NumericMatrix &, const int * rows) {}; 
-		virtual void copy(Density*) {};
 		virtual double getLogDensityAt(int) { return(0); };
 		// Getter and Setter
 		virtual DensityName get_name() { return(OTHER); };
@@ -55,7 +54,6 @@ class ZiNB : public Density {
 		void calc_densities(Rcpp::NumericMatrix::Row & logdens);
 		void calc_logCDFs(Rcpp::NumericMatrix::Row & logCDF);
 		void calc_CDFs(Rcpp::NumericMatrix::Row & CDF);
-		void copy(Density* other);
 		double getLogDensityAt(int x);
 	
 		// Getter and Setter
@@ -79,6 +77,31 @@ class ZiNB : public Density {
 		Rcpp::NumericVector lxfactorials; ///< vector [max_obs] of precomputed factorials (x!)
 };
 
+class BinomialTest : public Density {
+	public:
+		// Constructor and Destructor
+		BinomialTest();
+		BinomialTest(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_test, double prob);
+		~BinomialTest();
+
+		// Methods
+		void calc_logdensities(Rcpp::NumericMatrix::Row & logdens);
+		void calc_densities(Rcpp::NumericMatrix::Row & dens);
+		void update(const Rcpp::NumericMatrix & weights, const int * rows);
+		double getLogDensityAt(int test, int total);
+
+		// Getter and Setter
+		DensityName get_name();
+		double get_prob();
+
+	private:
+		// Member variables
+		double prob; ///< parameter of the distribution
+		Rcpp::IntegerVector obs_total; ///< vector [NDATA] of observations
+		Rcpp::IntegerVector obs_test; ///< vector [NDATA] of observations
+};
+
+
 class NegativeBinomial : public Density {
 	public:
 		// Constructor and Destructor
@@ -93,7 +116,6 @@ class NegativeBinomial : public Density {
 		void calc_logCDFs(Rcpp::NumericMatrix::Row & logCDF);
 		void calc_CDFs(Rcpp::NumericMatrix::Row & CDF);
 		void update(const Rcpp::NumericMatrix & weights, const int * rows);
-		void copy(Density* other);
 		double getLogDensityAt(int x);
 
 		// Getter and Setter
@@ -125,8 +147,9 @@ class ZeroInflation : public Density {
 		// Methods
 		void calc_logdensities(Rcpp::NumericMatrix::Row & logdens);
 		void calc_densities(Rcpp::NumericMatrix::Row & dens);
+		void calc_logCDFs(Rcpp::NumericMatrix::Row & logCDF);
+		void calc_CDFs(Rcpp::NumericMatrix::Row & CDF);
 		void update(const Rcpp::NumericMatrix & weights, const int * rows);
-		void copy(Density* other);
 		double getLogDensityAt(int x);
 
 		// Getters and Setters

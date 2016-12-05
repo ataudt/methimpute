@@ -246,15 +246,6 @@ void ZiNB::calc_logCDFs(Rcpp::NumericMatrix::Row & logCDF)
 	}
 }
 
-void ZiNB::copy(Density* other)
-{
-	ZiNB* o = (ZiNB*)other;
-	this->prob = o->prob;
-	this->size = o->size;
-	this->obs = o->obs;
-	this->w = o->w;
-}
-
 double ZiNB::getLogDensityAt(int x)
 {
 	double logp = log(this->prob);
@@ -322,6 +313,91 @@ double ZiNB::get_prob()
 double ZiNB::get_w()
 {
 	return(this->w);
+}
+
+
+// ============================================================
+// Binomial test
+// ============================================================
+
+// Constructor and Destructor ---------------------------------
+BinomialTest::BinomialTest() { }
+
+BinomialTest::BinomialTest(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_test, double prob)
+{
+	this->obs_total = obs_total;
+	this->obs_test = obs_test;
+	this->prob = prob;
+
+}
+
+BinomialTest::~BinomialTest()
+{
+}
+
+// Methods ----------------------------------------------------
+void BinomialTest::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
+{
+	for (int t=0; t<this->obs_total.size(); t++)
+	{
+		logdens[t] = R::pbinom(this->obs_test[t], this->obs_total[t], this->prob, true, true);
+		if (std::isnan(logdens[t]))
+		{
+			throw nan_detected;
+		}
+	}
+} 
+
+void BinomialTest::calc_densities(Rcpp::NumericMatrix::Row & dens)
+{
+	for (int t=0; t<this->obs_total.size(); t++)
+	{
+		dens[t] = R::pbinom(this->obs_test[t], this->obs_total[t], this->prob, true, false);
+		if (std::isnan(dens[t]))
+		{
+			throw nan_detected;
+		}
+	}
+} 
+
+void BinomialTest::update(const Rcpp::NumericMatrix & weights, const int * rows)
+{
+	// Update prob (p)
+	double numerator, denominator;
+	numerator = denominator = 0.0;
+// 	clock_t time, dtime;
+// 	time = clock();
+	for (int t=0; t<this->obs_total.size(); t++)
+	{
+		numerator += weights(rows[0],t) * (this->obs_test[t]);
+		denominator += weights(rows[0],t) * (2 * this->obs_total[t]);
+	}
+	this->prob = numerator/denominator; // Update this->prob
+	
+// 	dtime = clock() - time;
+
+}
+
+double BinomialTest::getLogDensityAt(int test, int total)
+{
+	double logdens = R::pbinom(test-1, total, this->prob, false, true);
+	if (std::isnan(logdens))
+	{
+		throw nan_detected;
+	}
+	
+	return(logdens);
+}
+
+// Getter and Setter ------------------------------------------
+DensityName BinomialTest::get_name()
+{
+	return(BINOMIAL_TEST);
+}
+
+double BinomialTest::get_prob()
+{
+	return(this->prob);
 }
 
 
@@ -661,14 +737,6 @@ void NegativeBinomial::update(const Rcpp::NumericMatrix & weights, const int * r
 
 }
 
-void NegativeBinomial::copy(Density* other)
-{
-	NegativeBinomial* o = (NegativeBinomial*)other;
-	this->prob = o->prob;
-	this->size = o->size;
-	this->obs = o->obs;
-}
-
 double NegativeBinomial::getLogDensityAt(int x)
 {
 	double logp = log(this->prob);
@@ -772,7 +840,21 @@ void ZeroInflation::calc_densities(Rcpp::NumericMatrix::Row & dens)
 	}
 }
 
-void ZeroInflation::copy(Density*) {}
+void ZeroInflation::calc_CDFs(Rcpp::NumericMatrix::Row & CDF)
+{
+	for (int t=0; t<this->obs.size(); t++)
+	{
+		CDF[t] = 1.0;
+	}
+}
+
+void ZeroInflation::calc_logCDFs(Rcpp::NumericMatrix::Row & logCDF)
+{
+	for (int t=0; t<this->obs.size(); t++)
+	{
+		logCDF[t] = 0.0;
+	}
+}
 
 void ZeroInflation::update(const Rcpp::NumericMatrix &, const int *)
 {
@@ -1144,15 +1226,28 @@ MVCopulaApproximation::MVCopulaApproximation(const Rcpp::IntegerMatrix & obs, co
 	this->cor_matrix_det = cor_matrix_det;
 	// Create marginal distributions
 	int ndistr = emissionParamsList.size();
+	int stateindex;
 	for (int imod=0; imod<ndistr; imod++)
 	{
+		stateindex = statedef[imod] - 1;
 		Rcpp::IntegerMatrix::Column iobs = this->obs(Rcpp::_, imod);
 		Rcpp::DataFrame emissionParams = Rcpp::as<Rcpp::DataFrame>(emissionParamsList[imod]);
 		Rcpp::CharacterVector emissionTypes = emissionParams["type"];
 		Rcpp::NumericVector sizes = Rcpp::as<Rcpp::NumericVector>(emissionParams["size"]);
 		Rcpp::NumericVector probs = Rcpp::as<Rcpp::NumericVector>(emissionParams["prob"]);
-		NegativeBinomial * d0 = new NegativeBinomial(iobs, sizes[statedef[imod]-1], probs[statedef[imod]-1]);
-		this->marginals.push_back(d0);
+		std::string dtype = Rcpp::as<std::string>(emissionTypes[stateindex]);
+		if (dtype.compare("delta") == 0)
+		{
+			// Zero Inflation
+			ZeroInflation * d = new ZeroInflation(iobs);
+			this->marginals.push_back(d);
+		}
+		else if (dtype.compare("dnbinom") == 0)
+		{
+			// Negative Binomial
+			NegativeBinomial * d = new NegativeBinomial(iobs, sizes[stateindex], probs[stateindex]);
+			this->marginals.push_back(d);
+		}
 	}
 }
 
@@ -1239,7 +1334,6 @@ void MVCopulaApproximation::calc_logdensities(Rcpp::NumericMatrix::Row & logdens
 				throw nan_detected;
 			}
 		}
-// 		logdens[t] = log(1/sqrt(this->cor_matrix_det)) - 0.5 * exponent + sum;
 		logdens[t] = -0.5 * log(this->cor_matrix_det) - 0.5 * exponent + sum;
 		if (std::isnan(logdens[t]))
 		{

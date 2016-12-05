@@ -14,15 +14,16 @@
 #'hmms <- loadFromFiles(files[1:10])
 #'lapply(hmms, plot, type='profile')
 #'
-loadFromFiles <- function(files, check.class=c('binnedMethylome')) {
+loadFromFiles <- function(files, check.class=c('GRanges', 'binnedMethylome','NcomponentHMM')) {
 
+    available.classes <- c('GRanges', 'binnedMethylome', 'NcomponentHMM')
     # ptm <- startTimedMessage("Loading data from files ...")
     if (is.null(files)) {
         # stopTimedMessage(ptm)
         return(files)
     }
-    if (any(! check.class %in% c('binnedMethylome'))) {
-        stop("Argument 'check.class' must contain any combination of c('", paste0(c('GRanges', class.univariate.hmm, class.bivariate.hmm), collapse="', '"), "').")
+    if (any(! check.class %in% available.classes)) {
+        stop("Argument 'check.class' must contain any combination of c('", paste0(available.classes, collapse="', '"), "').")
     }
     modellist <- list()
     if (is.character(files)) {
@@ -33,6 +34,9 @@ loadFromFiles <- function(files, check.class=c('binnedMethylome')) {
                 stop("File '", file, "' does not contain an object of class ", paste0(check.class, collapse=' or '), ".")
             }
             modellist[[file]] <- model
+        }
+        if (!is.null(names(files))) {
+            names(modellist) <- names(files)
         }
     } else if (class(files) %in% check.class) {
         modellist[[1]] <- files

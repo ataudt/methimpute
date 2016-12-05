@@ -9,6 +9,3 @@ NULL
 # =======================================================
 # Some global variables that can be used in all functions
 # =======================================================
-## Class names
-class.univariate.hmm <- "popmethHMM"
-class.hmm.list <- "popmethHMM.list"

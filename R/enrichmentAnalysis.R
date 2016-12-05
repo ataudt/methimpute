@@ -77,6 +77,8 @@ heatmapFoldEnrichment <- function(model, annotations, plot=TRUE) {
     annotationsAtBins <- lapply(annotations, function(x) { IRanges::subsetByOverlaps(x, bins) })
     feature.lengths <- lapply(annotationsAtBins, function(x) { sum(as.numeric(width(x))) })
     state.levels <- levels(bins$state)
+    # Only state levels that actually appear
+    state.levels <- state.levels[state.levels %in% unique(bins$state)]
     
     ggplts <- list()
     folds <- list()
@@ -109,7 +111,8 @@ heatmapFoldEnrichment <- function(model, annotations, plot=TRUE) {
     if (plot) {
         logfold[is.infinite(logfold)] <- NaN
         colorbar <- gplots::colorpanel(n = 100, low="blue", mid="white",high="red")
-        margins <- c( max(5, max(nchar(colnames(logfold)))) , max(5, max(nchar(rownames(logfold)))))
+        charf <- 0.6
+        margins <- c( max(5, charf*max(nchar(colnames(logfold)))) , max(5, charf*max(nchar(rownames(logfold)))))
         gplots::heatmap.2(logfold, col=colorbar, trace='none', density.info='none', key.title = 'log(observed/expected)', key.xlab='log(observed/expected)', margins=margins, na.color='gray')
     } else {
         return(logfold)

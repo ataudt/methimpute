@@ -148,18 +148,18 @@ plotBoxplotRatio <- function(model) {
 }
 
 
-plotScatter <- function(model, xcol, ycol, datapoints='all') {
+plotScatter <- function(model, datapoints=1000) {
   
     ## Find sensible limits
     xmax <- quantile(model$data$counts.unmethylated, 0.99)
     ymax <- quantile(model$data$counts.methylated, 0.99)
     df <- data.frame(state=model$data$state, counts.unmethylated=model$data$counts.unmethylated, counts.methylated=model$data$counts.methylated)
-    if (is.numeric(datapoints)) {
+    if (datapoints < nrow(df)) {
         df <- df[sample(1:nrow(df), datapoints, replace = FALSE), ]
     }
     
     ggplt <- ggplot(df, aes_string(x='counts.methylated', y='counts.unmethylated', col='state')) + theme_bw()
-    ggplt <- ggplt + geom_point(alpha=0.1)
+    ggplt <- ggplt + geom_point(alpha=0.3)
     # ggplt <- ggplt + geom_density2d()
     ggplt <- ggplt + scale_color_manual(values=getStateColors(names(model$params$weights)))
     ggplt <- ggplt + coord_cartesian(xlim=c(0,xmax), ylim=c(0,ymax))
@@ -371,7 +371,7 @@ heatmapTransitionProbs <- function(model, order=FALSE) {
         A$from <- factor(A$from)
         A$to <- factor(A$to)
     }
-    ggplt <- ggplot(data=A) + geom_tile(aes_string(x='to', y='from', fill='prob')) + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) + scale_fill_gradient(low="white", high="blue") + theme_bw()
+    ggplt <- ggplot(data=A) + geom_tile(aes_string(x='to', y='from', fill='prob')) + scale_fill_gradient(low="white", high="blue") + theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
     
     return(ggplt)
   

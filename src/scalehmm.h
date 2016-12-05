@@ -21,13 +21,14 @@ class ScaleHMM  {
 		ScaleHMM();
 		ScaleHMM(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::DataFrame emissionParams_initial, int verbosity);
 		ScaleHMM(const Rcpp::IntegerVector & obs, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::DataFrame emissionParams_initial, int verbosity);
+		ScaleHMM(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_meth, const Rcpp::IntegerVector & obs_unmeth, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::DataFrame emissionParams_initial, int verbosity);
 		ScaleHMM(const Rcpp::IntegerMatrix & multi_obs, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::List emissionParamsList, int verbosity, const Rcpp::List & cor_mat_inv, const Rcpp::NumericVector & determinant, const Rcpp::DataFrame & statedef);
 		~ScaleHMM();
 
 		// Member variables
 
 		// Methods
-		Rcpp::List viterbi(double eps, double maxiter, double maxtime);
+		Rcpp::List forward_backward(double eps, double maxiter, double maxtime);
 		Rcpp::List baumWelch(double eps, double maxiter, double maxtime);
 		Rcpp::NumericVector calc_weights();
 		void calc_weights(Rcpp::NumericVector & weights);

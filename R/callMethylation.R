@@ -1,3 +1,233 @@
+#' Methylation calling with a binomial-test HMM
+#' 
+#' Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
+#' 
+#' @return A list with fitted parameters, posteriors.
+callMethylationBinomial <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL) {
+  
+    ### Input checks ###
+    if (is.null(max.time)) {
+        max.time <- Inf
+    }
+    if (is.null(max.iter)) {
+        max.iter <- Inf
+    }
+  
+    ### Add distance to bins ###
+    ptm <- startTimedMessage("Adding distance ...")
+    data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
+    data$distance[data$distance < 0] <- Inf 
+    stopTimedMessage(ptm)
+    
+    ### Assign variables ###
+    states <- c('unmethylated', 'methylated')
+    numstates <- length(states)
+    counts <- mcols(data)[,c('counts.unmethylated', 'counts.methylated')]
+    counts$total <- counts[,1] + counts[,2]
+    counts <- as.matrix(counts)
+    distances <- data$distance
+    
+    ## Filter counts by cutoff
+    if (quantile.cutoff < 1) {
+        count.cutoff.upper <- as.integer(quantile(counts, quantile.cutoff))
+        counts[counts > count.cutoff.upper] <- count.cutoff.upper
+        # count.cutoff.lower <- as.integer(quantile(counts, 1-quantile.cutoff))
+        # counts[counts < count.cutoff.lower] <- count.cutoff.lower
+    }
+    data$observable <- counts # assign it now to have filtered values in there
+    
+    ## Subset by chromosomes
+    if (!is.null(fit.on.chrom)) {
+        counts <- counts[as.logical(data@seqnames %in% fit.on.chrom),]
+    }
+  
+    ### Initial probabilities ###
+    if (is.null(initial.params)) {
+        s <- 0.9
+        transProbs_initial <- matrix((1-s)/(numstates-1), ncol=numstates, nrow=numstates, dimnames=list(from=states, to=states))
+        diag(transProbs_initial) <- s
+        startProbs_initial <- rep(1/numstates, numstates)
+        names(startProbs_initial) <- states
+        
+        ### Initialization of emission distributions ###
+        counts.greater.0 <- counts[counts>0]
+        mean.counts <- mean(counts.greater.0)
+        var.counts <- var(counts.greater.0)
+        ep <- list()
+        ep[[states[1]]] <- data.frame(type='pbinom', prob=0.5)
+        ep[[states[2]]] <- data.frame(type='pbinom', prob=0.99)
+        ep <- do.call(rbind, ep)
+        rownames(ep) <- states
+        emissionParams_initial <- ep
+    } else {
+        model.init <- loadFromFiles(initial.params, check.class='NcomponentHMM')[[1]]
+        transProbs_initial <- model.init$params$transProbs
+        startProbs_initial <- model.init$params$startProbs
+        emissionParams_initial <- model.init$params$emissionParams
+    }
+  
+    ### Define parameters for C function ###
+    params <- list()
+    params$startProbs_initial <- startProbs_initial
+    params$transProbs_initial <- transProbs_initial
+    params$emissionParams_initial <- emissionParams_initial
+    params$transDist <- transDist
+    params$eps <- eps
+    params$maxtime <- max.time
+    params$maxiter <- max.iter
+    params$verbosity <- verbosity
+    
+    ### Call the C function ###
+    on.exit(cleanup())
+    if (is.null(fit.on.chrom)) {
+        ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
+        hmm <- fitBinomialTestHMM(counts_total=counts[,'total'], counts_meth=counts[,'counts.methylated'], counts_unmeth=counts[,'counts.unmethylated'], distances=distances, params=params, algorithm=1)
+        message("Time spent in Baum-Welch:", appendLF=FALSE)
+        stopTimedMessage(ptm)
+    } else {
+        ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
+        message(" ... on chromosomes ", paste0(fit.on.chrom, collapse=', '))
+        hmm <- fitBinomialTestHMM(counts_total=counts[,'total'], counts_meth=counts[,'counts.methylated'], counts_unmeth=counts[,'counts.unmethylated'], distances=distances, params=params, algorithm=1)
+        message("Time spent in Baum-Welch:", appendLF=FALSE)
+        stopTimedMessage(ptm)
+        counts <- data$observable
+        params2 <- list()
+        params2$startProbs_initial <- hmm$startProbs
+        params2$transProbs_initial <- hmm$transProbs
+        params2$emissionParams_initial <- hmm$emissionParams
+        params2$transDist <- transDist
+        params2$eps <- eps
+        params2$maxtime <- max.time
+        params2$maxiter <- max.iter
+        params2$verbosity <- verbosity
+        ptm <- startTimedMessage("Forward-Backward: Obtaining state sequence - no updates\n")
+        message(" ... on all chromosomes")
+        hmm <- fitBinomialTestHMM(counts_total=counts[,'total'], counts_meth=counts[,'counts.methylated'], counts_unmeth=counts[,'counts.unmethylated'], distances=distances, params=params2, algorithm=2)
+        message("Time spent in Forward-Backward:", appendLF=FALSE)
+        stopTimedMessage(ptm)
+    }
+    
+    ### Construct result object ###
+    ptm <- startTimedMessage("Compiling results ...")
+    r <- list()
+    class(r) <- "NcomponentHMM"
+    if (hmm$error == "") {
+        r$convergenceInfo <- hmm$convergenceInfo
+        names(hmm$weights) <- states
+        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParams=hmm$emissionParams, weights=hmm$weights)
+        r$params.initial <- params
+        # States and posteriors
+        rownames(hmm$posteriors) <- states
+        data$posteriors <- t(hmm$posteriors)
+        data$state <- factor(states, levels=states)[hmm$states+1]
+        ## Segmentation
+        data.collapse <- data
+        mcols(data.collapse) <- NULL
+        data.collapse$state <- data$state
+        df <- suppressMessages( collapseBins(as.data.frame(data.collapse), column2collapseBy = 'state') )
+        segments <- methods::as(df, 'GRanges')
+        seqlengths(segments) <- seqlengths(data)[seqlevels(segments)]
+    }
+    r$data <- data
+    r$segments <- segments
+    stopTimedMessage(ptm)
+    
+    return(r)
+}
+
+
+
+#' Make a multivariate segmentation
+#' 
+#' Make a multivariate segmentation by fitting the transition probabilities of a multivariate Hidden Markov Model.
+#' 
+#' The function will use the provided univariate Hidden Markov Models (HMMs) to build the multivariate emission density. Number of states are also taken from the combination of univaraite HMMs.
+#' 
+#' @return A list with fitted parameters, posteriors.
+multivariateSegmentation <- function(models, ID, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, max.states=Inf, verbosity=1) {
+  
+    ### Input checks ###
+    if (is.null(max.time)) {
+        max.time <- Inf
+    }
+    if (is.null(max.iter)) {
+        max.iter <- Inf
+    }
+    ID.check <- ID
+  
+    ### Assign variables ###
+    models <- loadFromFiles(models, check.class = 'NcomponentHMM')
+    components <- lapply(models, function(model) { levels(model$data$state) })
+    statedef <- permute(components)
+    # Data object
+    data <- models[[1]]$data
+    mcols(data) <- NULL
+    data$distance <- models[[1]]$data$distance
+    
+    ### Prepare the multivariate ###
+    messageU("Multivariate HMM: preparing fitting procedure", underline="=", overline="=")
+    cormat <- prepareMultivariate(data=models[[1]]$data, hmms=models, statedef=statedef, max.states=max.states)
+    data$observable <- cormat$observable
+    statenames <- cormat$mapping
+    statenames <- lapply(strsplit(statenames, ' '), function(x) { paste(paste0(names(models), "=", x), collapse=" ") })
+    numstates <- length(statenames)
+    statedef <- cormat$statedef
+    
+    ### Initial probabilities ###
+    s <- 0.9
+    transProbs_initial <- matrix((1-s)/(numstates-1), ncol=numstates, nrow=numstates, dimnames=list(from=statenames, to=statenames))
+    diag(transProbs_initial) <- s
+    startProbs_initial <- rep(1/numstates, numstates)
+    names(startProbs_initial) <- statenames
+    
+    ### Define parameters for C function ###
+    params <- list()
+    params$startProbs_initial <- startProbs_initial
+    params$transProbs_initial <- transProbs_initial
+    params$emissionParamsList <- cormat$emissionParams
+    params$transDist <- transDist
+    params$eps <- eps
+    params$maxtime <- max.time
+    params$maxiter <- max.iter
+    params$verbosity <- verbosity
+    params$correlationMatrixInverse <- cormat$correlationMatrixInverse
+    params$determinant <- cormat$determinant
+    params$statedef <- cormat$statedef
+    
+    ### Fit the HMM ###
+    message("Baum-Welch: Fitting parameters for multivariate HMM")
+    on.exit(cleanup())
+    hmm <- fitMultiHMM(data$observable, data$distance, params)
+    
+    ### Construct result object ###
+    ptm <- startTimedMessage("Compiling results ...")
+    r <- list()
+    class(r) <- 'NcomponentMultiHMM'
+    r$ID <- ID
+    if (hmm$error == "") {
+        r$convergenceInfo <- hmm$convergenceInfo
+        names(hmm$weights) <- statenames
+        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParamsList=params$emissionParamsList, weights=hmm$weights)
+        r$params.initial <- params
+        # States and posteriors
+        rownames(hmm$posteriors) <- statenames
+        data$posteriors <- t(hmm$posteriors)
+        data$state <- factor(statenames, levels=statenames)[hmm$states+1]
+        ## Make segmentation
+        df <- as.data.frame(data)
+        df <- df[, c(names(df)[1:5], 'state')]
+        segments <- suppressMessages( collapseBins(df, column2collapseBy = 'state') )
+        segments <- methods::as(segments, 'GRanges')
+        seqlevels(segments) <- seqlevels(data)
+        seqlengths(segments) <- seqlengths(data)[seqlevels(segments)]
+    }
+    r$segments <- segments
+    r$data <- data
+    stopTimedMessage(ptm)
+    
+    return(r)
+}
+
 #' Call methylated regions
 #' 
 #' Call methylated, unmethylated and hemimethylated regions by fitting a multivariate Hidden Markov Model to the data.
@@ -25,7 +255,8 @@ callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=10000, eps=0.
     numstates <- length(states)
     
     ### State definition and mapping ###
-    statedef <- permute(components, modelnames)
+    comp <- list(unmethylated=components, methylated=components)
+    statedef <- permute(comp)
     rownames(statedef) <- states.full
     statedef <- statedef[states,]
     
@@ -142,14 +373,17 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
     states <- c("background", "signal")
     numstates <- length(states)
     counts <- mcols(data)[,observable]
+    counts <- as.matrix(counts)
     distances <- data$distance
     
     ## Filter counts by cutoff
-    count.cutoff.upper <- as.integer(quantile(counts, quantile.cutoff))
-    counts[counts > count.cutoff.upper] <- count.cutoff.upper
-    count.cutoff.lower <- as.integer(quantile(counts, 1-quantile.cutoff))
-    counts[counts < count.cutoff.lower] <- count.cutoff.lower
-    data$observable <- matrix(counts) # assign it now to have filtered values in there
+    if (quantile.cutoff < 1) {
+        count.cutoff.upper <- as.integer(quantile(counts, quantile.cutoff))
+        counts[counts > count.cutoff.upper] <- count.cutoff.upper
+        # count.cutoff.lower <- as.integer(quantile(counts, 1-quantile.cutoff))
+        # counts[counts < count.cutoff.lower] <- count.cutoff.lower
+    }
+    data$observable <- counts # assign it now to have filtered values in there
     colnames(data$observable) <- observable
     
     ## Subset by chromosomes
@@ -351,141 +585,6 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.tim
 }
 
 
-#' @importFrom stats pnbinom qnorm dnbinom
-prepareMultivariate = function(data, hmms, statedef) {
-  
-    ## Assign variables
-    bins <- data
-    mcols(bins) <- NULL
-    bins$distance <- data$distance
-    modelnames <- names(hmms)
-    l <- list()
-    for (i1 in 1:ncol(statedef)) {
-        l[[i1]] <- statedef[,i1]
-    }
-    states <- rownames(statedef)
-    names(states) <- do.call(paste, l)
-    components <- levels(statedef[,1])
-    numstates <- length(states)
-    
-    ## Go through HMMs and extract stuff
-    ptm <- startTimedMessage("Extracting states ...")
-    counts <- matrix(NA, nrow=length(bins), ncol=2, dimnames=list(NULL, modelnames))
-    emissionParams <- list()
-    statevec <- list()
-    for (i1 in 1:length(modelnames)) {
-        modelname <- modelnames[i1]
-        counts[,i1] <- hmms[[modelname]]$data$observable
-        emissionParams[[modelname]] <- hmms[[modelname]]$params$emissionParams
-        statevec[[modelname]] <- hmms[[modelname]]$data$state
-    }
-    maxcounts <- max(apply(counts, 2, max))
-    bins$counts <- counts
-    bins$state <- factor(states[do.call(paste, statevec)], levels=states)
-    stopTimedMessage(ptm)
-    
-    # Clean up to reduce memory usage
-    # remove(hmm)
-    
-    ## We pre-compute the z-values for each number of counts
-    ptm <- startTimedMessage("Computing pre z-matrix ...")
-    z.per.read <- array(NA, dim=c(maxcounts+1, length(modelnames), length(components)), dimnames=list(counts=NULL, model=modelnames, component=components))
-    xcounts = 0:maxcounts
-    for (modelname in modelnames) {
-        for (component in components) {
-            
-            size = emissionParams[[modelname]][component,'size']
-            prob = emissionParams[[modelname]][component,'prob']
-            u = stats::pnbinom(xcounts, size, prob)
-            
-            # Check for infinities in u and set them to max value which is not infinity
-            qnorm_u = stats::qnorm(u)
-            mask <- qnorm_u==Inf
-            qnorm_u[mask] <- stats::qnorm(1-1e-16)
-            z.per.read[ , modelname, component] <- qnorm_u
-          
-        }
-    }
-    stopTimedMessage(ptm)
-    
-    ## Compute the z matrix
-    ptm <- startTimedMessage("Transfering values into z-matrix ...")
-    z.per.bin = array(NA, dim=c(length(bins), length(modelnames), length(components)), dimnames=list(bin=NULL, model=modelnames, component=components))
-    for (modelname in modelnames) {
-        for (component in components) {
-            z.per.bin[ , modelname, component] <- z.per.read[bins$counts[, modelname]+1, modelname, i1]
-        }
-    }
-    
-    # Clean up to reduce memory usage
-    remove(z.per.read)
-    stopTimedMessage(ptm)
-    
-    ### Calculate correlation matrix
-    ptm <- startTimedMessage("Computing inverse of correlation matrix ...")
-    correlationMatrix = array(NA, dim=c(length(modelnames),length(modelnames),length(states)), dimnames=list(model=modelnames, model=modelnames, state=states))
-    correlationMatrixInverse = correlationMatrix
-    determinant = rep(NA, length(states))
-    names(determinant) <- states
-    
-    for (state in states) {
-        istate = which(state==states)
-        mask = which(bins$state==state)
-        # Subselect z
-        z.temp <- matrix(NA, nrow=length(mask), ncol=length(modelnames), dimnames=list(NULL, model=modelnames))
-        for (modelname in modelnames) {
-            z.temp[,modelname] <- z.per.bin[mask, modelname, statedef[state, modelname]]
-        }
-        temp <- tryCatch({
-            if (nrow(z.temp) > 100) {
-                correlationMatrix[,,state] <- cor(z.temp)
-                determinant[state] <- det( correlationMatrix[,,state] )
-                correlationMatrixInverse[,,state] <- chol2inv(chol(correlationMatrix[,,state]))
-            } else {
-                correlationMatrix[,,state] <- diag(length(modelnames))
-                determinant[state] <- 1 # det(diag(x)) == 1
-                correlationMatrixInverse[,,state] <- diag(length(modelnames)) # solve(diag(x)) == diag(x)
-            }
-            0
-        }, warning = function(war) {
-            1
-        }, error = function(err) {
-            1
-        })
-        if (temp!=0) {
-            correlationMatrix[,,state] <- diag(length(modelnames))
-            determinant[state] <- 1
-            correlationMatrixInverse[,,state] <- diag(length(modelnames))
-        }
-        if (any(is.na(correlationMatrixInverse[,,state]))) {
-            correlationMatrixInverse[,,state] <- diag(length(modelnames))
-        }
-    }
-    remove(z.per.bin)
-    stopTimedMessage(ptm)
-    
-    ### Put correlation matrix into list
-    corrList <- list()
-    corrInvList <- list()
-    for (state in states) {
-        corrList[[state]] <- correlationMatrix[,, state]
-        corrInvList[[state]] <- correlationMatrixInverse[,, state]
-    }
-    correlationMatrix <- corrList
-    correlationMatrixInverse <- corrInvList
-    
-    # Return parameters
-    out <- list(
-                correlationMatrix = correlationMatrix,
-                correlationMatrixInverse = correlationMatrixInverse,
-                determinant = determinant,
-                observable = counts,
-                emissionParams = emissionParams
-    )
-    return(out)
-}
-
-
 #' Fit an n-component HMM
 #' 
 #' Fit an n-component Hidden Markov Model to the supplied counts. The transition matrix is distance-dependent with exponential decaying constant \code{transDist} (only relevant in non-consecutive bins). The zero-th component is a delta distribution to account for empty bins, and all other n-components are modeled as negative binomial distributions.
@@ -500,9 +599,10 @@ prepareMultivariate = function(data, hmms, statedef) {
 #' @param max.iter Maximum number of iterations for the Baum-Welch algorithm.
 #' @param quantile.cutoff A quantile (between 0 and 1) serving as cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to 1 to disable this filtering.
 #' @param verbosity Integer from c(0,1) specifying the verbosity of the fitting procedure.
+#' @oaram initial.params An \code{\link{NcomponentHMM}} or a file that contains such an object. Parameters from this model will be used for initialization of the fitting procedure.
 #' @return A list with fitted parameters, posteriors, and the input parameters.
 #' 
-fitNComponentHMM <- function(data, nstates=2, observable='counts', fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=0.999, verbosity=1) {
+fitNComponentHMM <- function(data, nstates=2, observable='counts', fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -522,14 +622,17 @@ fitNComponentHMM <- function(data, nstates=2, observable='counts', fit.on.chrom=
     states <- 0:nstates
     numstates <- length(states)
     counts <- mcols(data)[,observable]
+    counts <- as.matrix(counts)
     distances <- data$distance
     
     ## Filter counts by cutoff
-    count.cutoff.upper <- as.integer(quantile(counts, quantile.cutoff))
-    counts[counts > count.cutoff.upper] <- count.cutoff.upper
-    count.cutoff.lower <- as.integer(quantile(counts, 1-quantile.cutoff))
-    counts[counts < count.cutoff.lower] <- count.cutoff.lower
-    data$observable <- matrix(counts) # assign it now to have filtered values in there
+    if (quantile.cutoff < 1) {
+        count.cutoff.upper <- as.integer(quantile(counts, quantile.cutoff))
+        counts[counts > count.cutoff.upper] <- count.cutoff.upper
+        # count.cutoff.lower <- as.integer(quantile(counts, 1-quantile.cutoff))
+        # counts[counts < count.cutoff.lower] <- count.cutoff.lower
+    }
+    data$observable <- counts # assign it now to have filtered values in there
     colnames(data$observable) <- observable
     
     ## Subset by chromosomes
@@ -538,29 +641,36 @@ fitNComponentHMM <- function(data, nstates=2, observable='counts', fit.on.chrom=
     }
   
     ### Initial probabilities ###
-    s <- 0.9
-    transProbs_initial <- matrix((1-s)/(numstates-1), ncol=numstates, nrow=numstates, dimnames=list(from=states, to=states))
-    diag(transProbs_initial) <- s
-    startProbs_initial <- rep(1/numstates, numstates)
-    names(startProbs_initial) <- states
-    
-    ### Initialization of emission distributions ###
-    counts.greater.0 <- counts[counts>0]
-    mean.counts <- mean(counts.greater.0)
-    var.counts <- var(counts.greater.0)
-    ep <- list()
-    for (state in setdiff(states,0)) {
-        ep[[as.character(state)]] <- data.frame(type='dnbinom', mu=mean.counts*state/2, var=var.counts*state/2)
+    if (is.null(initial.params)) {
+        s <- 0.9
+        transProbs_initial <- matrix((1-s)/(numstates-1), ncol=numstates, nrow=numstates, dimnames=list(from=states, to=states))
+        diag(transProbs_initial) <- s
+        startProbs_initial <- rep(1/numstates, numstates)
+        names(startProbs_initial) <- states
+        
+        ### Initialization of emission distributions ###
+        counts.greater.0 <- counts[counts>0]
+        mean.counts <- mean(counts.greater.0)
+        var.counts <- var(counts.greater.0)
+        ep <- list()
+        for (state in setdiff(states,0)) {
+            ep[[as.character(state)]] <- data.frame(type='dnbinom', mu=mean.counts*state/2, var=var.counts*state/2)
+        }
+        ep <- do.call(rbind, ep)
+        # Make sure variance is bigger than mean for negative binomial
+        ep$var[ep$mu >= ep$var] <- ep$mu[ep$mu >= ep$var] + 1
+        ep$size <- dnbinom.size(ep$mu, ep$var)
+        ep$prob <- dnbinom.prob(ep$mu, ep$var)
+        ## Add zero-inflation
+        ep <- rbind(data.frame(type='delta', mu=0, var=0, size=NA, prob=NA), ep)
+        rownames(ep) <- states
+        emissionParams_initial <- ep
+    } else {
+        model.init <- loadFromFiles(initial.params, check.class='NcomponentHMM')[[1]]
+        transProbs_initial <- model.init$params$transProbs
+        startProbs_initial <- model.init$params$startProbs
+        emissionParams_initial <- model.init$params$emissionParams
     }
-    ep <- do.call(rbind, ep)
-    # Make sure variance is bigger than mean for negative binomial
-    ep$var[ep$mu >= ep$var] <- ep$mu[ep$mu >= ep$var] + 1
-    ep$size <- dnbinom.size(ep$mu, ep$var)
-    ep$prob <- dnbinom.prob(ep$mu, ep$var)
-    ## Add zero-inflation
-    ep <- rbind(data.frame(type='delta', mu=0, var=0, size=NA, prob=NA), ep)
-    rownames(ep) <- states
-    emissionParams_initial <- ep
   
     ### Define parameters for C function ###
     params <- list()
@@ -596,17 +706,19 @@ fitNComponentHMM <- function(data, nstates=2, observable='counts', fit.on.chrom=
         params2$maxtime <- max.time
         params2$maxiter <- max.iter
         params2$verbosity <- verbosity
-        ptm <- startTimedMessage("Viterbi: Obtaining state sequence\n")
+        ptm <- startTimedMessage("Forward-Backward: Obtaining state sequence - no updates\n")
         message(" ... on all chromosomes")
         hmm <- fitHMM(counts=counts, distances=distances, params=params2, algorithm=2)
-        message("Time spent in Viterbi:", appendLF=FALSE)
+        message("Time spent in Forward-Backward:", appendLF=FALSE)
         stopTimedMessage(ptm)
     }
     
     ### Construct result object ###
     ptm <- startTimedMessage("Compiling results ...")
     r <- list()
+    class(r) <- "NcomponentHMM"
     if (hmm$error == "") {
+      
         r$convergenceInfo <- hmm$convergenceInfo
         names(hmm$weights) <- states
         r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParams=hmm$emissionParams, weights=hmm$weights)
@@ -622,6 +734,36 @@ fitNComponentHMM <- function(data, nstates=2, observable='counts', fit.on.chrom=
         df <- suppressMessages( collapseBins(as.data.frame(data.collapse), column2collapseBy = 'state') )
         segments <- methods::as(df, 'GRanges')
         seqlengths(segments) <- seqlengths(data)[seqlevels(segments)]
+        
+        ## Reorder the states by mean of the emission distrbution
+        stateorder <- as.character(states[order(hmm$emissionParams$mu)])
+        # Initial params
+        r$params.initial$startProbs_initial <- r$params.initial$startProbs_initial[stateorder]
+        names(r$params.initial$startProbs_initial) <- states
+        r$params.initial$transProbs_initial <- r$params.initial$transProbs_initial[stateorder, stateorder]
+        rownames(r$params.initial$transProbs_initial) <- states
+        colnames(r$params.initial$transProbs_initial) <- states
+        r$params.initial$emissionParams_initial <- r$params.initial$emissionParams_initial[stateorder, ]
+        rownames(r$params.initial$emissionParams_initial) <- states
+        # Params
+        r$params$startProbs <- r$params$startProbs[stateorder]
+        names(r$params$startProbs) <- states
+        r$params$transProbs <- r$params$transProbs[stateorder, stateorder]
+        rownames(r$params$transProbs) <- states
+        colnames(r$params$transProbs) <- states
+        r$params$emissionParams <- r$params$emissionParams[stateorder, ]
+        rownames(r$params$emissionParams) <- states
+        r$params$weights <- r$params$weights[stateorder]
+        names(r$params$weights) <- states
+        # Posteriors
+        data$posteriors <- data$posteriors[,stateorder]
+        colnames(data$posteriors) <- states
+        # Actual states
+        stateorder.mapping <- states
+        names(stateorder.mapping) <- stateorder
+        stateorder.mapping <- factor(stateorder.mapping, levels=states)
+        data$state <- stateorder.mapping[as.character(data$state)]
+        segments$state <- stateorder.mapping[as.character(segments$state)]
     }
     r$data <- data
     r$segments <- segments
@@ -630,3 +772,150 @@ fitNComponentHMM <- function(data, nstates=2, observable='counts', fit.on.chrom=
     return(r)
 }
 
+
+#' @importFrom stats pnbinom qnorm dnbinom
+prepareMultivariate = function(data, hmms, statedef, max.states=Inf) {
+  
+    ## Assign variables
+    bins <- data
+    mcols(bins) <- NULL
+    bins$distance <- data$distance
+    modelnames <- names(hmms)
+    l <- list()
+    for (i1 in 1:ncol(statedef)) {
+        l[[i1]] <- statedef[,i1]
+    }
+    states <- rownames(statedef)
+    names(states) <- do.call(paste, l)
+    mapping <- names(states)
+    names(mapping) <- states
+    components <- lapply(statedef, levels)
+    if (any(names(components) != modelnames)) {
+        stop("names(hmms) must be equal to names(statedef)")
+    }
+    numstates <- length(states)
+    
+    ## Go through HMMs and extract stuff
+    ptm <- startTimedMessage("Extracting states ...")
+    counts <- matrix(NA, nrow=length(bins), ncol=length(modelnames), dimnames=list(NULL, modelnames))
+    emissionParams <- list()
+    statevec <- list()
+    for (i1 in 1:length(modelnames)) {
+        modelname <- modelnames[i1]
+        counts[,i1] <- hmms[[modelname]]$data$observable
+        emissionParams[[modelname]] <- hmms[[modelname]]$params$emissionParams
+        statevec[[modelname]] <- hmms[[modelname]]$data$state
+    }
+    maxcounts <- max(apply(counts, 2, max))
+    bins$counts <- counts
+    bins$state <- factor(states[do.call(paste, statevec)], levels=states)
+    stopTimedMessage(ptm)
+    
+    # Clean up to reduce memory usage
+    # remove(hmm)
+    
+    ## We pre-compute the z-values for each number of counts
+    ptm <- startTimedMessage("Computing pre z-matrix ...")
+    z.per.read <- list()
+    for (modelname in modelnames) {
+        z.per.read[[modelname]] <- array(NA, dim=c(maxcounts+1, length(components[[modelname]])), dimnames=list(counts=NULL, component=components[[modelname]]))
+        xcounts = 0:maxcounts
+        for (component in components[[modelname]]) {
+            
+            size = emissionParams[[modelname]][component,'size']
+            prob = emissionParams[[modelname]][component,'prob']
+            u = stats::pnbinom(xcounts, size, prob)
+            
+            # Check for infinities in u and set them to max value which is not infinity
+            qnorm_u = stats::qnorm(u)
+            mask <- qnorm_u==Inf
+            qnorm_u[mask] <- stats::qnorm(1-1e-16)
+            z.per.read[[modelname]][ , component] <- qnorm_u
+          
+        }
+    }
+    stopTimedMessage(ptm)
+    
+    ## Compute the z matrix
+    ptm <- startTimedMessage("Transfering values into z-matrix ...")
+    z.per.bin <- list()
+    for (modelname in modelnames) {
+        z.per.bin[[modelname]] = array(NA, dim=c(length(bins), length(components[[modelname]])), dimnames=list(bin=NULL, component=components[[modelname]]))
+        for (component in components[[modelname]]) {
+            z.per.bin[[modelname]][ , component] <- z.per.read[[modelname]][bins$counts[, modelname]+1, i1]
+        }
+    }
+    
+    # Clean up to reduce memory usage
+    remove(z.per.read)
+    stopTimedMessage(ptm)
+    
+    ### Calculate correlation matrix
+    ptm <- startTimedMessage("Computing inverse of correlation matrix ...")
+    correlationMatrix = array(NA, dim=c(length(modelnames),length(modelnames),length(states)), dimnames=list(model=modelnames, model=modelnames, state=states))
+    for (i1 in 1:dim(correlationMatrix)[3]) {
+        correlationMatrix[,,i1] <- diag(length(modelnames))
+    }
+    correlationMatrixInverse = correlationMatrix
+    determinant = rep(1, length(states))
+    names(determinant) <- states
+    
+    for (state in states) {
+        istate = which(state==states)
+        mask = which(bins$state==state)
+        if (length(mask) > 100) {
+            # Subselect z
+            z.temp <- matrix(NA, nrow=length(mask), ncol=length(modelnames), dimnames=list(NULL, model=modelnames))
+            for (modelname in modelnames) {
+                z.temp[,modelname] <- z.per.bin[[modelname]][mask, as.character(statedef[state, modelname])]
+            }
+            temp <- tryCatch({
+                correlationMatrix[,,state] <- cor(z.temp)
+                determinant[state] <- det( correlationMatrix[,,state] )
+                correlationMatrixInverse[,,state] <- chol2inv(chol(correlationMatrix[,,state]))
+                0
+            }, warning = function(war) {
+                1
+            }, error = function(err) {
+                1
+            })
+        }
+        if (any(is.na(correlationMatrixInverse[,,state]))) {
+            correlationMatrixInverse[,,state] <- diag(length(modelnames))
+        }
+    }
+    remove(z.per.bin)
+    stopTimedMessage(ptm)
+    
+    ### Put correlation matrix into list
+    corrList <- list()
+    corrInvList <- list()
+    for (state in states) {
+        corrList[[state]] <- correlationMatrix[,, state]
+        corrInvList[[state]] <- correlationMatrixInverse[,, state]
+    }
+    correlationMatrix <- corrList
+    correlationMatrixInverse <- corrInvList
+    
+    ### Select states to use ###
+    weights <- sort(table(bins$state), decreasing = TRUE)
+    states2use <- names(weights)[1:min(max.states, length(weights))]
+    correlationMatrix <- correlationMatrix[states2use]
+    correlationMatrixInverse <- correlationMatrixInverse[states2use]
+    determinant <- determinant[states2use]
+    statedef <- statedef[states2use,]
+    mapping <- mapping[states2use]
+    
+    # Return parameters
+    out <- list(
+                correlationMatrix = correlationMatrix,
+                correlationMatrixInverse = correlationMatrixInverse,
+                determinant = determinant,
+                observable = counts,
+                emissionParams = emissionParams,
+                statedef = statedef,
+                mapping = mapping,
+                weights = weights
+    )
+    return(out)
+}

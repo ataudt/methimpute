@@ -116,7 +116,7 @@ binMethylome <- function(data, binsize) {
         bins$cytosines <- countOverlaps(bins, data.context)
         stopTimedMessage(ptm)
         
-        ptm <- startTimedMessage("Aggregating total methylation status and counts ...")
+        ptm <- startTimedMessage("Aggregating methylation status and counts ...")
         data.context$status.methylated <- data.context$methylated == 1
         data.context$status.unmethylated <- !data.context$status.methylated
         ind <- findOverlaps(data.context, bins, select='first')

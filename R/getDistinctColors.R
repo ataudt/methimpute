@@ -10,6 +10,7 @@
 #' @param start.color Color to start the selection process from.
 #' @param exclude.colors Character vector with colors that should not be used.
 #' @param exclude.rgb.above Exclude colors where all RGB values are above. This is useful to exclude whitish colors.
+#' @param exclude.brightness.above Exclude colors where the 'brightness' value in HSV space is above. This is useful to obtain a matt palette.
 #' @return A character vector with colors.
 #' @author Aaron Taudt
 #' @importFrom grDevices col2rgb
@@ -19,15 +20,23 @@
 #'cols <- getDistinctColors(5)
 #'pie(rep(1,5), labels=cols, col=cols)
 #'
-getDistinctColors <- function(n, start.color='blue4', exclude.colors=c('white','black','gray','grey'), exclude.rgb.above=210) {
+getDistinctColors <- function(n, start.color='blue4', exclude.colors=c('white','black','gray','grey','\\<yellow\\>', 'yellow1', 'lemonchiffon'), exclude.brightness.above=1, exclude.rgb.above=210) {
     
+    n.names <- NULL
     if (is.character(n)) {
         n.names <- n
         n <- length(n)
     }
     cols <- grDevices::colors()
+    
     # Exclude unwanted colors
     cols <- grep(paste(exclude.colors, collapse='|'), cols, invert=TRUE, value=TRUE)
+    # Exclude too bright colors
+    colsrgb <- grDevices::col2rgb(cols)
+    colshsv <- t(mapply(rgb2hsv, r=colsrgb[1,], g=colsrgb[2,], b=colsrgb[3,]))
+    rownames(colshsv) <- cols
+    colshsv <- colshsv[colshsv[,3] <= exclude.brightness.above,]
+    cols <- rownames(colshsv)
     # Get RGB values
     rgbs <- t(grDevices::col2rgb(cols))
     rownames(rgbs) <- cols

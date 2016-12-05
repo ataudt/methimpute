@@ -155,6 +155,63 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs, const Rcpp::NumericVector & 
 
 }
 
+ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_meth, const Rcpp::IntegerVector & obs_unmeth, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::DataFrame emissionParams_initial, int verbosity)
+{
+	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	this->xvariate = UNIVARIATE;
+	this->verbosity = verbosity;
+	this->NDATA = obs_total.size();
+	this->NSTATES = startProbs_initial.size();
+	this->distances = distances;
+	this->scalefactoralpha = Rcpp::NumericVector(this->NDATA);
+	this->scalealpha = Rcpp::NumericMatrix(this->NDATA, this->NSTATES);
+	this->scalebeta = Rcpp::NumericMatrix(this->NDATA, this->NSTATES);
+	this->densities = Rcpp::NumericMatrix(this->NSTATES, this->NDATA);
+	this->gamma = Rcpp::NumericMatrix(this->NSTATES, this->NDATA);
+	this->sumgamma = Rcpp::NumericVector(this->NSTATES);
+	this->sumxi = Rcpp::NumericMatrix(this->NSTATES, this->NSTATES);
+	this->loglik = -INFINITY;
+	this->dloglik = INFINITY;
+
+	// Initial probabilities
+	this->transProbs = Rcpp::clone(transProbs_initial);
+	this->transExp = Rcpp::NumericVector(this->NDATA);
+	for (int t=0; t<this->NDATA; t++)
+	{
+		this->transExp[t] = exp(-this->distances[t] / transDist);
+		if (std::isnan(this->transExp[t]))
+		{
+			throw nan_detected;
+		}
+	}
+	this->startProbs = Rcpp::clone(startProbs_initial);
+
+	// Emission densities
+	this->emissionParams = Rcpp::clone(emissionParams_initial);
+	Rcpp::CharacterVector emissionTypes = this->emissionParams["type"];
+	Rcpp::NumericVector probs = Rcpp::as<Rcpp::NumericVector>(this->emissionParams["prob"]);
+	for (int i=0; i<this->NSTATES; i++)
+	{
+		std::string dtype = Rcpp::as<std::string>(emissionTypes[i]);
+		if (dtype.compare("pbinom") == 0)
+		{
+			if (i == 0)
+			{
+				// Binomial test
+				BinomialTest * d = new BinomialTest(obs_total, obs_unmeth, probs[i]);
+				this->emissionDensities.push_back(d);
+			}
+			else if (i == 1)
+			{
+				// Binomial test
+				BinomialTest * d = new BinomialTest(obs_total, obs_meth, probs[i]);
+				this->emissionDensities.push_back(d);
+			}
+		}
+	}
+
+}
+
 ScaleHMM::ScaleHMM(const Rcpp::IntegerMatrix & multi_obs, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::List emissionParamsList, int verbosity, const Rcpp::List & cor_mat_inv, const Rcpp::NumericVector & determinant, const Rcpp::DataFrame & statedef)
 {
 	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
@@ -218,7 +275,7 @@ ScaleHMM::~ScaleHMM()
 }
 
 // Methods ----------------------------------------------------
-Rcpp::List ScaleHMM::viterbi(double eps, double maxiter, double maxtime)
+Rcpp::List ScaleHMM::forward_backward(double eps, double maxiter, double maxtime)
 {
 	if (this->verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
 	// measuring the time
@@ -458,6 +515,14 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 					this->emissionDensities[i]->update(this->gamma, rows);
 				}
 			}
+			else if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST)
+			{ 
+				for (int i=0; i<this->NSTATES; i++)
+				{
+					const int rows[] = {i};
+					this->emissionDensities[i]->update(this->gamma, rows);
+				}
+			}
 			R_CheckUserInterrupt();
 		}
 
@@ -532,6 +597,18 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 					probs[irow] = this->emissionDensities[irow]->get_prob();
 					means[irow] = this->emissionDensities[irow]->get_mean();
 					vars[irow] = this->emissionDensities[irow]->get_variance();
+				}
+			}
+		}
+		else if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST)
+		{ 
+			Rcpp::NumericVector probs = this->emissionParams["prob"];
+			for (int irow=0; irow<this->NSTATES; irow++)
+			{
+				std::string dtype = Rcpp::as<std::string>(emissionTypes[irow]);
+				if (dtype.compare("pbinom") == 0)
+				{
+					probs[irow] = this->emissionDensities[irow]->get_prob();
 				}
 			}
 		}
