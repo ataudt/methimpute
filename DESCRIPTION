@@ -24,10 +24,12 @@ Imports:
     IRanges,
     reshape2,
     Rsamtools,
-    GenomicAlignments
+    GenomicAlignments,
+    ggdendro,
+    ReorderCluster
 Suggests:
-		knitr,
-		testthat,
+    knitr,
+    testthat,
     biomaRt,
     ggbio
 LinkingTo: Rcpp
