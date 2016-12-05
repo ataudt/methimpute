@@ -347,6 +347,7 @@ Rcpp::List ScaleHMM::forward_backward(double eps, double maxiter, double maxtime
 	// Convergence information
 	this->baumWelchTime_real = difftime(time(NULL),this->baumWelchStartTime_sec);
 	Rcpp::List convergenceInfo = Rcpp::List::create(Rcpp::Named("logliks") = this->loglik,
+																									Rcpp::Named("dloglik") = this->dloglik,
 																					 				Rcpp::Named("time") = this->baumWelchTime_real);
 
 	// Collect results in list
@@ -552,6 +553,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 	// Convergence information
 	this->baumWelchTime_real = difftime(time(NULL),this->baumWelchStartTime_sec);
 	Rcpp::List convergenceInfo = Rcpp::List::create(Rcpp::Named("logliks") = logliks,
+																									Rcpp::Named("dloglik") = this->dloglik,
 																					 				Rcpp::Named("time") = this->baumWelchTime_real);
 
 	// Collect results in list
