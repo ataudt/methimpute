@@ -583,43 +583,49 @@ void NegativeBinomial::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 			}
 		}
 	}
-
-	double logp = log(this->prob);
-	double log1minusp = log(1-this->prob);
-	double lGammaR,lGammaRplusX,lxfactorial;
-	double obs_j;
-	lGammaR = lgamma(this->size);
-	// Select strategy for computing gammas, redundant since obs_unique.size() always < obs.size()
-	if (this->obs_unique.size() <= this->obs.size())
-	{
-		std::vector<double> logdens_per_uobs(this->obs_unique.size());
-		for (int j=0; j<this->obs_unique.size(); j++)
-		{
-			obs_j = this->obs_unique[j];
-			logdens_per_uobs[j] = lgamma(this->size + obs_j) - lGammaR - this->lxfactorials[obs_j] + this->size * logp + obs_j * log1minusp;
-		}
-		for (int t=0; t<this->obs.size(); t++)
-		{
-			logdens[t] = logdens_per_uobs[this->uobsind_per_t[t]];
-			if (std::isnan(logdens[t]))
-			{
-				throw nan_detected;
-			}
-		}
-	}
 	else
 	{
-		for (int t=0; t<this->obs.size(); t++)
+
+		// Normal case
+		double logp = log(this->prob);
+		double log1minusp = log(1-this->prob);
+		double lGammaR,lGammaRplusX,lxfactorial;
+		double obs_j;
+		lGammaR = lgamma(this->size);
+		// Select strategy for computing gammas, redundant since obs_unique.size() always < obs.size()
+		if (this->obs_unique.size() <= this->obs.size())
 		{
-			lGammaRplusX = lgamma(this->size + this->obs[t]);
-			lxfactorial = this->lxfactorials[(int) this->obs[t]];
-			logdens[t] = lGammaRplusX - lGammaR - lxfactorial + this->size * logp + this->obs[t] * log1minusp;
-			if (std::isnan(logdens[t]))
+			std::vector<double> logdens_per_uobs(this->obs_unique.size());
+			for (int j=0; j<this->obs_unique.size(); j++)
 			{
-				throw nan_detected;
+				obs_j = this->obs_unique[j];
+				logdens_per_uobs[j] = lgamma(this->size + obs_j) - lGammaR - this->lxfactorials[obs_j] + this->size * logp + obs_j * log1minusp;
+			}
+			for (int t=0; t<this->obs.size(); t++)
+			{
+				logdens[t] = logdens_per_uobs[this->uobsind_per_t[t]];
+				if (std::isnan(logdens[t]))
+				{
+					throw nan_detected;
+				}
 			}
 		}
+		else
+		{
+			for (int t=0; t<this->obs.size(); t++)
+			{
+				lGammaRplusX = lgamma(this->size + this->obs[t]);
+				lxfactorial = this->lxfactorials[(int) this->obs[t]];
+				logdens[t] = lGammaRplusX - lGammaR - lxfactorial + this->size * logp + this->obs[t] * log1minusp;
+				if (std::isnan(logdens[t]))
+				{
+					throw nan_detected;
+				}
+			}
+		}
+
 	}
+
 } 
 
 void NegativeBinomial::calc_densities(Rcpp::NumericMatrix::Row & dens)
@@ -641,50 +647,55 @@ void NegativeBinomial::calc_densities(Rcpp::NumericMatrix::Row & dens)
 			}
 		}
 	}
-		
-	// Normal case
-	double logp = log(this->prob);
-	double log1minusp = log(1-this->prob);
-	double lGammaR,lGammaRplusX,lxfactorial;
-	double obs_j;
-	lGammaR = lgamma(this->size);
-	// Select strategy for computing gammas, redundant since obs_unique.size() always < obs.size()
-	if (this->obs_unique.size() <= this->obs.size())
-	{
-// clock_t clocktime = clock(), dtime;
-		std::vector<double> dens_per_uobs(this->obs_unique.size());
-		for (int j=0; j<this->obs_unique.size(); j++)
-		{
-			obs_j = this->obs_unique[j];
-// 			dens_per_uobs[j] = R::dnbinom(obs_j, this->size, this->prob, 0); // TOO SLOW!!
-			dens_per_uobs[j] = exp( lgamma(this->size + obs_j) - lGammaR - this->lxfactorials[obs_j] + this->size * logp + obs_j * log1minusp );
-			if (std::isnan(dens_per_uobs[j]))
-			{
-				if (verbosity>=4) Rprintf("    size = %g, prob = %g, logp = %g, log1minusp = %g\n", size, prob, logp, log1minusp);
-				if (verbosity>=4) Rprintf("    lGammaR = %g, lgamma(size + obs=%d) = %g\n", lGammaR, obs_j, lgamma(size + obs_j));
-				throw nan_detected;
-			}
-		}
-// dtime = clock() - clocktime;
-// Rprintf("dtime = %Lg\n", (long double)dtime);
-		for (int t=0; t<this->obs.size(); t++)
-		{
-			dens[t] = dens_per_uobs[this->uobsind_per_t[t]];
-		}
-	}
 	else
 	{
-		for (int t=0; t<this->obs.size(); t++)
+		
+		// Normal case
+		double logp = log(this->prob);
+		double log1minusp = log(1-this->prob);
+		double lGammaR,lGammaRplusX,lxfactorial;
+		double obs_j;
+		lGammaR = lgamma(this->size);
+		// Select strategy for computing gammas, redundant since obs_unique.size() always < obs.size()
+		if (this->obs_unique.size() <= this->obs.size())
 		{
-			lGammaRplusX = lgamma(this->size + this->obs[t]);
-			lxfactorial = this->lxfactorials[(int) this->obs[t]];
-			dens[t] = exp( lGammaRplusX - lGammaR - lxfactorial + this->size * logp + this->obs[t] * log1minusp );
-			if (std::isnan(dens[t]))
+	// clock_t clocktime = clock(), dtime;
+			std::vector<double> dens_per_uobs(this->obs_unique.size());
+			for (int j=0; j<this->obs_unique.size(); j++)
 			{
-				throw nan_detected;
+				obs_j = this->obs_unique[j];
+	// 			dens_per_uobs[j] = R::dnbinom(obs_j, this->size, this->prob, 0); // TOO SLOW!!
+				dens_per_uobs[j] = exp( lgamma(this->size + obs_j) - lGammaR - this->lxfactorials[obs_j] + this->size * logp + obs_j * log1minusp );
+				if (std::isnan(dens_per_uobs[j]))
+				{
+					if (verbosity>=4) Rprintf("    size = %g, prob = %g, logp = %g, log1minusp = %g\n", size, prob, logp, log1minusp);
+					if (verbosity>=4) Rprintf("    lGammaR = %g, lgamma(size + obs=%d) = %g\n", lGammaR, obs_j, lgamma(size + obs_j));
+					throw nan_detected;
+				}
+			}
+	// dtime = clock() - clocktime;
+	// Rprintf("dtime = %Lg\n", (long double)dtime);
+			for (int t=0; t<this->obs.size(); t++)
+			{
+				dens[t] = dens_per_uobs[this->uobsind_per_t[t]];
 			}
 		}
+		else
+		{
+			for (int t=0; t<this->obs.size(); t++)
+			{
+				lGammaRplusX = lgamma(this->size + this->obs[t]);
+				lxfactorial = this->lxfactorials[(int) this->obs[t]];
+				dens[t] = exp( lGammaRplusX - lGammaR - lxfactorial + this->size * logp + this->obs[t] * log1minusp );
+				if (std::isnan(dens[t]))
+				{
+					throw nan_detected;
+				}
+			}
+		}
+
 	}
+
 } 
 
 void NegativeBinomial::calc_CDFs(Rcpp::NumericMatrix::Row & CDF)
