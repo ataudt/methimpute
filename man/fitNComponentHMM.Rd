@@ -6,7 +6,8 @@
 \usage{
 fitNComponentHMM(data, nstates = 2, observable = "counts",
   fit.on.chrom = NULL, transDist = 10000, eps = 0.01, max.time = Inf,
-  max.iter = Inf, quantile.cutoff = 0.999, verbosity = 1)
+  max.iter = Inf, quantile.cutoff = 1, verbosity = 1,
+  initial.params = NULL)
 }
 \arguments{
 \item{data}{A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'distance' and 'counts' (or any other column specified as \code{observable}).}
@@ -28,6 +29,8 @@ fitNComponentHMM(data, nstates = 2, observable = "counts",
 \item{quantile.cutoff}{A quantile (between 0 and 1) serving as cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to 1 to disable this filtering.}
 
 \item{verbosity}{Integer from c(0,1) specifying the verbosity of the fitting procedure.}
+
+\item{initial.params}{An \code{\link{NcomponentHMM}} or a file that contains such an object. Parameters from this model will be used for initialization of the fitting procedure.}
 }
 \value{
 A list with fitted parameters, posteriors, and the input parameters.

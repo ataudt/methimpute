@@ -19,6 +19,6 @@ plotStateHistograms(segmentation, bins, plotcol, binwidth)
 A \code{\link[ggplot2]{ggplot}}.
 }
 \description{
-Make histograms of a variable in \code{bins} faceted by state in \code{bins}.
+Make histograms of variables in \code{bins} faceted by state in \code{segmentation}.
 }
 

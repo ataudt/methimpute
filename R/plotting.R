@@ -10,7 +10,7 @@
 #'cols <- getStateColors()
 #'pie(1:length(cols), col=cols, labels=names(cols))
 getStateColors <- function(states=NULL) {
-    state.colors <- c("Background" = "gray", "UNmethylated" = "red","Methylated" = "blue","Hemimethylated" = "green", "total" = "black", "background" = "gray", "signal" = "red")
+    state.colors <- c("Background" = "gray", "UNmethylated" = "red","Methylated" = "blue","Heterozygous" = "green", "total" = "black", "background" = "gray", "signal" = "red")
     if (is.null(states)) {
         return(state.colors)
     } else {
@@ -84,6 +84,7 @@ plotRatioBoxplot <- function(model) {
 #' 
 #' Plot a histogram of count values and fitted distributions.
 #' 
+#' @export
 plotHistogram <- function(model, binwidth=10) {
     
     ## Assign variables

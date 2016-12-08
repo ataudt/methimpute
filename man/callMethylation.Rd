@@ -6,7 +6,7 @@
 \usage{
 callMethylation(data, ID, fit.on.chrom = NULL, transDist = 10000,
   eps = 0.01, max.time = Inf, max.iter = Inf, quantile.cutoff = 0.999,
-  states = c("Background", "Methylated", "UNmethylated", "Hemimethylated"),
+  states = c("Background", "Methylated", "UNmethylated", "Heterozygous"),
   verbosity = 1)
 }
 \arguments{
@@ -30,9 +30,9 @@ callMethylation(data, ID, fit.on.chrom = NULL, transDist = 10000,
 A list with fitted parameters, posteriors and input parameters.
 }
 \description{
-Call methylated, unmethylated and hemimethylated regions by fitting a multivariate Hidden Markov Model to the data.
+Call methylated, unmethylated and heterozygous regions by fitting a multivariate Hidden Markov Model to the data.
 }
 \details{
-In a first step, the function will use \code{\link{fitSignalBackground}} to obtain the distribution parameters for a signal-background model for methylated and unmethylated read counts, respectively. The resulting distributions are used in a second step to fit a multivariate HMM with states \code{c("Background", "Methylated", "UNmethylated", "Hemimethylated")}.
+In a first step, the function will use \code{\link{fitSignalBackground}} to obtain the distribution parameters for a signal-background model for methylated and unmethylated read counts, respectively. The resulting distributions are used in a second step to fit a multivariate HMM with states \code{c("Background", "Methylated", "UNmethylated", "Heterozygous")}.
 }
 

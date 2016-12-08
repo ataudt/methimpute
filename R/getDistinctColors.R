@@ -13,11 +13,10 @@
 #' @param exclude.brightness.above Exclude colors where the 'brightness' value in HSV space is above. This is useful to obtain a matt palette.
 #' @return A character vector with colors.
 #' @author Aaron Taudt
-#' @importFrom grDevices col2rgb
+#' @importFrom grDevices col2rgb rgb2hsv
 #' @importFrom stats dist
-#' @export
 #' @examples
-#'cols <- getDistinctColors(5)
+#'cols <- AneuFinder:::getDistinctColors(5)
 #'pie(rep(1,5), labels=cols, col=cols)
 #'
 getDistinctColors <- function(n, start.color='blue4', exclude.colors=c('white','black','gray','grey','\\<yellow\\>', 'yellow1', 'lemonchiffon'), exclude.brightness.above=1, exclude.rgb.above=210) {
@@ -26,6 +25,9 @@ getDistinctColors <- function(n, start.color='blue4', exclude.colors=c('white','
     if (is.character(n)) {
         n.names <- n
         n <- length(n)
+    } else if (is.factor(n)) {
+        n.names <- as.character(n)
+        n <- length(n)
     }
     cols <- grDevices::colors()
     
@@ -33,7 +35,7 @@ getDistinctColors <- function(n, start.color='blue4', exclude.colors=c('white','
     cols <- grep(paste(exclude.colors, collapse='|'), cols, invert=TRUE, value=TRUE)
     # Exclude too bright colors
     colsrgb <- grDevices::col2rgb(cols)
-    colshsv <- t(mapply(rgb2hsv, r=colsrgb[1,], g=colsrgb[2,], b=colsrgb[3,]))
+    colshsv <- t(mapply(grDevices::rgb2hsv, r=colsrgb[1,], g=colsrgb[2,], b=colsrgb[3,]))
     rownames(colshsv) <- cols
     colshsv <- colshsv[colshsv[,3] <= exclude.brightness.above,]
     cols <- rownames(colshsv)

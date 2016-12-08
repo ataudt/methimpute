@@ -4,7 +4,8 @@
 \alias{loadFromFiles}
 \title{Load \pkg{popmeth} objects from file}
 \usage{
-loadFromFiles(files, check.class = c("binnedMethylome"))
+loadFromFiles(files, check.class = c("GRanges", "binnedMethylome",
+  "NcomponentHMM"))
 }
 \arguments{
 \item{files}{A list of \code{\link{GRanges}}, \code{\link{aneuHMM}} or \code{\link{aneuBiHMM}} objects or a character vector with files that contain such objects.}

@@ -26,6 +26,7 @@ class Density {
 		virtual void calc_logCDFs(Rcpp::NumericMatrix::Row &) {};
 		virtual void calc_CDFs(Rcpp::NumericMatrix::Row &) {};
 		virtual void update(const Rcpp::NumericMatrix &, const int * rows) {}; 
+		virtual void update_constrained(const Rcpp::NumericMatrix &, const int * rows, double r) {}; 
 		virtual double getLogDensityAt(int) { return(0); };
 		// Getter and Setter
 		virtual DensityName get_name() { return(OTHER); };
@@ -33,6 +34,7 @@ class Density {
 		virtual double get_variance() { return(0); };
 		virtual double get_size() { return(0); };
 		virtual double get_prob() { return(0); };
+		virtual void set_prob(double prob) {};
 		virtual double get_a() { return(0); };
 		virtual double get_b() { return(0); };
 		virtual void set_a(double a) {};
@@ -88,17 +90,21 @@ class BinomialTest : public Density {
 		void calc_logdensities(Rcpp::NumericMatrix::Row & logdens);
 		void calc_densities(Rcpp::NumericMatrix::Row & dens);
 		void update(const Rcpp::NumericMatrix & weights, const int * rows);
+		void update_constrained(const Rcpp::NumericMatrix & weights, const int * rows, double r);
 		double getLogDensityAt(int test, int total);
 
 		// Getter and Setter
 		DensityName get_name();
 		double get_prob();
+		void set_prob(double prob);
 
 	private:
 		// Member variables
 		double prob; ///< parameter of the distribution
 		Rcpp::IntegerVector obs_total; ///< vector [NDATA] of observations
 		Rcpp::IntegerVector obs_test; ///< vector [NDATA] of observations
+// 		int max_obs; ///< maximum value in obs
+// 		Rcpp::NumericVector lxfactorials; ///< vector [max_obs] of precomputed factorials (x!)
 };
 
 

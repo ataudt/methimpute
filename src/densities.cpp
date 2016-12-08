@@ -328,6 +328,15 @@ BinomialTest::BinomialTest(const Rcpp::IntegerVector & obs_total, const Rcpp::In
 	this->obs_total = obs_total;
 	this->obs_test = obs_test;
 	this->prob = prob;
+// 	// Precompute the lxfactorials that are used in computing the densities
+// 	this->max_obs = Rcpp::max(obs_total);
+// 	this->lxfactorials = Rcpp::NumericVector(max_obs+1);
+// 	this->lxfactorials[0] = 0.0;	// Not necessary, already 0 because of Calloc
+// 	this->lxfactorials[1] = 0.0;
+// 	for (int j=2; j<=max_obs; j++)
+// 	{
+// 		this->lxfactorials[j] = this->lxfactorials[j-1] + log(j);
+// 	}
 
 }
 
@@ -338,9 +347,12 @@ BinomialTest::~BinomialTest()
 // Methods ----------------------------------------------------
 void BinomialTest::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 {
+// 	double log05 = log(0.5);
+	double logprob = log(this->prob);
 	for (int t=0; t<this->obs_total.size(); t++)
 	{
-		logdens[t] = R::pbinom(this->obs_test[t], this->obs_total[t], this->prob, true, true);
+			logdens[t] = R::dbinom(this->obs_test[t], this->obs_total[t], this->prob, true);
+// 			logdens[t] = this->lxfactorials[this->obs_total[t]] - this->lxfactorials[this->obs_test[t]] - this->lxfactorials[this->obs_total[t] - this->obs_test[t]] + this->obs_test[t]*logprob + (this->obs_total[t] - this->obs_test[t]) * logprob; // precision problems
 		if (std::isnan(logdens[t]))
 		{
 			throw nan_detected;
@@ -350,9 +362,11 @@ void BinomialTest::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 
 void BinomialTest::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
+	double logprob = log(this->prob);
 	for (int t=0; t<this->obs_total.size(); t++)
 	{
-		dens[t] = R::pbinom(this->obs_test[t], this->obs_total[t], this->prob, true, false);
+			dens[t] = R::dbinom(this->obs_test[t], this->obs_total[t], this->prob, false);
+// 			dens[t] = exp( this->lxfactorials[this->obs_total[t]] - this->lxfactorials[this->obs_test[t]] - this->lxfactorials[this->obs_total[t] - this->obs_test[t]] + this->obs_test[t]*logprob + (this->obs_total[t] - this->obs_test[t]) * logprob ); // precision problems
 		if (std::isnan(dens[t]))
 		{
 			throw nan_detected;
@@ -369,8 +383,10 @@ void BinomialTest::update(const Rcpp::NumericMatrix & weights, const int * rows)
 // 	time = clock();
 	for (int t=0; t<this->obs_total.size(); t++)
 	{
+// 		numerator += weights(rows[0],t) * (this->obs_test[t] + 4); // +4 because we assign 0.5 to 0-3
+// 		denominator += weights(rows[0],t) * (2 * this->obs_total[t]);
 		numerator += weights(rows[0],t) * (this->obs_test[t]);
-		denominator += weights(rows[0],t) * (2 * this->obs_total[t]);
+		denominator += weights(rows[0],t) * (this->obs_total[t]);
 	}
 	this->prob = numerator/denominator; // Update this->prob
 	
@@ -378,9 +394,50 @@ void BinomialTest::update(const Rcpp::NumericMatrix & weights, const int * rows)
 
 }
 
+void BinomialTest::update_constrained(const Rcpp::NumericMatrix & weights, const int * rows, double r)
+{
+	double eps = 1e-4;
+	double kmax = 20;
+	double numerator, denominator;
+	double F, dFdProb, FdivM; // F = dL/dProb
+	double n, m;
+	double p = this->prob;
+
+	// Update of prob with Newton Method
+// 	time = clock();
+	for (int k=0; k<kmax; k++)
+	{
+		F = dFdProb = 0.0;
+		for(int t=0; t<this->obs_total.size(); t++)
+		{
+			m = (double)this->obs_test[t];
+			n = (double)this->obs_total[t];
+			F += weights(rows[0],t) * (m/p + (m-n)/(1-p) + m/(p+r) + (m-n)/(2-p-r));
+			dFdProb += weights(rows[0],t) * (-m/p/p - m/(p+r)/(p+r) + (m-n)/(1-p)/(1-p) + (m-n)/(2-p-r)/(2-p-r));
+		}
+		FdivM = F/dFdProb;
+		if (FdivM < p)
+		{
+			p = p-FdivM;
+		}
+		else if (FdivM >= p)
+		{
+			p = p/2.0;
+		}
+		if(fabs(F)<eps)
+		{
+			break;
+		}
+	}
+	this->prob = p;
+
+// 	dtime = clock() - time;
+
+}
+
 double BinomialTest::getLogDensityAt(int test, int total)
 {
-	double logdens = R::pbinom(test-1, total, this->prob, false, true);
+	double logdens = R::dbinom(test, total, this->prob, true);
 	if (std::isnan(logdens))
 	{
 		throw nan_detected;
@@ -398,6 +455,11 @@ DensityName BinomialTest::get_name()
 double BinomialTest::get_prob()
 {
 	return(this->prob);
+}
+
+void BinomialTest::set_prob(double prob)
+{
+	this->prob = prob;
 }
 
 

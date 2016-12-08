@@ -3,7 +3,7 @@
 #' Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
 #' 
 #' @return A list with fitted parameters, posteriors.
-callMethylationBinomial <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL) {
+callMethylationBinomial <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -20,7 +20,11 @@ callMethylationBinomial <- function(data, fit.on.chrom=NULL, transDist=10000, ep
     stopTimedMessage(ptm)
     
     ### Assign variables ###
-    states <- c('unmethylated', 'methylated')
+    if (!include.heterozygosity) {
+        states <- c('UNmethylated', 'Methylated')
+    } else {
+        states <- c('UNmethylated', 'Heterozygous', 'Methylated')
+    }
     numstates <- length(states)
     counts <- mcols(data)[,c('counts.unmethylated', 'counts.methylated')]
     counts$total <- counts[,1] + counts[,2]
@@ -54,8 +58,14 @@ callMethylationBinomial <- function(data, fit.on.chrom=NULL, transDist=10000, ep
         mean.counts <- mean(counts.greater.0)
         var.counts <- var(counts.greater.0)
         ep <- list()
-        ep[[states[1]]] <- data.frame(type='pbinom', prob=0.5)
-        ep[[states[2]]] <- data.frame(type='pbinom', prob=0.99)
+        if (!include.heterozygosity) {
+            ep[[states[1]]] <- data.frame(type='dbinom', prob=0.01)
+            ep[[states[2]]] <- data.frame(type='dbinom', prob=0.9)
+        } else {
+            ep[[states[1]]] <- data.frame(type='dbinom', prob=0.01)
+            ep[[states[2]]] <- data.frame(type='dbinom', prob=0.5*(0.01+0.9))
+            ep[[states[3]]] <- data.frame(type='dbinom', prob=0.9)
+        }
         ep <- do.call(rbind, ep)
         rownames(ep) <- states
         emissionParams_initial <- ep
@@ -230,14 +240,14 @@ multivariateSegmentation <- function(models, ID, fit.on.chrom=NULL, transDist=10
 
 #' Call methylated regions
 #' 
-#' Call methylated, unmethylated and hemimethylated regions by fitting a multivariate Hidden Markov Model to the data.
+#' Call methylated, unmethylated and heterozygous regions by fitting a multivariate Hidden Markov Model to the data.
 #' 
-#' In a first step, the function will use \code{\link{fitSignalBackground}} to obtain the distribution parameters for a signal-background model for methylated and unmethylated read counts, respectively. The resulting distributions are used in a second step to fit a multivariate HMM with states \code{c("Background", "Methylated", "UNmethylated", "Hemimethylated")}.
+#' In a first step, the function will use \code{\link{fitSignalBackground}} to obtain the distribution parameters for a signal-background model for methylated and unmethylated read counts, respectively. The resulting distributions are used in a second step to fit a multivariate HMM with states \code{c("Background", "Methylated", "UNmethylated", "Heterozygous")}.
 #' 
 #' @inheritParams fitSignalBackground
 #' @return A list with fitted parameters, posteriors and input parameters.
 #' 
-callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=0.999, states=c("Background", "Methylated", "UNmethylated", "Hemimethylated"), verbosity=1) {
+callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=0.999, states=c("Background", "Methylated", "UNmethylated", "Heterozygous"), verbosity=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -251,7 +261,7 @@ callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=10000, eps=0.
     ### Assign variables ###
     modelnames <- c('unmethylated', 'methylated')
     components <- c('background', 'signal')
-    states.full <- c("Background", "Methylated", "UNmethylated", "Hemimethylated")
+    states.full <- c("Background", "Methylated", "UNmethylated", "Heterozygous")
     numstates <- length(states)
     
     ### State definition and mapping ###
@@ -503,7 +513,7 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.tim
     stopTimedMessage(ptm)
     
     ### Assign variables ###
-    states <- c("UNmethylated", "Hemimethylated", "Methylated")
+    states <- c("UNmethylated", "Heterozygous", "Methylated")
     numstates <- length(states)
     ratio <- data$ratio
     distances <- data$distance
@@ -523,7 +533,7 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.tim
     ### Initialization of emission distributions ###
     ep <- list()
     ep[["UNmethylated"]] <- data.frame(type='dbeta', a=1, b=4)
-    ep[["Hemimethylated"]] <- data.frame(type='dbeta', a=10, b=10)
+    ep[["Heterozygous"]] <- data.frame(type='dbeta', a=10, b=10)
     ep[["Methylated"]] <- data.frame(type='dbeta', a=4, b=1)
     ep <- do.call(rbind, ep)
     emissionParams_initial <- ep
@@ -599,7 +609,7 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.tim
 #' @param max.iter Maximum number of iterations for the Baum-Welch algorithm.
 #' @param quantile.cutoff A quantile (between 0 and 1) serving as cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to 1 to disable this filtering.
 #' @param verbosity Integer from c(0,1) specifying the verbosity of the fitting procedure.
-#' @oaram initial.params An \code{\link{NcomponentHMM}} or a file that contains such an object. Parameters from this model will be used for initialization of the fitting procedure.
+#' @param initial.params An \code{\link{NcomponentHMM}} or a file that contains such an object. Parameters from this model will be used for initialization of the fitting procedure.
 #' @return A list with fitted parameters, posteriors, and the input parameters.
 #' 
 fitNComponentHMM <- function(data, nstates=2, observable='counts', fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL) {

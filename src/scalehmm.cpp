@@ -193,20 +193,11 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVec
 	for (int i=0; i<this->NSTATES; i++)
 	{
 		std::string dtype = Rcpp::as<std::string>(emissionTypes[i]);
-		if (dtype.compare("pbinom") == 0)
+		if (dtype.compare("dbinom") == 0)
 		{
-			if (i == 0)
-			{
-				// Binomial test
-				BinomialTest * d = new BinomialTest(obs_total, obs_unmeth, probs[i]);
-				this->emissionDensities.push_back(d);
-			}
-			else if (i == 1)
-			{
 				// Binomial test
 				BinomialTest * d = new BinomialTest(obs_total, obs_meth, probs[i]);
 				this->emissionDensities.push_back(d);
-			}
 		}
 	}
 
@@ -412,7 +403,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 	// Do the Baum-Welch
 	this->baumWelchTime_real = difftime(time(NULL),this->baumWelchStartTime_sec);
 	int iteration = 0;
-	std::vector<double> logliks;
+	Rcpp::NumericVector logliks;
 	logliks.push_back(-INFINITY);
 	while (((this->baumWelchTime_real < maxtime) or (maxtime < 0)) and ((iteration < maxiter) or (maxiter < 0)))
 	{
@@ -514,14 +505,32 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 				{
 					const int rows[] = {i};
 					this->emissionDensities[i]->update(this->gamma, rows);
+					if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: size = %g, prob =  = %g\n", i, emissionDensities[i]->get_size(), emissionDensities[i]->get_prob());
 				}
 			}
 			else if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST)
 			{ 
-				for (int i=0; i<this->NSTATES; i++)
+				if (this->NSTATES == 2)
 				{
-					const int rows[] = {i};
-					this->emissionDensities[i]->update(this->gamma, rows);
+					for (int i=0; i<this->NSTATES; i++)
+					{
+						const int rows[] = {i};
+						this->emissionDensities[i]->update(this->gamma, rows);
+						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob =  = %g\n", i, emissionDensities[i]->get_prob());
+					}
+				} else if (this->NSTATES == 3) { // epi-heterozygosity
+						double r = this->emissionDensities[0]->get_prob();
+						double p = this->emissionDensities[2]->get_prob();
+						int rows[] = {0};
+// 						this->emissionDensities[0]->update_constrained(this->gamma, rows, p);
+						this->emissionDensities[0]->update(this->gamma, rows);
+						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob =  = %g\n", 0, emissionDensities[0]->get_prob());
+						rows[0] = 2;
+// 						this->emissionDensities[2]->update_constrained(this->gamma, rows, r);
+						this->emissionDensities[2]->update(this->gamma, rows);
+						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob =  = %g\n", 2, emissionDensities[2]->get_prob());
+						this->emissionDensities[1]->set_prob(0.5*(this->emissionDensities[0]->get_prob() + this->emissionDensities[2]->get_prob()));
+						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob =  = %g\n", 1, emissionDensities[1]->get_prob());
 				}
 			}
 			R_CheckUserInterrupt();
@@ -608,7 +617,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 			for (int irow=0; irow<this->NSTATES; irow++)
 			{
 				std::string dtype = Rcpp::as<std::string>(emissionTypes[irow]);
-				if (dtype.compare("pbinom") == 0)
+				if (dtype.compare("dbinom") == 0)
 				{
 					probs[irow] = this->emissionDensities[irow]->get_prob();
 				}
@@ -866,7 +875,9 @@ void ScaleHMM::backward()
 				{
 					for (int j=0; j<this->NSTATES; j++)
 					{
+// 						Rprintf("scalebeta(t+1=%d,j=%d) = %f, densities(j=%d,t+1=%d) = %f\n", t+1, j, scalebeta(t+1,j), j, t+1, densities(j,t+1));
 					}
+// 					Rprintf("scalebeta(t=%d,i=%d) = %f, beta[i=%d] = %f, scalefactoralpha[t=%d] = %f\n", t, i, scalebeta(t,i), i, beta[i], t, scalefactoralpha[t]);
 					throw nan_detected;
 				}
 			}
@@ -1063,8 +1074,8 @@ void ScaleHMM::calc_densities()
 	}
 
 	// Check if the density for all states is close to zero and correct to prevent NaNs
-// 	double zero_cutoff = 1.18e-37; // 32-bit precision is 1.18e-38
-	double zero_cutoff = 2.23e-307; // 64-bit precision is 2.23e-308
+// 	double zero_cutoff = 1.18e-27; // 32-bit precision is 1.18e-38
+	double zero_cutoff = 2.23e-207; // 64-bit precision is 2.23e-308
 	std::vector<double> temp(this->NSTATES);
 	// t=0
 	for (int i=0; i<this->NSTATES; i++)
@@ -1087,6 +1098,7 @@ void ScaleHMM::calc_densities()
 		}
 		if (*std::max_element(temp.begin(), temp.end()) < zero_cutoff)
 		{
+// 			Rprintf("corrected at t=%d\n", t);
 			for (int i=0; i<this->NSTATES; i++)
 			{
 				this->densities(i,t) = this->densities(i,t-1);

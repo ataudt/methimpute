@@ -65,11 +65,12 @@ NULL
 #' @param model A \code{\link{combinedMultimodel}} or \code{\link{multimodel}} object or a file that contains such an object.
 #' @param annotations A \code{list()} with \code{\link{GRanges}} objects containing coordinates of multiple annotations The names of the list entries will be used to name the return values.
 #' @param plot A logical indicating whether the plot or an array with the fold enrichment values is returned.
+#' @param logscale Whether (\code{TRUE}) or not (\code{FALSE}) to plot on log scale.
 #' @importFrom S4Vectors subjectHits queryHits
 #' @importFrom IRanges subsetByOverlaps
 #' @importFrom reshape2 melt
 #' @export
-heatmapFoldEnrichment <- function(model, annotations, plot=TRUE) {
+heatmapFoldEnrichment <- function(model, annotations, plot=TRUE, logscale=TRUE) {
     
     ## Variables
     bins <- model$data
@@ -105,46 +106,64 @@ heatmapFoldEnrichment <- function(model, annotations, plot=TRUE) {
     }
     stopTimedMessage(ptm)
     
-    ## Transform fold values to range centered around 0
-    logfold <- log(fold)
-    
-    if (plot) {
-        logfold[is.infinite(logfold)] <- NaN
-        colorbar <- gplots::colorpanel(n = 100, low="blue", mid="white",high="red")
-        charf <- 0.6
-        margins <- c( max(5, charf*max(nchar(colnames(logfold)))) , max(5, charf*max(nchar(rownames(logfold)))))
-        gplots::heatmap.2(logfold, col=colorbar, trace='none', density.info='none', key.title = 'log(observed/expected)', key.xlab='log(observed/expected)', margins=margins, na.color='gray')
-    } else {
-        return(logfold)
-    }
-    
-    # ## Clustering
-    # if (cluster) {
-    #   hc.anno <- hclust(dist(fold))
-    #   hc.state <- hclust(dist(t(fold)))
-    #   fold <- fold[hc.anno$order, hc.state$order]
-    # }
-    # 
     # if (plot) {
-    #   ## Dendrograms
-    #   if (cluster) {
-    #     # Row dendrogram
-    #     row.dendro <- ggplot(ggdendro::segment(ggdendro::dendro_data(as.dendrogram(hc.anno)))) +  geom_segment(aes_string(x='x', y='y', xend='xend', yend='yend')) +  theme_none + theme(axis.title.x=element_blank()) + coord_flip()
-    #     # Column dendrogram
-    #     col.dendro <- ggplot(ggdendro::segment(ggdendro::dendro_data(as.dendrogram(hc.state)))) +  geom_segment(aes_string(x='x', y='y', xend='xend', yend='yend')) + theme_none
-    #   }
-    #   df <- reshape2::melt(fold, value.name='foldEnrichment')
-    #   df$state <- factor(df$state, levels=colnames(fold))
-    #   maxfold <- max(df$foldEnrichment, na.rm=TRUE)
-    #   ggplt <- ggplot(df) + geom_tile(aes_string(x='state', y='annotation', fill='foldEnrichment'))
-    #   ggplt <- ggplt + theme_bw()
-    #   ggplt <- ggplt + theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
-    #   ggplt <- ggplt + scale_fill_gradientn(colors=grDevices::colorRampPalette(c("blue","white","red"))(20), values=c(seq(0,1,length.out=10), seq(1,maxfold,length.out=10)), rescaler=function(x,...) {x}, oob=identity, limits=c(0,maxfold))
-    #   cowplt <- cowplot::plot_grid(NULL, col.dendro, row.dendro, ggplt, align = 'hv', ncol = 2)
-    #   return(ggplt)
+    #     fold <- log(fold)
+    #     fold[is.infinite(fold)] <- NaN
+    #     colorbar <- gplots::colorpanel(n = 100, low="blue", mid="white",high="red")
+    #     charf <- 0.6
+    #     margins <- c( max(5, charf*max(nchar(colnames(fold)))) , max(5, charf*max(nchar(rownames(fold)))))
+    #     gplots::heatmap.2(fold, col=colorbar, trace='none', density.info='none', key.title = 'log(observed/expected)', key.xlab='log(observed/expected)', margins=margins, na.color='gray')
     # } else {
-    #   return(fold)
+    #     return(fold)
     # }
+    
+    ## Clustering
+    if (cluster) {
+        hc.anno <- hclust(dist(fold))
+        # hc.state <- hclust(dist(t(fold)))
+        # fold <- fold[hc.anno$order, hc.state$order]
+        fold <- fold[hc.anno$order, ]
+    }
+
+    if (plot) {
+        df <- reshape2::melt(fold, value.name='fold')
+        if (logscale) {
+            df$fold <- log(df$fold)
+        }
+        df$state <- factor(df$state, levels=colnames(fold))
+        # Transform annotation to numeric for compatibility with the dendrogram
+        df$ylabel <- df$annotation
+        df$annotation <- as.numeric(df$annotation)
+        maxfold <- max(df$fold, na.rm=TRUE)
+        minfold <- max(df$fold, na.rm=TRUE)
+        limits <- max(abs(maxfold), abs(minfold))
+        ggplt <- ggplot(df) + geom_tile(aes_string(x='state', y='annotation', fill='fold'))
+        ggplt <- ggplt + scale_y_continuous(breaks=1:length(unique(df$annotation)), labels=unique(df$ylabel), position='right')
+        ggplt <- ggplt + theme_bw()
+        ggplt <- ggplt + theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
+        cowplt <- ggplt
+        if (logscale) {
+            ggplt <- ggplt + scale_fill_gradientn(name='log(observed/expected)', colors=grDevices::colorRampPalette(c("blue","white","red"))(20), values=c(seq(-limits,0,length.out=10), seq(0,limits,length.out=10)), rescaler=function(x,...) {x}, oob=identity, limits=c(-limits,limits))
+        } else {
+            ggplt <- ggplt + scale_fill_gradientn(name='observed/expected', colors=grDevices::colorRampPalette(c("blue","white","red"))(20), values=c(seq(0,1,length.out=10), seq(1,maxfold,length.out=10)), rescaler=function(x,...) {x}, oob=identity, limits=c(0,maxfold))
+        }
+        ## Dendrograms
+        if (cluster) {
+            theme_none <- theme(axis.text = element_blank(),
+                                axis.ticks = element_blank(),
+                                panel.background = element_blank(),
+                                axis.title = element_blank())
+            # Row dendrogram
+            df.dendro <- ggdendro::segment(ggdendro::dendro_data(as.dendrogram(hc.anno)))
+            row.dendro <- ggplot(df.dendro) +  geom_segment(aes_string(x='y', y='x', xend='yend', yend='xend')) +  theme_none + scale_x_reverse() + coord_cartesian(ylim=c(0.5,max(df$annotation)+0.5))
+            # Column dendrogram
+            # col.dendro <- ggplot(ggdendro::segment(ggdendro::dendro_data(as.dendrogram(hc.state)))) +  geom_segment(aes_string(x='x', y='y', xend='xend', yend='yend')) + theme_none
+            cowplt <- cowplot::plot_grid(row.dendro, ggplt, align = 'h', ncol = 2, rel_widths = c(1,3))
+        }
+        return(cowplt)
+    } else {
+        return(fold)
+    }
 }
 
 
