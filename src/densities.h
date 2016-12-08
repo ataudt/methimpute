@@ -47,8 +47,8 @@ class ZiNB : public Density {
 	public:
 		// Constructor and Destructor
 		ZiNB();
-		ZiNB(const Rcpp::IntegerVector & obs, double size, double prob, double w);
-		ZiNB(const Rcpp::IntegerVector & obs, const Rcpp::IntegerVector & obs_unique, const Rcpp::IntegerVector & uobsind_per_obs, double size, double prob, double w);
+		ZiNB(const Rcpp::IntegerVector & obs, double size, double prob, double w, int verbosity);
+		ZiNB(const Rcpp::IntegerVector & obs, const Rcpp::IntegerVector & obs_unique, const Rcpp::IntegerVector & uobsind_per_obs, double size, double prob, double w, int verbosity);
 		~ZiNB();
 	
 		// Methods
@@ -68,6 +68,7 @@ class ZiNB : public Density {
 
 	private:
 		// Member variables
+		int verbosity; ///< verbosity parameter for debugging
 		double size; ///< parameter of the distribution
 		double prob; ///< parameter of the distribution
 		double w; ///< parameter of the distribution
@@ -83,7 +84,7 @@ class BinomialTest : public Density {
 	public:
 		// Constructor and Destructor
 		BinomialTest();
-		BinomialTest(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_test, double prob);
+		BinomialTest(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_test, double prob, int verbosity);
 		~BinomialTest();
 
 		// Methods
@@ -100,6 +101,7 @@ class BinomialTest : public Density {
 
 	private:
 		// Member variables
+		int verbosity; ///< verbosity parameter for debugging
 		double prob; ///< parameter of the distribution
 		Rcpp::IntegerVector obs_total; ///< vector [NDATA] of observations
 		Rcpp::IntegerVector obs_test; ///< vector [NDATA] of observations
@@ -112,8 +114,8 @@ class NegativeBinomial : public Density {
 	public:
 		// Constructor and Destructor
 		NegativeBinomial();
-		NegativeBinomial(const Rcpp::IntegerVector & obs, double size, double prob);
-		NegativeBinomial(const Rcpp::IntegerVector & obs, const Rcpp::IntegerVector & obs_unique, const Rcpp::IntegerVector & uobsind_per_obs, double size, double prob);
+		NegativeBinomial(const Rcpp::IntegerVector & obs, double size, double prob, int verbosity);
+		NegativeBinomial(const Rcpp::IntegerVector & obs, const Rcpp::IntegerVector & obs_unique, const Rcpp::IntegerVector & uobsind_per_obs, double size, double prob, int verbosity);
 		~NegativeBinomial();
 
 		// Methods
@@ -133,6 +135,7 @@ class NegativeBinomial : public Density {
 
 	private:
 		// Member variables
+		int verbosity; ///< verbosity parameter for debugging
 		double size; ///< parameter of the distribution
 		double prob; ///< parameter of the distribution
 		Rcpp::IntegerVector obs; ///< vector [NDATA] of observations
@@ -147,7 +150,7 @@ class ZeroInflation : public Density {
 	public:
 		// Constructor and Destructor
 		ZeroInflation();
-		ZeroInflation(const Rcpp::IntegerVector & obs);
+		ZeroInflation(const Rcpp::IntegerVector & obs, int verbosity);
 		~ZeroInflation();
 
 		// Methods
@@ -165,6 +168,7 @@ class ZeroInflation : public Density {
 
 	private:
 		// Member variables
+		int verbosity; ///< verbosity parameter for debugging
 		Rcpp::IntegerVector obs; ///< vector [NDATA] of observations
 };
 
@@ -173,7 +177,7 @@ class Beta : public Density {
 	public:
 		// Constructor and Destructor
 		Beta();
-		Beta(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b);
+		Beta(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b, int verbosity);
 		~Beta();
 
 		// Methods
@@ -195,6 +199,7 @@ class Beta : public Density {
 
 	private:
 		// Member variables
+		int verbosity; ///< verbosity parameter for debugging
 		double a; ///< parameter of the distribution
 		double b; ///< parameter of the distribution
 		Rcpp::NumericVector obs; ///< vector [NDATA] of observations
@@ -207,7 +212,7 @@ class Beta_mirror : public Beta {
 	public:
 		// Constructor and Destructor
 		Beta_mirror();
-		Beta_mirror(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b);
+		Beta_mirror(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b, int verbosity);
 		~Beta_mirror();
 
 		// Methods
@@ -229,6 +234,7 @@ class Beta_mirror : public Beta {
 
 	private:
 		// Member variables
+		int verbosity; ///< verbosity parameter for debugging
 		double a; ///< parameter of the distribution
 		double b; ///< parameter of the distribution
 		Rcpp::NumericVector obs; ///< vector [NDATA] of observations
@@ -241,7 +247,7 @@ class Beta_symmetric : public Beta {
 	public:
 		// Constructor and Destructor
 		Beta_symmetric();
-		Beta_symmetric(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b);
+		Beta_symmetric(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b, int verbosity);
 		~Beta_symmetric();
 
 		// Methods
@@ -263,6 +269,7 @@ class Beta_symmetric : public Beta {
 
 	private:
 		// Member variables
+		int verbosity; ///< verbosity parameter for debugging
 		double a; ///< parameter of the distribution
 		double b; ///< parameter of the distribution
 		Rcpp::NumericVector obs; ///< vector [NDATA] of observations
@@ -274,7 +281,7 @@ class Beta_symmetric : public Beta {
 class MVCopulaApproximation : public Density {
 	public:
 		// Constructor and Destructor
-		MVCopulaApproximation(const Rcpp::IntegerMatrix & obs, const Rcpp::IntegerVector & statedef, const Rcpp::List & emissionParamsList, const Rcpp::NumericMatrix & cor_matrix_inv, const double & cor_matrix_det);
+		MVCopulaApproximation(const Rcpp::IntegerMatrix & obs, const Rcpp::IntegerVector & statedef, const Rcpp::List & emissionParamsList, const Rcpp::NumericMatrix & cor_matrix_inv, const double & cor_matrix_det, int verbosity);
 		~MVCopulaApproximation();
 	
 		// Methods
@@ -286,6 +293,7 @@ class MVCopulaApproximation : public Density {
 
 	private:
 		// Member variables
+		int verbosity; ///< verbosity parameter for debugging
 		Rcpp::IntegerMatrix obs; ///< matrix [Nmod x NDATA] of observations
 		std::vector<Density*> marginals; ///< vector [Nmod] of marginal distributions
 		Rcpp::NumericMatrix cor_matrix_inv; ///< vector with elements of the inverse of the correlation matrix
@@ -296,7 +304,7 @@ class MVCopulaApproximation : public Density {
 class BernoulliProduct : public Density {
 	public:
 		// Constructor and Destructor
-		BernoulliProduct(const Rcpp::NumericMatrix & obs, Rcpp::LogicalVector & binary_states);
+		BernoulliProduct(const Rcpp::NumericMatrix & obs, Rcpp::LogicalVector & binary_states, int verbosity);
 		~BernoulliProduct();
 		// Methods
 		void calc_logdensities(Rcpp::NumericMatrix::Row & logdens);
@@ -305,6 +313,7 @@ class BernoulliProduct : public Density {
 
 	private:
 		// Member variables
+		int verbosity; ///< verbosity parameter for debugging
 		Rcpp::NumericMatrix obs;
 		Rcpp::LogicalVector binary_states;
 };

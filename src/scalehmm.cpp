@@ -69,13 +69,13 @@ ScaleHMM::ScaleHMM(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & 
 	Rcpp::NumericVector a_s = Rcpp::as<Rcpp::NumericVector>(this->emissionParams["a"]);
 	Rcpp::NumericVector b_s = Rcpp::as<Rcpp::NumericVector>(this->emissionParams["b"]);
 	// UNmethylated
-	Beta_mirror * d0 = new Beta_mirror(obs, this->logObs, this->log1mObs, a_s[0], b_s[0]);
+	Beta_mirror * d0 = new Beta_mirror(obs, this->logObs, this->log1mObs, a_s[0], b_s[0], this->verbosity);
 	this->emissionDensities.push_back(d0);
 	// Hemimethylated
-	Beta_symmetric * d1 = new Beta_symmetric(obs, this->logObs, this->log1mObs, a_s[1], b_s[1]);
+	Beta_symmetric * d1 = new Beta_symmetric(obs, this->logObs, this->log1mObs, a_s[1], b_s[1], this->verbosity);
 	this->emissionDensities.push_back(d1);
 	// Methylated
-	Beta_mirror * d2 = new Beta_mirror(obs, this->logObs, this->log1mObs, a_s[2], b_s[2]);
+	Beta_mirror * d2 = new Beta_mirror(obs, this->logObs, this->log1mObs, a_s[2], b_s[2], this->verbosity);
 	this->emissionDensities.push_back(d2);
 }
 
@@ -142,13 +142,13 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs, const Rcpp::NumericVector & 
 		if (dtype.compare("delta") == 0)
 		{
 			// Zero Inflation
-			ZeroInflation * d = new ZeroInflation(obs);
+			ZeroInflation * d = new ZeroInflation(obs, this->verbosity);
 			this->emissionDensities.push_back(d);
 		}
 		else if (dtype.compare("dnbinom") == 0)
 		{
 			// Negative Binomial
-			NegativeBinomial * d = new NegativeBinomial(obs, this->obs_unique, this->uobsind_per_t, sizes[i], probs[i]);
+			NegativeBinomial * d = new NegativeBinomial(obs, this->obs_unique, this->uobsind_per_t, sizes[i], probs[i], this->verbosity);
 			this->emissionDensities.push_back(d);
 		}
 	}
@@ -196,7 +196,7 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVec
 		if (dtype.compare("dbinom") == 0)
 		{
 				// Binomial test
-				BinomialTest * d = new BinomialTest(obs_total, obs_meth, probs[i]);
+				BinomialTest * d = new BinomialTest(obs_total, obs_meth, probs[i], this->verbosity);
 				this->emissionDensities.push_back(d);
 		}
 	}
@@ -250,7 +250,7 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerMatrix & multi_obs, const Rcpp::NumericVec
 			Rcpp::IntegerVector jcol = statedef[j];
 			state_def[j] = jcol[i];
 		}
-		MVCopulaApproximation * MVdens = new MVCopulaApproximation(multi_obs, state_def, this->emissionParamsList, Rcpp::as<Rcpp::NumericMatrix>(cor_mat_inv[i]), determinant[i]);
+		MVCopulaApproximation * MVdens = new MVCopulaApproximation(multi_obs, state_def, this->emissionParamsList, Rcpp::as<Rcpp::NumericMatrix>(cor_mat_inv[i]), determinant[i], this->verbosity);
 		this->emissionDensities.push_back(MVdens);
 	}
 
@@ -505,7 +505,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 				{
 					const int rows[] = {i};
 					this->emissionDensities[i]->update(this->gamma, rows);
-					if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: size = %g, prob =  = %g\n", i, emissionDensities[i]->get_size(), emissionDensities[i]->get_prob());
+					if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: size = %g, prob = %g\n", i, emissionDensities[i]->get_size(), emissionDensities[i]->get_prob());
 				}
 			}
 			else if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST)
@@ -516,7 +516,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 					{
 						const int rows[] = {i};
 						this->emissionDensities[i]->update(this->gamma, rows);
-						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob =  = %g\n", i, emissionDensities[i]->get_prob());
+						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob = %g\n", i, emissionDensities[i]->get_prob());
 					}
 				} else if (this->NSTATES == 3) { // epi-heterozygosity
 						double r = this->emissionDensities[0]->get_prob();
@@ -524,13 +524,13 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 						int rows[] = {0};
 // 						this->emissionDensities[0]->update_constrained(this->gamma, rows, p);
 						this->emissionDensities[0]->update(this->gamma, rows);
-						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob =  = %g\n", 0, emissionDensities[0]->get_prob());
+						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob = %g\n", 0, emissionDensities[0]->get_prob());
 						rows[0] = 2;
 // 						this->emissionDensities[2]->update_constrained(this->gamma, rows, r);
 						this->emissionDensities[2]->update(this->gamma, rows);
-						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob =  = %g\n", 2, emissionDensities[2]->get_prob());
+						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob = %g\n", 2, emissionDensities[2]->get_prob());
 						this->emissionDensities[1]->set_prob(0.5*(this->emissionDensities[0]->get_prob() + this->emissionDensities[2]->get_prob()));
-						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob =  = %g\n", 1, emissionDensities[1]->get_prob());
+						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob = %g\n", 1, emissionDensities[1]->get_prob());
 				}
 			}
 			R_CheckUserInterrupt();
