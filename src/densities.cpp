@@ -7,7 +7,7 @@
 // Constructor and Destructor ---------------------------------
 ZiNB::ZiNB(const Rcpp::IntegerVector & obs, double size, double prob, double w, int verbosity)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->verbosity = verbosity;
 	this->obs = obs;
 	this->prob = prob;
@@ -47,7 +47,7 @@ ZiNB::ZiNB(const Rcpp::IntegerVector & obs, double size, double prob, double w, 
 
 ZiNB::ZiNB(const Rcpp::IntegerVector & obs, const Rcpp::IntegerVector & obs_unique, const Rcpp::IntegerVector & uobsind_per_t, double size, double prob, double w, int verbosity)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->verbosity = verbosity;
 	this->obs = obs;
 	this->obs_unique = obs_unique;
@@ -69,13 +69,13 @@ ZiNB::ZiNB(const Rcpp::IntegerVector & obs, const Rcpp::IntegerVector & obs_uniq
 
 ZiNB::~ZiNB()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 }
 
 // Methods ----------------------------------------------------
 void ZiNB::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR,lGammaRplusX,lxfactorial;
@@ -130,7 +130,7 @@ void ZiNB::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 
 void ZiNB::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR,lGammaRplusX,lxfactorial;
@@ -185,7 +185,7 @@ void ZiNB::calc_densities(Rcpp::NumericMatrix::Row & dens)
 
 void ZiNB::calc_CDFs(Rcpp::NumericMatrix::Row & CDF)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR;
@@ -221,7 +221,7 @@ void ZiNB::calc_CDFs(Rcpp::NumericMatrix::Row & CDF)
 
 void ZiNB::calc_logCDFs(Rcpp::NumericMatrix::Row & logCDF)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR;
@@ -257,7 +257,7 @@ void ZiNB::calc_logCDFs(Rcpp::NumericMatrix::Row & logCDF)
 
 double ZiNB::getLogDensityAt(int x)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR,lGammaRplusX,lxfactorial;
@@ -297,37 +297,37 @@ double ZiNB::getLogDensityAt(int x)
 // Getter and Setter ------------------------------------------
 double ZiNB::get_mean()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return (1-this->w)*this->size*(1-this->prob)/this->prob;
 }
 
 double ZiNB::get_variance()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return (1-this->w)*this->size*(1-this->prob)/this->prob/this->prob; //TODO: Is this correct?
 }
 
 DensityName ZiNB::get_name()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(ZERO_INFLATED_NEGATIVE_BINOMIAL);
 }
 
 double ZiNB::get_size()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
   return(this->size);
 }
 
 double ZiNB::get_prob()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
   return(this->prob);
 }
 
 double ZiNB::get_w()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(this->w);
 }
 
@@ -341,7 +341,7 @@ BinomialTest::BinomialTest() { }
 
 BinomialTest::BinomialTest(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_test, double prob, int verbosity)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->verbosity = verbosity;
 	this->obs_total = obs_total;
 	this->obs_test = obs_test;
@@ -360,13 +360,13 @@ BinomialTest::BinomialTest(const Rcpp::IntegerVector & obs_total, const Rcpp::In
 
 BinomialTest::~BinomialTest()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 }
 
 // Methods ----------------------------------------------------
 void BinomialTest::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 // 	double log05 = log(0.5);
 	double logprob = log(this->prob);
 	for (int t=0; t<this->obs_total.size(); t++)
@@ -382,7 +382,7 @@ void BinomialTest::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 
 void BinomialTest::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double logprob = log(this->prob);
 	for (int t=0; t<this->obs_total.size(); t++)
 	{
@@ -397,7 +397,7 @@ void BinomialTest::calc_densities(Rcpp::NumericMatrix::Row & dens)
 
 void BinomialTest::update(const Rcpp::NumericMatrix & weights, const int * rows)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	// Update prob (p)
 	double numerator, denominator;
 	numerator = denominator = 0.0;
@@ -418,7 +418,7 @@ void BinomialTest::update(const Rcpp::NumericMatrix & weights, const int * rows)
 
 void BinomialTest::update_constrained(const Rcpp::NumericMatrix & weights, const int * rows, double r)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double eps = 1e-4;
 	double kmax = 20;
 	double numerator, denominator;
@@ -460,7 +460,7 @@ void BinomialTest::update_constrained(const Rcpp::NumericMatrix & weights, const
 
 double BinomialTest::getLogDensityAt(int test, int total)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double logdens = R::dbinom(test, total, this->prob, true);
 	if (std::isnan(logdens))
 	{
@@ -473,19 +473,19 @@ double BinomialTest::getLogDensityAt(int test, int total)
 // Getter and Setter ------------------------------------------
 DensityName BinomialTest::get_name()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(BINOMIAL_TEST);
 }
 
 double BinomialTest::get_prob()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(this->prob);
 }
 
 void BinomialTest::set_prob(double prob)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->prob = prob;
 }
 
@@ -499,7 +499,7 @@ NegativeBinomial::NegativeBinomial() { }
 
 NegativeBinomial::NegativeBinomial(const Rcpp::IntegerVector & obs, double size, double prob, int verbosity)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->verbosity = verbosity;
 	this->obs = obs;
 	this->size = size;
@@ -539,7 +539,7 @@ NegativeBinomial::NegativeBinomial(const Rcpp::IntegerVector & obs, double size,
 
 NegativeBinomial::NegativeBinomial(const Rcpp::IntegerVector & obs, const Rcpp::IntegerVector & obs_unique, const Rcpp::IntegerVector & uobsind_per_t, double size, double prob, int verbosity)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->verbosity = verbosity;
 	this->obs = obs;
 	this->obs_unique = obs_unique;
@@ -560,13 +560,30 @@ NegativeBinomial::NegativeBinomial(const Rcpp::IntegerVector & obs, const Rcpp::
 
 NegativeBinomial::~NegativeBinomial()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 }
 
 // Methods ----------------------------------------------------
 void NegativeBinomial::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
+
+	// Limit case
+	if (this->size == 0 or this->prob == 1)
+	{
+		for (int t=0; t<this->obs.size(); t++)
+		{
+			if (this->obs[t] == 0)
+			{
+				logdens[t] = 0;
+			}
+			else
+			{
+				logdens[t] = -INFINITY;
+			}
+		}
+	}
+
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR,lGammaRplusX,lxfactorial;
@@ -607,7 +624,25 @@ void NegativeBinomial::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 
 void NegativeBinomial::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
+
+	// Limit case
+	if (this->size == 0 or this->prob == 1)
+	{
+		for (int t=0; t<this->obs.size(); t++)
+		{
+			if (this->obs[t] == 0)
+			{
+				dens[t] = 1;
+			}
+			else
+			{
+				dens[t] = 0;
+			}
+		}
+	}
+		
+	// Normal case
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR,lGammaRplusX,lxfactorial;
@@ -625,8 +660,8 @@ void NegativeBinomial::calc_densities(Rcpp::NumericMatrix::Row & dens)
 			dens_per_uobs[j] = exp( lgamma(this->size + obs_j) - lGammaR - this->lxfactorials[obs_j] + this->size * logp + obs_j * log1minusp );
 			if (std::isnan(dens_per_uobs[j]))
 			{
-				if (verbosity>=4) Rprintf("size = %g, prob = %g, logp = %g, log1minusp = %g\n", size, prob, logp, log1minusp);
-				if (verbosity>=4) Rprintf("lGammaR = %g, lgamma(size + obs=%d) = %g\n", lGammaR, obs_j, lgamma(size + obs_j));
+				if (verbosity>=4) Rprintf("    size = %g, prob = %g, logp = %g, log1minusp = %g\n", size, prob, logp, log1minusp);
+				if (verbosity>=4) Rprintf("    lGammaR = %g, lgamma(size + obs=%d) = %g\n", lGammaR, obs_j, lgamma(size + obs_j));
 				throw nan_detected;
 			}
 		}
@@ -654,7 +689,7 @@ void NegativeBinomial::calc_densities(Rcpp::NumericMatrix::Row & dens)
 
 void NegativeBinomial::calc_CDFs(Rcpp::NumericMatrix::Row & CDF)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR;
@@ -690,7 +725,7 @@ void NegativeBinomial::calc_CDFs(Rcpp::NumericMatrix::Row & CDF)
 
 void NegativeBinomial::calc_logCDFs(Rcpp::NumericMatrix::Row & logCDF)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR;
@@ -726,7 +761,7 @@ void NegativeBinomial::calc_logCDFs(Rcpp::NumericMatrix::Row & logCDF)
 
 void NegativeBinomial::update(const Rcpp::NumericMatrix & weights, const int * rows)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double eps = 1e-4;
 	double kmax = 20;
 	double numerator, denominator, size0, DigammaSize, TrigammaSize;
@@ -840,7 +875,7 @@ void NegativeBinomial::update(const Rcpp::NumericMatrix & weights, const int * r
 
 double NegativeBinomial::getLogDensityAt(int x)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double logp = log(this->prob);
 	double log1minusp = log(1-this->prob);
 	double lGammaR,lGammaRplusX,lxfactorial;
@@ -873,31 +908,31 @@ double NegativeBinomial::getLogDensityAt(int x)
 // Getter and Setter ------------------------------------------
 double NegativeBinomial::get_mean()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return this->size*(1-this->prob)/this->prob;
 }
 
 double NegativeBinomial::get_variance()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return this->size*(1-this->prob)/this->prob/this->prob;
 }
 
 DensityName NegativeBinomial::get_name()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(NEGATIVE_BINOMIAL);
 }
 
 double NegativeBinomial::get_size()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(this->size);
 }
 
 double NegativeBinomial::get_prob()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(this->prob);
 }
 
@@ -909,20 +944,20 @@ double NegativeBinomial::get_prob()
 // Constructor and Destructor ---------------------------------
 ZeroInflation::ZeroInflation(const Rcpp::IntegerVector & obs, int verbosity)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->verbosity = verbosity;
 	this->obs = obs;
 }
 
 ZeroInflation::~ZeroInflation()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 }
 
 // Methods ----------------------------------------------------
 void ZeroInflation::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	for (int t=0; t<this->obs.size(); t++)
 	{
 		if(obs[t]==0)
@@ -938,7 +973,7 @@ void ZeroInflation::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 
 void ZeroInflation::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	for (int t=0; t<this->obs.size(); t++)
 	{
 		if(obs[t]==0)
@@ -954,7 +989,7 @@ void ZeroInflation::calc_densities(Rcpp::NumericMatrix::Row & dens)
 
 void ZeroInflation::calc_CDFs(Rcpp::NumericMatrix::Row & CDF)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	for (int t=0; t<this->obs.size(); t++)
 	{
 		CDF[t] = 1.0;
@@ -963,7 +998,7 @@ void ZeroInflation::calc_CDFs(Rcpp::NumericMatrix::Row & CDF)
 
 void ZeroInflation::calc_logCDFs(Rcpp::NumericMatrix::Row & logCDF)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	for (int t=0; t<this->obs.size(); t++)
 	{
 		logCDF[t] = 0.0;
@@ -972,12 +1007,12 @@ void ZeroInflation::calc_logCDFs(Rcpp::NumericMatrix::Row & logCDF)
 
 void ZeroInflation::update(const Rcpp::NumericMatrix &, const int *)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 }
 
 double ZeroInflation::getLogDensityAt(int x)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double logdens;
 	// Calculate logdensity
 	if (x == 0)
@@ -995,19 +1030,19 @@ double ZeroInflation::getLogDensityAt(int x)
 // Getter and Setter ------------------------------------------
 double ZeroInflation::get_mean()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return 0;
 }
 
 double ZeroInflation::get_variance()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return 0;
 }
 
 DensityName ZeroInflation::get_name()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(ZERO_INFLATION);
 }
 
@@ -1025,7 +1060,7 @@ Beta_mirror::Beta_mirror() { }
 
 Beta::Beta(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b, int verbosity)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->verbosity = verbosity;
 	this->obs = obs;
 	this->logObs = logObs;
@@ -1036,7 +1071,7 @@ Beta::Beta(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, 
 
 Beta_symmetric::Beta_symmetric(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b, int verbosity)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->verbosity = verbosity;
 	this->obs = obs;
 	this->logObs = logObs;
@@ -1047,7 +1082,7 @@ Beta_symmetric::Beta_symmetric(const Rcpp::NumericVector & obs, const Rcpp::Nume
 
 Beta_mirror::Beta_mirror(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & logObs, const Rcpp::NumericVector & log1mObs, double a, double b, int verbosity)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->verbosity = verbosity;
 	this->obs = obs;
 	this->logObs = logObs;
@@ -1065,12 +1100,12 @@ Beta_mirror::~Beta_mirror() { }
 // Methods ----------------------------------------------------
 void Beta::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 } 
 
 void Beta::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double cutoff = 1e10;
 	for (int t=0; t<this->obs.size(); t++)
 	{
@@ -1084,7 +1119,7 @@ void Beta::calc_densities(Rcpp::NumericMatrix::Row & dens)
 
 void Beta_mirror::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double cutoff = 1e10;
 	for (int t=0; t<this->obs.size(); t++)
 	{
@@ -1098,7 +1133,7 @@ void Beta_mirror::calc_densities(Rcpp::NumericMatrix::Row & dens)
 
 void Beta_symmetric::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double cutoff = 1e10;
 	for (int t=0; t<this->obs.size(); t++)
 	{
@@ -1112,22 +1147,22 @@ void Beta_symmetric::calc_densities(Rcpp::NumericMatrix::Row & dens)
 
 void Beta::calc_CDFs(Rcpp::NumericMatrix::Row & CDF)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 }
 
 void Beta::calc_logCDFs(Rcpp::NumericMatrix::Row & logCDF)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 }
 
 void Beta::update(const Rcpp::NumericMatrix & weights, const int * rows)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 }
 
 void Beta_mirror::update(const Rcpp::NumericMatrix & weights, const int * rows)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	// Updates with Newton-Raphson
 	double eps = 1e-4;
 	double kmax = 20;
@@ -1211,7 +1246,7 @@ void Beta_mirror::update(const Rcpp::NumericMatrix & weights, const int * rows)
 
 void Beta_symmetric::update(const Rcpp::NumericMatrix & weights, const int * rows)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	// Updates with Newton-Raphson
 	double eps = 1e-4;
 	double kmax = 20;
@@ -1257,20 +1292,20 @@ void Beta_symmetric::update(const Rcpp::NumericMatrix & weights, const int * row
 
 double Beta::getLogDensityAt(double x)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(R::dbeta(x, this->a, this->b, 1));
 }
 
 // Getter and Setter ------------------------------------------
 double Beta::get_mean()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return this->a / ( this->a + this->b );
 }
 
 double Beta::get_variance()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double a = this->a;
 	double b = this->b;
 	return a*b / ( (a+b)*(a+b) * (a+b+1) );
@@ -1278,91 +1313,91 @@ double Beta::get_variance()
 
 DensityName Beta::get_name()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(BETA);
 }
 
 DensityName Beta_symmetric::get_name()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(BETA_SYMMETRIC);
 }
 
 DensityName Beta_mirror::get_name()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(BETA_MIRROR);
 }
 
 double Beta::get_a()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(this->a);
 }
 
 double Beta_mirror::get_a()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(this->a);
 }
 
 double Beta_symmetric::get_a()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(this->a);
 }
 
 double Beta::get_b()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(this->b);
 }
 
 double Beta_mirror::get_b()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(this->b);
 }
 
 double Beta_symmetric::get_b()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(this->b);
 }
 
 void Beta::set_a(double a)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->a = a;
 }
 
 void Beta_mirror::set_a(double a)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->a = a;
 }
 
 void Beta_symmetric::set_a(double a)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->a = a;
 }
 
 void Beta::set_b(double b)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->b = b;
 }
 
 void Beta_mirror::set_b(double b)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->b = b;
 }
 	
 void Beta_symmetric::set_b(double b)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->b = b;
 }
 
@@ -1373,7 +1408,7 @@ void Beta_symmetric::set_b(double b)
 // Constructor and Destructor ---------------------------------
 MVCopulaApproximation::MVCopulaApproximation(const Rcpp::IntegerMatrix & obs, const Rcpp::IntegerVector & statedef, const Rcpp::List & emissionParamsList, const Rcpp::NumericMatrix & cor_matrix_inv, const double & cor_matrix_det, int verbosity)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->verbosity = verbosity;
 	this->obs = obs;
 	this->cor_matrix_inv = cor_matrix_inv;
@@ -1407,7 +1442,7 @@ MVCopulaApproximation::MVCopulaApproximation(const Rcpp::IntegerMatrix & obs, co
 
 MVCopulaApproximation::~MVCopulaApproximation()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	for (int imod=0; imod<this->marginals.size(); imod++)
 	{
 		delete this->marginals[imod];
@@ -1417,7 +1452,7 @@ MVCopulaApproximation::~MVCopulaApproximation()
 // Methods ----------------------------------------------------
 void MVCopulaApproximation::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 // Rprintf("new state\n");
 	// Calculate logdensities for marginals
 	Rcpp::NumericMatrix marginals_logdensities = Rcpp::NumericMatrix(this->obs.ncol(), this->obs.nrow());
@@ -1510,7 +1545,7 @@ void MVCopulaApproximation::calc_logdensities(Rcpp::NumericMatrix::Row & logdens
 
 void MVCopulaApproximation::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->calc_logdensities(dens);
 
 	for (int t=0; t<this->obs.nrow(); t++)
@@ -1522,7 +1557,7 @@ void MVCopulaApproximation::calc_densities(Rcpp::NumericMatrix::Row & dens)
 // Getter and Setter ------------------------------------------
 DensityName MVCopulaApproximation::get_name()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(OTHER);
 }
 
@@ -1534,7 +1569,7 @@ DensityName MVCopulaApproximation::get_name()
 // Constructor and Destructor ---------------------------------
 BernoulliProduct::BernoulliProduct(const Rcpp::NumericMatrix & obs, Rcpp::LogicalVector & binary_states, int verbosity)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	this->verbosity = verbosity;
 	this->obs = obs;
 	this->binary_states = binary_states;
@@ -1542,13 +1577,13 @@ BernoulliProduct::BernoulliProduct(const Rcpp::NumericMatrix & obs, Rcpp::Logica
 
 BernoulliProduct::~BernoulliProduct()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 }
 
 // Methods ----------------------------------------------------
 void BernoulliProduct::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double d, mult;
 	Rcpp::NumericMatrix tempPost = Rcpp::NumericMatrix(this->obs.nrow(), this->obs.ncol());
 
@@ -1578,7 +1613,7 @@ void BernoulliProduct::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 // Getter and Setter ------------------------------------------
 DensityName BernoulliProduct::get_name()
 {
-	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	return(OTHER);
 }
 
