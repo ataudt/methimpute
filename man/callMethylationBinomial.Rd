@@ -4,9 +4,10 @@
 \alias{callMethylationBinomial}
 \title{Methylation calling with a binomial-test HMM}
 \usage{
-callMethylationBinomial(data, fit.on.chrom = NULL, transDist = 10000,
-  eps = 0.01, max.time = Inf, max.iter = Inf, quantile.cutoff = 1,
-  verbosity = 1, initial.params = NULL, include.heterozygosity = FALSE)
+callMethylationBinomial(data, fit.on.chrom = NULL, min.reads = 3,
+  transDist = 10000, eps = 0.01, max.time = Inf, max.iter = Inf,
+  quantile.cutoff = 1, verbosity = 1, initial.params = NULL,
+  include.heterozygosity = FALSE)
 }
 \value{
 A list with fitted parameters, posteriors.

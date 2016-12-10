@@ -5,7 +5,7 @@
 #ifndef DENSITIES_H
 #define DENSITIES_H
 
-enum DensityName {ZERO_INFLATION, BINOMIAL_TEST, NEGATIVE_BINOMIAL, ZERO_INFLATED_NEGATIVE_BINOMIAL, BETA, BETA_MIRROR, BETA_SYMMETRIC, OTHER};
+enum DensityName {ZERO_INFLATION, BINOMIAL_TEST, BINOMIAL_TEST_CONTEXT, NEGATIVE_BINOMIAL, ZERO_INFLATED_NEGATIVE_BINOMIAL, BETA, BETA_MIRROR, BETA_SYMMETRIC, OTHER};
 
 /* custom error handling class */
 static class exception_nan: public std::exception
@@ -27,6 +27,7 @@ class Density {
 		virtual void calc_CDFs(Rcpp::NumericMatrix::Row &) {};
 		virtual void update(const Rcpp::NumericMatrix &, const int * rows) {}; 
 		virtual void update_constrained(const Rcpp::NumericMatrix &, const int * rows, double r) {}; 
+		virtual void update_constrained_context(const Rcpp::NumericMatrix &, const int * rows, Rcpp::NumericVector rs) {}; 
 		virtual double getLogDensityAt(int) { return(0); };
 		// Getter and Setter
 		virtual DensityName get_name() { return(OTHER); };
@@ -34,7 +35,9 @@ class Density {
 		virtual double get_variance() { return(0); };
 		virtual double get_size() { return(0); };
 		virtual double get_prob() { return(0); };
+		virtual Rcpp::NumericVector get_probs() { return(0); };
 		virtual void set_prob(double prob) {};
+		virtual void set_probs(Rcpp::NumericVector prob) {};
 		virtual double get_a() { return(0); };
 		virtual double get_b() { return(0); };
 		virtual void set_a(double a) {};
@@ -84,7 +87,7 @@ class BinomialTest : public Density {
 	public:
 		// Constructor and Destructor
 		BinomialTest();
-		BinomialTest(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_test, double prob, int verbosity);
+		BinomialTest(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_test, double prob, int min_obs, int verbosity);
 		~BinomialTest();
 
 		// Methods
@@ -105,6 +108,38 @@ class BinomialTest : public Density {
 		double prob; ///< parameter of the distribution
 		Rcpp::IntegerVector obs_total; ///< vector [NDATA] of observations
 		Rcpp::IntegerVector obs_test; ///< vector [NDATA] of observations
+		int min_obs; ///< positions with fewer than min_obs reads will be assigned 0.5
+// 		int max_obs; ///< maximum value in obs
+// 		Rcpp::NumericVector lxfactorials; ///< vector [max_obs] of precomputed factorials (x!)
+};
+
+
+class BinomialTestContext : public Density {
+	public:
+		// Constructor and Destructor
+		BinomialTestContext();
+		BinomialTestContext(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_test, const Rcpp::IntegerVector & context, Rcpp::NumericVector prob, int min_obs, int verbosity);
+		~BinomialTestContext();
+
+		// Methods
+		void calc_logdensities(Rcpp::NumericMatrix::Row & logdens);
+		void calc_densities(Rcpp::NumericMatrix::Row & dens);
+		void update(const Rcpp::NumericMatrix & weights, const int * rows);
+		void update_constrained_context(const Rcpp::NumericMatrix & weights, const int * rows, Rcpp::NumericVector rs);
+
+		// Getter and Setter
+		DensityName get_name();
+		Rcpp::NumericVector get_probs();
+		void set_probs(Rcpp::NumericVector prob);
+
+	private:
+		// Member variables
+		int verbosity; ///< verbosity parameter for debugging
+		Rcpp::NumericVector prob; ///< vector with context-dependent parameters of the distribution
+		Rcpp::IntegerVector obs_total; ///< vector [NDATA] of observations
+		Rcpp::IntegerVector obs_test; ///< vector [NDATA] of observations
+		Rcpp::IntegerVector context; ///< vector [NDATA] of contexts
+		int min_obs; ///< positions with fewer than min_obs reads will be assigned 0.5
 // 		int max_obs; ///< maximum value in obs
 // 		Rcpp::NumericVector lxfactorials; ///< vector [max_obs] of precomputed factorials (x!)
 };

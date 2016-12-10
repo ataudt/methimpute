@@ -155,7 +155,7 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs, const Rcpp::NumericVector & 
 
 }
 
-ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_meth, const Rcpp::IntegerVector & obs_unmeth, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::DataFrame emissionParams_initial, int verbosity)
+ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_meth, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::DataFrame emissionParams_initial, int min_obs, int verbosity)
 {
 	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
 	this->xvariate = UNIVARIATE;
@@ -196,9 +196,53 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVec
 		if (dtype.compare("dbinom") == 0)
 		{
 				// Binomial test
-				BinomialTest * d = new BinomialTest(obs_total, obs_meth, probs[i], this->verbosity);
+				BinomialTest * d = new BinomialTest(obs_total, obs_meth, probs[i], min_obs, this->verbosity);
 				this->emissionDensities.push_back(d);
 		}
+	}
+
+}
+
+ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_meth, const Rcpp::IntegerVector & context, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::List emissionParams_initial, int min_obs, int verbosity)
+{
+	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	this->xvariate = UNIVARIATE;
+	this->verbosity = verbosity;
+	this->NDATA = obs_total.size();
+	this->NSTATES = startProbs_initial.size();
+	this->distances = distances;
+	this->scalefactoralpha = Rcpp::NumericVector(this->NDATA);
+	this->scalealpha = Rcpp::NumericMatrix(this->NDATA, this->NSTATES);
+	this->scalebeta = Rcpp::NumericMatrix(this->NDATA, this->NSTATES);
+	this->densities = Rcpp::NumericMatrix(this->NSTATES, this->NDATA);
+	this->gamma = Rcpp::NumericMatrix(this->NSTATES, this->NDATA);
+	this->sumgamma = Rcpp::NumericVector(this->NSTATES);
+	this->sumxi = Rcpp::NumericMatrix(this->NSTATES, this->NSTATES);
+	this->loglik = -INFINITY;
+	this->dloglik = INFINITY;
+
+	// Initial probabilities
+	this->transProbs = Rcpp::clone(transProbs_initial);
+	this->transExp = Rcpp::NumericVector(this->NDATA);
+	for (int t=0; t<this->NDATA; t++)
+	{
+		this->transExp[t] = exp(-this->distances[t] / transDist);
+		if (std::isnan(this->transExp[t]))
+		{
+			throw nan_detected;
+		}
+	}
+	this->startProbs = Rcpp::clone(startProbs_initial);
+
+	// Emission densities
+	this->emissionParamsList = Rcpp::clone(emissionParams_initial);
+	for (int i=0; i<this->NSTATES; i++)
+	{
+		Rcpp::DataFrame probsDF = Rcpp::as<Rcpp::DataFrame>(this->emissionParamsList[i]);
+		Rcpp::NumericVector probs = probsDF["prob"];
+		// Binomial test
+		BinomialTestContext * d = new BinomialTestContext(obs_total, obs_meth, context, probs, min_obs, this->verbosity);
+		this->emissionDensities.push_back(d);
 	}
 
 }
@@ -353,7 +397,23 @@ Rcpp::List ScaleHMM::forward_backward(double eps, double maxiter, double maxtime
 	// Emission parameters
 	if (this->xvariate == UNIVARIATE)
 	{
-		result.push_back(this->emissionParams, "emissionParams");
+		// Emission densities
+		if (this->emissionDensities[0]->get_name() == BETA_MIRROR)
+		{
+			result.push_back(this->emissionParams, "emissionParams");
+		}
+		else if ((this->emissionDensities[0]->get_name() == NEGATIVE_BINOMIAL) | (this->emissionDensities[0]->get_name() == ZERO_INFLATION))
+		{ 
+			result.push_back(this->emissionParams, "emissionParams");
+		}
+		else if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST)
+		{ 
+			result.push_back(this->emissionParams, "emissionParams");
+		}
+		else if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST_CONTEXT)
+		{ 
+			result.push_back(this->emissionParamsList, "emissionParams");
+		}
 	}
 
 	return result;
@@ -521,16 +581,42 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 				} else if (this->NSTATES == 3) { // epi-heterozygosity
 						double r = this->emissionDensities[0]->get_prob();
 						double p = this->emissionDensities[2]->get_prob();
-						int rows[] = {0};
-// 						this->emissionDensities[0]->update_constrained(this->gamma, rows, p);
-						this->emissionDensities[0]->update(this->gamma, rows);
+						const int rows1[] = {0,1};
+						this->emissionDensities[0]->update_constrained(this->gamma, rows1, p);
 						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob = %g\n", 0, emissionDensities[0]->get_prob());
-						rows[0] = 2;
-// 						this->emissionDensities[2]->update_constrained(this->gamma, rows, r);
-						this->emissionDensities[2]->update(this->gamma, rows);
+						const int rows2[] = {2,1};
+						this->emissionDensities[2]->update_constrained(this->gamma, rows2, r);
 						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob = %g\n", 2, emissionDensities[2]->get_prob());
 						this->emissionDensities[1]->set_prob(0.5*(this->emissionDensities[0]->get_prob() + this->emissionDensities[2]->get_prob()));
 						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob = %g\n", 1, emissionDensities[1]->get_prob());
+				}
+			}
+			else if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST_CONTEXT)
+			{ 
+				if (this->NSTATES == 2)
+				{
+					for (int i=0; i<this->NSTATES; i++)
+					{
+						const int rows[] = {i};
+						this->emissionDensities[i]->update(this->gamma, rows);
+						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob = %g\n", i, emissionDensities[i]->get_prob());
+					}
+				} else if (this->NSTATES == 3) { // epi-heterozygosity
+						Rcpp::NumericVector rs = this->emissionDensities[0]->get_prob();
+						Rcpp::NumericVector ps = this->emissionDensities[2]->get_prob();
+						const int rows1[] = {0,1};
+						this->emissionDensities[0]->update_constrained_context(this->gamma, rows1, ps);
+						const int rows2[] = {2,1};
+						this->emissionDensities[2]->update_constrained_context(this->gamma, rows2, rs);
+						// Update heterozyous state
+						rs = this->emissionDensities[0]->get_probs();
+						ps = this->emissionDensities[2]->get_probs();
+						Rcpp::NumericVector qs = Rcpp::NumericVector(rs.size());
+						for (int c=0; c<rs.size(); c++)
+						{
+							qs[c] = 0.5*(rs[c] + ps[c]);
+						}
+						this->emissionDensities[1]->set_probs(qs);
 				}
 			}
 			R_CheckUserInterrupt();
@@ -578,9 +664,9 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 	if (this->xvariate == UNIVARIATE)
 	{
 		// Emission densities
-		Rcpp::CharacterVector emissionTypes = this->emissionParams["type"];
 		if (this->emissionDensities[0]->get_name() == BETA_MIRROR)
 		{
+			Rcpp::CharacterVector emissionTypes = this->emissionParams["type"];
 			Rcpp::NumericVector a_s = this->emissionParams["a"];
 			Rcpp::NumericVector b_s = this->emissionParams["b"];
 			for (int irow=0; irow<this->NSTATES; irow++)
@@ -592,9 +678,11 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 		 			b_s[irow] = this->emissionDensities[irow]->get_b();
 		 		}
 			}
+			result.push_back(this->emissionParams, "emissionParams");
 		}
 		else if ((this->emissionDensities[0]->get_name() == NEGATIVE_BINOMIAL) | (this->emissionDensities[0]->get_name() == ZERO_INFLATION))
 		{ 
+			Rcpp::CharacterVector emissionTypes = this->emissionParams["type"];
 			Rcpp::NumericVector sizes = this->emissionParams["size"];
 			Rcpp::NumericVector probs = this->emissionParams["prob"];
 			Rcpp::NumericVector means = this->emissionParams["mu"];
@@ -610,9 +698,11 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 					vars[irow] = this->emissionDensities[irow]->get_variance();
 				}
 			}
+			result.push_back(this->emissionParams, "emissionParams");
 		}
 		else if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST)
 		{ 
+			Rcpp::CharacterVector emissionTypes = this->emissionParams["type"];
 			Rcpp::NumericVector probs = this->emissionParams["prob"];
 			for (int irow=0; irow<this->NSTATES; irow++)
 			{
@@ -622,8 +712,22 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 					probs[irow] = this->emissionDensities[irow]->get_prob();
 				}
 			}
+			result.push_back(this->emissionParams, "emissionParams");
 		}
-		result.push_back(this->emissionParams, "emissionParams");
+		else if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST_CONTEXT)
+		{ 
+			for (int i=0; i<this->NSTATES; i++)
+			{
+				Rcpp::DataFrame probsDF = Rcpp::as<Rcpp::DataFrame>(this->emissionParamsList[i]);
+				Rcpp::NumericVector probs = probsDF["prob"];
+				Rcpp::NumericVector ps = this->emissionDensities[i]->get_probs();
+				for (int c=0; c<ps.size(); c++)
+				{
+					probs[c] = ps[c];
+				}
+			}
+			result.push_back(this->emissionParamsList, "emissionParams");
+		}
 	}
 
 	return result;

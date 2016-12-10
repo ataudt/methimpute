@@ -20,18 +20,33 @@ BEGIN_RCPP
 END_RCPP
 }
 // fitBinomialTestHMM
-List fitBinomialTestHMM(const IntegerVector& counts_total, const IntegerVector& counts_meth, const IntegerVector& counts_unmeth, const NumericVector& distances, const List& params, const int& algorithm);
-RcppExport SEXP popmeth_fitBinomialTestHMM(SEXP counts_totalSEXP, SEXP counts_methSEXP, SEXP counts_unmethSEXP, SEXP distancesSEXP, SEXP paramsSEXP, SEXP algorithmSEXP) {
+List fitBinomialTestHMM(const IntegerVector& counts_total, const IntegerVector& counts_meth, const NumericVector& distances, const List& params, const int& algorithm);
+RcppExport SEXP popmeth_fitBinomialTestHMM(SEXP counts_totalSEXP, SEXP counts_methSEXP, SEXP distancesSEXP, SEXP paramsSEXP, SEXP algorithmSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const IntegerVector& >::type counts_total(counts_totalSEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type counts_meth(counts_methSEXP);
-    Rcpp::traits::input_parameter< const IntegerVector& >::type counts_unmeth(counts_unmethSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type distances(distancesSEXP);
     Rcpp::traits::input_parameter< const List& >::type params(paramsSEXP);
     Rcpp::traits::input_parameter< const int& >::type algorithm(algorithmSEXP);
-    rcpp_result_gen = Rcpp::wrap(fitBinomialTestHMM(counts_total, counts_meth, counts_unmeth, distances, params, algorithm));
+    rcpp_result_gen = Rcpp::wrap(fitBinomialTestHMM(counts_total, counts_meth, distances, params, algorithm));
+    return rcpp_result_gen;
+END_RCPP
+}
+// fitBinomialTestHMMcontext
+List fitBinomialTestHMMcontext(const IntegerVector& counts_total, const IntegerVector& counts_meth, const IntegerVector& context, const NumericVector& distances, const List& params, const int& algorithm);
+RcppExport SEXP popmeth_fitBinomialTestHMMcontext(SEXP counts_totalSEXP, SEXP counts_methSEXP, SEXP contextSEXP, SEXP distancesSEXP, SEXP paramsSEXP, SEXP algorithmSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector& >::type counts_total(counts_totalSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type counts_meth(counts_methSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type context(contextSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type distances(distancesSEXP);
+    Rcpp::traits::input_parameter< const List& >::type params(paramsSEXP);
+    Rcpp::traits::input_parameter< const int& >::type algorithm(algorithmSEXP);
+    rcpp_result_gen = Rcpp::wrap(fitBinomialTestHMMcontext(counts_total, counts_meth, context, distances, params, algorithm));
     return rcpp_result_gen;
 END_RCPP
 }

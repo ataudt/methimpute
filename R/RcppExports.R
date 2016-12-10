@@ -5,8 +5,12 @@ fitHMM <- function(counts, distances, params, algorithm) {
     .Call('popmeth_fitHMM', PACKAGE = 'popmeth', counts, distances, params, algorithm)
 }
 
-fitBinomialTestHMM <- function(counts_total, counts_meth, counts_unmeth, distances, params, algorithm) {
-    .Call('popmeth_fitBinomialTestHMM', PACKAGE = 'popmeth', counts_total, counts_meth, counts_unmeth, distances, params, algorithm)
+fitBinomialTestHMM <- function(counts_total, counts_meth, distances, params, algorithm) {
+    .Call('popmeth_fitBinomialTestHMM', PACKAGE = 'popmeth', counts_total, counts_meth, distances, params, algorithm)
+}
+
+fitBinomialTestHMMcontext <- function(counts_total, counts_meth, context, distances, params, algorithm) {
+    .Call('popmeth_fitBinomialTestHMMcontext', PACKAGE = 'popmeth', counts_total, counts_meth, context, distances, params, algorithm)
 }
 
 fitHMMratio <- function(ratio, distances, params, algorithm) {
