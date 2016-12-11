@@ -347,15 +347,6 @@ BinomialTest::BinomialTest(const Rcpp::IntegerVector & obs_total, const Rcpp::In
 	this->obs_test = obs_test;
 	this->prob = prob;
 	this->min_obs = min_obs;
-// 	// Precompute the lxfactorials that are used in computing the densities
-// 	this->max_obs = Rcpp::max(obs_total);
-// 	this->lxfactorials = Rcpp::NumericVector(max_obs+1);
-// 	this->lxfactorials[0] = 0.0;	// Not necessary, already 0 because of Calloc
-// 	this->lxfactorials[1] = 0.0;
-// 	for (int j=2; j<=max_obs; j++)
-// 	{
-// 		this->lxfactorials[j] = this->lxfactorials[j-1] + log(j);
-// 	}
 
 }
 
@@ -416,21 +407,15 @@ void BinomialTest::update(const Rcpp::NumericMatrix & weights, const int * rows)
 	// Update prob (p)
 	double numerator, denominator;
 	numerator = denominator = 0.0;
-// 	clock_t time, dtime;
-// 	time = clock();
 	for (int t=0; t<this->obs_total.size(); t++)
 	{
 		if (this->obs_total[t] >= this->min_obs)
 		{
-	// 		numerator += weights(rows[0],t) * (this->obs_test[t] + 4); // +4 because we assign 0.5 to 0-3
-	// 		denominator += weights(rows[0],t) * (2 * this->obs_total[t]);
 			numerator += weights(rows[0],t) * (this->obs_test[t]);
 			denominator += weights(rows[0],t) * (this->obs_total[t]);
 		}
 	}
 	this->prob = numerator/denominator; // Update this->prob
-	
-// 	dtime = clock() - time;
 
 }
 
@@ -439,7 +424,6 @@ void BinomialTest::update_constrained(const Rcpp::NumericMatrix & weights, const
 	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double eps = 1e-4;
 	double kmax = 20;
-	double numerator, denominator;
 	double F, dFdProb, FdivM; // F = dL/dProb
 	double n, m;
 	double p = this->prob;
@@ -482,7 +466,15 @@ void BinomialTest::update_constrained(const Rcpp::NumericMatrix & weights, const
 double BinomialTest::getLogDensityAt(int test, int total)
 {
 	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
-	double logdens = R::dbinom(test, total, this->prob, true);
+	double logdens;
+	if (total < this->min_obs)
+	{
+		logdens = log(0.5);
+	}
+	else
+	{
+		logdens = R::dbinom(test, total, this->prob, true);
+	}
 	if (std::isnan(logdens))
 	{
 		throw nan_detected;
@@ -586,12 +578,13 @@ void BinomialTestContext::update(const Rcpp::NumericMatrix & weights, const int 
 	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	// Update prob (p)
 	double numerator, denominator;
-	numerator = denominator = 0.0;
 // 	clock_t time, dtime;
 // 	time = clock();
 
 	for (int c=0; c<this->prob.size(); c++)
 	{
+		numerator = 0.0;
+		denominator = 0.0;
 		for (int t=0; t<this->obs_total.size(); t++)
 		{
 			if (this->context[t] == c)
@@ -615,7 +608,6 @@ void BinomialTestContext::update_constrained_context(const Rcpp::NumericMatrix &
 	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double eps = 1e-4;
 	double kmax = 20;
-	double numerator, denominator;
 	double F, dFdProb, FdivM; // F = dL/dProb
 	double n, m;
 	double p, r;
@@ -674,13 +666,16 @@ DensityName BinomialTestContext::get_name()
 Rcpp::NumericVector BinomialTestContext::get_probs()
 {
 	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
-	return(this->prob);
+	return(Rcpp::clone(this->prob));
 }
 
 void BinomialTestContext::set_probs(Rcpp::NumericVector prob)
 {
 	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
-	this->prob = prob;
+	for (int c=0; c<this->prob.size(); c++)
+	{
+		this->prob[c] = prob[c];
+	}
 }
 
 

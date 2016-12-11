@@ -574,7 +574,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 				{
 					for (int i=0; i<this->NSTATES; i++)
 					{
-						const int rows[] = {i};
+						int rows[] = {i};
 						this->emissionDensities[i]->update(this->gamma, rows);
 						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob = %g\n", i, emissionDensities[i]->get_prob());
 					}
@@ -597,13 +597,13 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 				{
 					for (int i=0; i<this->NSTATES; i++)
 					{
-						const int rows[] = {i};
+						int rows[] = {i};
 						this->emissionDensities[i]->update(this->gamma, rows);
 						if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob = %g\n", i, emissionDensities[i]->get_prob());
 					}
 				} else if (this->NSTATES == 3) { // epi-heterozygosity
-						Rcpp::NumericVector rs = this->emissionDensities[0]->get_prob();
-						Rcpp::NumericVector ps = this->emissionDensities[2]->get_prob();
+						Rcpp::NumericVector rs = this->emissionDensities[0]->get_probs();
+						Rcpp::NumericVector ps = this->emissionDensities[2]->get_probs();
 						const int rows1[] = {0,1};
 						this->emissionDensities[0]->update_constrained_context(this->gamma, rows1, ps);
 						const int rows2[] = {2,1};
@@ -716,16 +716,16 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 		}
 		else if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST_CONTEXT)
 		{ 
-			for (int i=0; i<this->NSTATES; i++)
-			{
-				Rcpp::DataFrame probsDF = Rcpp::as<Rcpp::DataFrame>(this->emissionParamsList[i]);
-				Rcpp::NumericVector probs = probsDF["prob"];
-				Rcpp::NumericVector ps = this->emissionDensities[i]->get_probs();
-				for (int c=0; c<ps.size(); c++)
-				{
-					probs[c] = ps[c];
-				}
-			}
+// 			for (int i=0; i<this->NSTATES; i++)
+// 			{
+// 				Rcpp::DataFrame probsDF = Rcpp::as<Rcpp::DataFrame>(this->emissionParamsList[i]);
+// 				Rcpp::NumericVector probs = probsDF["prob"];
+// 				Rcpp::NumericVector ps = this->emissionDensities[i]->get_probs();
+// 				for (int c=0; c<ps.size(); c++)
+// 				{
+// 					probs[c] = ps[c];
+// 				}
+// 			}
 			result.push_back(this->emissionParamsList, "emissionParams");
 		}
 	}

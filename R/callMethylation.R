@@ -3,7 +3,7 @@
 #' Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
 #' 
 #' @return A list with fitted parameters, posteriors.
-callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=3, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
+callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -165,7 +165,7 @@ callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=3,
 #' Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
 #' 
 #' @return A list with fitted parameters, posteriors.
-callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=3, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
+callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
   
     ### Input checks ###
     if (is.null(max.time)) {
