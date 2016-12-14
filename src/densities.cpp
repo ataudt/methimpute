@@ -359,13 +359,13 @@ BinomialTest::~BinomialTest()
 void BinomialTest::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 {
 	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
-	double log05 = log(0.5);
+	double logdens_min = log(1.0/this->min_obs);
 	double logprob = log(this->prob);
 	for (int t=0; t<this->obs_total.size(); t++)
 	{
 		if (this->obs_total[t] < this->min_obs)
 		{
-			logdens[t] = log05;
+			logdens[t] = logdens_min;
 		}
 		else
 		{
@@ -383,11 +383,12 @@ void BinomialTest::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
 	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double logprob = log(this->prob);
+	double dens_min = 1.0/this->min_obs;
 	for (int t=0; t<this->obs_total.size(); t++)
 	{
 		if (this->obs_total[t] < this->min_obs)
 		{
-			dens[t] = 0.5;
+			dens[t] = dens_min;
 		}
 		else
 		{
@@ -469,7 +470,7 @@ double BinomialTest::getLogDensityAt(int test, int total)
 	double logdens;
 	if (total < this->min_obs)
 	{
-		logdens = log(0.5);
+		logdens = log(1.0/this->min_obs);
 	}
 	else
 	{
@@ -530,13 +531,13 @@ BinomialTestContext::~BinomialTestContext()
 void BinomialTestContext::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 {
 	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
-	double log05 = log(0.5);
+	double logdens_min = log(1.0/this->min_obs);
 	double prob_context;
 	for (int t=0; t<this->obs_total.size(); t++)
 	{
 		if (this->obs_total[t] < this->min_obs)
 		{
-			logdens[t] = log05;
+			logdens[t] = logdens_min;
 		}
 		else
 		{
@@ -554,11 +555,12 @@ void BinomialTestContext::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
 	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double prob_context;
+	double dens_min = 1.0/this->min_obs;
 	for (int t=0; t<this->obs_total.size(); t++)
 	{
 		if (this->obs_total[t] < this->min_obs)
 		{
-			dens[t] = 0.5;
+			dens[t] = dens_min;
 		}
 		else
 		{

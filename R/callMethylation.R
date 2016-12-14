@@ -46,7 +46,7 @@ callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0,
     ## Subset by chromosomes
     if (!is.null(fit.on.chrom)) {
         counts <- counts[as.logical(data@seqnames %in% fit.on.chrom),]
-        context <- context[as.logical(data@seqnames %in% fit.on.chrom),]
+        context <- context[as.logical(data@seqnames %in% fit.on.chrom)]
     }
   
     ### Initial probabilities ###
@@ -108,7 +108,7 @@ callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0,
     } else {
         ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
         message(" ... on chromosomes ", paste0(fit.on.chrom, collapse=', '))
-        hmm <- fitBinomialTestHMMcontext(counts_total=counts[,'total'], counts_meth=counts[,'counts.methylated'], , context=as.integer(context)-1, distances=distances, params=params, algorithm=1)
+        hmm <- fitBinomialTestHMMcontext(counts_total=counts[,'total'], counts_meth=counts[,'counts.methylated'], context=as.integer(context)-1, distances=distances, params=params, algorithm=1)
         message("Time spent in Baum-Welch:", appendLF=FALSE)
         stopTimedMessage(ptm)
         counts <- data$observable
