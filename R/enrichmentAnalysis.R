@@ -66,11 +66,12 @@ NULL
 #' @param annotations A \code{list()} with \code{\link{GRanges}} objects containing coordinates of multiple annotations The names of the list entries will be used to name the return values.
 #' @param plot A logical indicating whether the plot or an array with the fold enrichment values is returned.
 #' @param logscale Whether (\code{TRUE}) or not (\code{FALSE}) to plot on log scale.
+#' @param cluster Whether (\code{TRUE}) or not (\code{FALSE}) to cluster the annotations.
 #' @importFrom S4Vectors subjectHits queryHits
 #' @importFrom IRanges subsetByOverlaps
 #' @importFrom reshape2 melt
 #' @export
-heatmapFoldEnrichment <- function(model, annotations, plot=TRUE, logscale=TRUE) {
+heatmapFoldEnrichment <- function(model, annotations, plot=TRUE, logscale=TRUE, cluster=TRUE) {
     
     ## Variables
     bins <- model$data
@@ -141,12 +142,12 @@ heatmapFoldEnrichment <- function(model, annotations, plot=TRUE, logscale=TRUE) 
         ggplt <- ggplt + scale_y_continuous(breaks=1:length(unique(df$annotation)), labels=unique(df$ylabel), position='right')
         ggplt <- ggplt + theme_bw()
         ggplt <- ggplt + theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
-        cowplt <- ggplt
         if (logscale) {
             ggplt <- ggplt + scale_fill_gradientn(name='log(observed/expected)', colors=grDevices::colorRampPalette(c("blue","white","red"))(20), values=c(seq(-limits,0,length.out=10), seq(0,limits,length.out=10)), rescaler=function(x,...) {x}, oob=identity, limits=c(-limits,limits))
         } else {
             ggplt <- ggplt + scale_fill_gradientn(name='observed/expected', colors=grDevices::colorRampPalette(c("blue","white","red"))(20), values=c(seq(0,1,length.out=10), seq(1,maxfold,length.out=10)), rescaler=function(x,...) {x}, oob=identity, limits=c(0,maxfold))
         }
+        cowplt <- ggplt
         ## Dendrograms
         if (cluster) {
             theme_none <- theme(axis.text = element_blank(),

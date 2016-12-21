@@ -761,7 +761,7 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.tim
 #' Fit an n-component Hidden Markov Model to the supplied counts. The transition matrix is distance-dependent with exponential decaying constant \code{transDist} (only relevant in non-consecutive bins). The zero-th component is a delta distribution to account for empty bins, and all other n-components are modeled as negative binomial distributions.
 #' 
 #' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'distance' and 'counts' (or any other column specified as \code{observable}).
-#' @param nstates The number of states with negative binomial distributions.
+#' @param states An integer vector giving the states for the Hidden Markov Model. State '0' will be modeled by a delta distribution, all other states ('1','2','3',...) with negative binomial distributions.
 #' @param observable A character naming the column of \code{data} that will serve as observable for the HMM.
 #' @param fit.on.chrom A character vector giving the chromosomes on which the HMM will be fitted.
 #' @param transDist The exponential decaying constant for the distance-dependent transition matrix. Should be given in the same units as \code{distances}.
@@ -773,7 +773,7 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.tim
 #' @param initial.params An \code{\link{NcomponentHMM}} or a file that contains such an object. Parameters from this model will be used for initialization of the fitting procedure.
 #' @return A list with fitted parameters, posteriors, and the input parameters.
 #' 
-fitNComponentHMM <- function(data, nstates=2, observable='counts', fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL) {
+fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -790,7 +790,6 @@ fitNComponentHMM <- function(data, nstates=2, observable='counts', fit.on.chrom=
     stopTimedMessage(ptm)
     
     ### Assign variables ###
-    states <- 0:nstates
     numstates <- length(states)
     counts <- mcols(data)[,observable]
     counts <- as.matrix(counts)
@@ -833,7 +832,9 @@ fitNComponentHMM <- function(data, nstates=2, observable='counts', fit.on.chrom=
         ep$size <- dnbinom.size(ep$mu, ep$var)
         ep$prob <- dnbinom.prob(ep$mu, ep$var)
         ## Add zero-inflation
-        ep <- rbind(data.frame(type='delta', mu=0, var=0, size=NA, prob=NA), ep)
+        if (0 %in% states) {
+            ep <- rbind(data.frame(type='delta', mu=0, var=0, size=NA, prob=NA), ep)
+        }
         rownames(ep) <- states
         emissionParams_initial <- ep
     } else {
