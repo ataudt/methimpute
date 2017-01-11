@@ -2,7 +2,7 @@
 
 export(collapseBins)
 export(getStateColors)
-export(heatmapFoldEnrichment)
+export(heatmapEnrichment)
 export(heatmapGenomewide)
 export(heatmapTransitionProbs)
 export(karyotypeMeasures)

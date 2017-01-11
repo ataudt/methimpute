@@ -71,7 +71,7 @@ NULL
 #' @importFrom IRanges subsetByOverlaps
 #' @importFrom reshape2 melt
 #' @export
-heatmapFoldEnrichment <- function(model, annotations, plot=TRUE, logscale=TRUE, cluster=TRUE) {
+heatmapEnrichment <- function(model, annotations, plot=TRUE, logscale=TRUE, cluster=TRUE) {
     
     ## Variables
     bins <- model$data
@@ -113,7 +113,7 @@ heatmapFoldEnrichment <- function(model, annotations, plot=TRUE, logscale=TRUE, 
     #     colorbar <- gplots::colorpanel(n = 100, low="blue", mid="white",high="red")
     #     charf <- 0.6
     #     margins <- c( max(5, charf*max(nchar(colnames(fold)))) , max(5, charf*max(nchar(rownames(fold)))))
-    #     gplots::heatmap.2(fold, col=colorbar, trace='none', density.info='none', key.title = 'log(observed/expected)', key.xlab='log(observed/expected)', margins=margins, na.color='gray')
+    #     gplots::heatmap.2(fold, col=colorbar, trace='none', density.info='none', key.title = 'log(enrichment)', key.xlab='log(enrichment)', margins=margins, na.color='gray')
     # } else {
     #     return(fold)
     # }
@@ -143,9 +143,9 @@ heatmapFoldEnrichment <- function(model, annotations, plot=TRUE, logscale=TRUE, 
         ggplt <- ggplt + theme_bw()
         ggplt <- ggplt + theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
         if (logscale) {
-            ggplt <- ggplt + scale_fill_gradientn(name='log(observed/expected)', colors=grDevices::colorRampPalette(c("blue","white","red"))(20), values=c(seq(-limits,0,length.out=10), seq(0,limits,length.out=10)), rescaler=function(x,...) {x}, oob=identity, limits=c(-limits,limits))
+            ggplt <- ggplt + scale_fill_gradientn(name='log(enrichment)', colors=grDevices::colorRampPalette(c("blue","white","red"))(20), values=c(seq(-limits,0,length.out=10), seq(0,limits,length.out=10)), rescaler=function(x,...) {x}, oob=identity, limits=c(-limits,limits), na.value="blue")
         } else {
-            ggplt <- ggplt + scale_fill_gradientn(name='observed/expected', colors=grDevices::colorRampPalette(c("blue","white","red"))(20), values=c(seq(0,1,length.out=10), seq(1,maxfold,length.out=10)), rescaler=function(x,...) {x}, oob=identity, limits=c(0,maxfold))
+            ggplt <- ggplt + scale_fill_gradientn(name='enrichment', colors=grDevices::colorRampPalette(c("blue","white","red"))(20), values=c(seq(0,1,length.out=10), seq(1,maxfold,length.out=10)), rescaler=function(x,...) {x}, oob=identity, limits=c(0,maxfold))
         }
         cowplt <- ggplt
         ## Dendrograms

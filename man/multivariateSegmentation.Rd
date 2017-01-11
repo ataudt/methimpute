@@ -4,7 +4,7 @@
 \alias{multivariateSegmentation}
 \title{Make a multivariate segmentation}
 \usage{
-multivariateSegmentation(models, ID, fit.on.chrom = NULL, transDist = 10000,
+multivariateSegmentation(models, ID, fit.on.chrom = NULL, transDist = 700,
   eps = 0.01, max.time = Inf, max.iter = Inf, max.states = Inf,
   verbosity = 1)
 }

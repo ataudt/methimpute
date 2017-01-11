@@ -459,12 +459,34 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 				
 	}
 
+	// Store information about parameters
+	Rcpp::NumericVector probs0, probs1;
+	if (this->xvariate == UNIVARIATE)
+	{
+		if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST)
+		{ 
+			if (this->NSTATES == 2)
+			{
+				probs0.push_back(this->emissionDensities[0]->get_prob());
+				probs1.push_back(this->emissionDensities[1]->get_prob());
+			}
+			else if (this->NSTATES == 3)
+			{
+				probs0.push_back(this->emissionDensities[0]->get_prob());
+				probs1.push_back(this->emissionDensities[2]->get_prob());
+			}
+		}
+	}
+					
+
+
 	R_CheckUserInterrupt();
 	// Do the Baum-Welch
 	this->baumWelchTime_real = difftime(time(NULL),this->baumWelchStartTime_sec);
 	int iteration = 0;
-	Rcpp::NumericVector logliks;
+	Rcpp::NumericVector logliks, dlogliks;
 	logliks.push_back(-INFINITY);
+	dlogliks.push_back(INFINITY);
 	while (((this->baumWelchTime_real < maxtime) or (maxtime < 0)) and ((iteration < maxiter) or (maxiter < 0)))
 	{
 
@@ -489,6 +511,25 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 			throw nan_detected;
 		}
 		this->dloglik = logliks[iteration] - logliks[iteration-1];
+		dlogliks.push_back(this->dloglik);
+		// Store information about parameters
+		if (this->xvariate == UNIVARIATE)
+		{
+			if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST)
+			{ 
+				if (this->NSTATES == 2)
+				{
+					probs0.push_back(this->emissionDensities[0]->get_prob());
+					probs1.push_back(this->emissionDensities[1]->get_prob());
+				}
+				else if (this->NSTATES == 3)
+				{
+					probs0.push_back(this->emissionDensities[0]->get_prob());
+					probs1.push_back(this->emissionDensities[2]->get_prob());
+				}
+			}
+		}
+
 
 		this->calc_sumxi();
 		R_CheckUserInterrupt();
@@ -507,7 +548,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 		}
 
 		// Check convergence
-		if(this->dloglik < eps) //it has converged
+		if(fabs(this->dloglik) < eps) //it has converged
 		{
 			if (this->verbosity>=1) Rprintf("HMM: Convergence reached!\n");
 			break;
@@ -516,10 +557,12 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 			if (iteration == maxiter)
 			{
 				if (this->verbosity>=1) Rprintf("HMM: Maximum number of iterations reached!\n");
+				break;
 			}
 			else if ((this->baumWelchTime_real >= maxtime) and (maxtime >= 0))
 			{
 				if (this->verbosity>=1) Rprintf("HMM: Exceeded maximum time!\n");
+				break;
 			}
 		}
 		
@@ -537,7 +580,49 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 			{
 				for (int j=0; j<this->NSTATES; j++)
 				{
-					this->transProbs(i,j) = this->sumxi(i,j) / this->sumgamma[i];
+					// Only for not t-dependent transitions
+// 					this->transProbs(i,j) = this->sumxi(i,j) / this->sumgamma[i];
+
+					// Newton-Raphson for t-dependent transitions
+					double eps = 1e-4;
+					double kmax = 20;
+					double F, dFdA, FdivM; // F = dL/dProb
+					double a = this->transProbs(i,j);
+					double a_distance;
+					// Update of prob with Newton Method
+					for (int k=0; k<kmax; k++)
+					{
+						F = dFdA = 0.0;
+						for(int t=0; t<this->NDATA-1; t++)
+						{
+							if (this->distances[t] > 0)
+							{
+								a_distance = a * this->transExp[t] + 1.0/this->NSTATES * ( 1.0 - this->transExp[t] );
+							}
+							else
+							{
+								a_distance = a;
+							}
+							F += a_distance * this->gamma(i,t);
+						}
+						F -= this->sumxi(i,j);
+						dFdA = this->sumgamma(i);
+						FdivM = F/dFdA;
+						if (FdivM < a)
+						{
+							a = a-FdivM;
+						}
+						else if (FdivM >= a)
+						{
+							a = a/2.0;
+						}
+						if(fabs(F)<eps)
+						{
+							break;
+						}
+					}
+					this->transProbs(i,j) = a;
+
 					if (std::isnan(this->transProbs(i,j)))
 					{
 						throw nan_detected;
@@ -645,11 +730,22 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 		}
 	}
 
+// 	// Store information about parameters
+// 	if (this->xvariate == UNIVARIATE)
+// 	{
+// 		if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST)
+// 		{ 
+				Rcpp::List parameterInfo = Rcpp::List::create(Rcpp::Named("probsUN") = probs0,
+																											Rcpp::Named("probsM") = probs1);
+// 		}
+// 	}
+
 	// Convergence information
 	this->baumWelchTime_real = difftime(time(NULL),this->baumWelchStartTime_sec);
 	Rcpp::List convergenceInfo = Rcpp::List::create(Rcpp::Named("logliks") = logliks,
-																									Rcpp::Named("dloglik") = this->dloglik,
-																					 				Rcpp::Named("time") = this->baumWelchTime_real);
+																									Rcpp::Named("dlogliks") = dlogliks,
+																									Rcpp::Named("parameterInfo") = parameterInfo,
+																									Rcpp::Named("time") = this->baumWelchTime_real);
 
 	// Collect results in list
 	Rcpp::List result = Rcpp::List::create(Rcpp::Named("convergenceInfo") = convergenceInfo,

@@ -418,6 +418,40 @@ void BinomialTest::update(const Rcpp::NumericMatrix & weights, const int * rows)
 	}
 	this->prob = numerator/denominator; // Update this->prob
 
+// 	double eps = 1e-4;
+// 	double kmax = 20;
+// 	double F, dFdProb, FdivM; // F = dL/dProb
+// 	double n, m;
+// 	double p = this->prob;
+// 	// Update of prob with Newton Method
+// 	for (int k=0; k<kmax; k++)
+// 	{
+// 		F = dFdProb = 0.0;
+// 		for(int t=0; t<this->obs_total.size(); t++)
+// 		{
+// 			if (this->obs_total[t] >= this->min_obs)
+// 			{
+// 				m = (double)this->obs_test[t];
+// 				n = (double)this->obs_total[t];
+// 				F += weights(rows[0],t) * (m/p + (m-n)/(1-p));
+// 				dFdProb += weights(rows[0],t) * (-m/p/p + (m-n)/(1-p)/(1-p));
+// 			}
+// 		}
+// 		FdivM = F/dFdProb;
+// 		if (FdivM < p)
+// 		{
+// 			p = p-FdivM;
+// 		}
+// 		else if (FdivM >= p)
+// 		{
+// 			p = p/2.0;
+// 		}
+// 		if(fabs(F)<eps)
+// 		{
+// 			break;
+// 		}
+// 	}
+// 	this->prob = p;
 }
 
 void BinomialTest::update_constrained(const Rcpp::NumericMatrix & weights, const int * rows, double r)
@@ -440,8 +474,10 @@ void BinomialTest::update_constrained(const Rcpp::NumericMatrix & weights, const
 			{
 				m = (double)this->obs_test[t];
 				n = (double)this->obs_total[t];
-				F += weights(rows[0],t) * (m/p + (m-n)/(1-p)) + weights(rows[1],t) * (m/(p+r) + (m-n)/(2-p-r));
-				dFdProb += weights(rows[0],t) * (-m/p/p + (m-n)/(1-p)/(1-p)) + weights(rows[1],t) * (-m/(p+r)/(p+r) + (m-n)/(2-p-r)/(2-p-r));
+				F += weights(rows[0],t) * (m/p + (m-n)/(1-p));
+				dFdProb += weights(rows[0],t) * (-m/p/p + (m-n)/(1-p)/(1-p));
+				F += weights(rows[1],t) * (m/(p+r) + (m-n)/(2-p-r));
+				dFdProb += weights(rows[1],t) * (-m/(p+r)/(p+r) + (m-n)/(2-p-r)/(2-p-r));
 			}
 		}
 		FdivM = F/dFdProb;

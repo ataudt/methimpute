@@ -4,8 +4,8 @@
 \alias{callMethylation}
 \title{Call methylated regions}
 \usage{
-callMethylation(data, ID, fit.on.chrom = NULL, transDist = 10000,
-  eps = 0.01, max.time = Inf, max.iter = Inf, quantile.cutoff = 0.999,
+callMethylation(data, ID, fit.on.chrom = NULL, transDist = 700,
+  eps = 0.01, max.time = Inf, max.iter = Inf, count.cutoff = 1000,
   states = c("Background", "Methylated", "UNmethylated", "Heterozygous"),
   verbosity = 1)
 }
@@ -22,7 +22,7 @@ callMethylation(data, ID, fit.on.chrom = NULL, transDist = 10000,
 
 \item{max.iter}{Maximum number of iterations for the Baum-Welch algorithm.}
 
-\item{quantile.cutoff}{A quantile (between 0 and 1) serving as cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to 1 to disable this filtering.}
+\item{count.cutoff}{A cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to \code{Inf} to disable this filtering.}
 
 \item{verbosity}{Integer from c(0,1) specifying the verbosity of the fitting procedure.}
 }

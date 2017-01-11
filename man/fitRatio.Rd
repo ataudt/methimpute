@@ -4,7 +4,7 @@
 \alias{fitRatio}
 \title{Fit a three-component HMM for methylation levels}
 \usage{
-fitRatio(data, fit.on.chrom = NULL, transDist = 10000, eps = 0.01,
+fitRatio(data, fit.on.chrom = NULL, transDist = 700, eps = 0.01,
   max.time = Inf, max.iter = Inf, verbosity = 1)
 }
 \arguments{

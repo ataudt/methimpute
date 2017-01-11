@@ -2,12 +2,13 @@
 % Please edit documentation in R/enrichmentAnalysis.R
 \name{enrichment_analysis}
 \alias{enrichment_analysis}
-\alias{heatmapFoldEnrichment}
+\alias{heatmapEnrichment}
 \alias{plotEnrichCountHeatmap}
 \alias{plotEnrichment}
 \title{Enrichment analysis}
 \usage{
-heatmapFoldEnrichment(model, annotations, plot = TRUE, logscale = TRUE)
+heatmapEnrichment(model, annotations, plot = TRUE, logscale = TRUE,
+  cluster = TRUE)
 
 plotEnrichCountHeatmap(model, annotation, bp.around.annotation = 10000,
   max.rows = 1000)
@@ -25,6 +26,8 @@ plotEnrichment(model, annotation, bp.around.annotation = 10000,
 \item{plot}{A logical indicating whether the plot or an array with the fold enrichment values is returned.}
 
 \item{logscale}{Whether (\code{TRUE}) or not (\code{FALSE}) to plot on log scale.}
+
+\item{cluster}{Whether (\code{TRUE}) or not (\code{FALSE}) to cluster the annotations.}
 
 \item{annotation}{A \code{\link{GRanges}} object with the annotation of interest.}
 
@@ -52,7 +55,7 @@ Plotting functions for enrichment analysis of \code{\link{multimodel}} or \code{
 }
 \section{Functions}{
 \itemize{
-\item \code{heatmapFoldEnrichment}: Compute the fold enrichment of combinatorial states for multiple annotations.
+\item \code{heatmapEnrichment}: Compute the fold enrichment of combinatorial states for multiple annotations.
 
 \item \code{plotEnrichCountHeatmap}: Plot read counts around annotation as heatmap.
 

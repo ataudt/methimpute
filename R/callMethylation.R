@@ -3,7 +3,7 @@
 #' Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
 #' 
 #' @return A list with fitted parameters, posteriors.
-callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
+callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=1000, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -35,12 +35,8 @@ callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0,
     context <- factor(data$context)
     
     ## Filter counts by cutoff
-    if (quantile.cutoff < 1) {
-        count.cutoff.upper <- as.integer(quantile(counts, quantile.cutoff))
-        counts[counts > count.cutoff.upper] <- count.cutoff.upper
-        # count.cutoff.lower <- as.integer(quantile(counts, 1-quantile.cutoff))
-        # counts[counts < count.cutoff.lower] <- count.cutoff.lower
-    }
+    mask <- counts[,'total'] > count.cutoff
+    counts[mask,] <- round(sweep(x = counts[mask,], MARGIN = 1, STATS = counts[mask,'total']/count.cutoff, FUN = '/'))
     data$observable <- counts # assign it now to have filtered values in there
     
     ## Subset by chromosomes
@@ -59,21 +55,23 @@ callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0,
         
         ### Initialization of emission distributions ###
         ep <- list()
+        probUN.start <- 0.01
+        probM.start <- 0.9
         if (!include.heterozygosity) {
-            probs <- rep(0.01, ncontexts)
+            probs <- rep(probUN.start, ncontexts)
             names(probs) <- contexts
             ep[[states[1]]] <- data.frame(prob=probs)
-            probs <- rep(0.9, ncontexts)
+            probs <- rep(probM.start, ncontexts)
             names(probs) <- contexts
             ep[[states[2]]] <- data.frame(prob=probs)
         } else {
-            probs <- rep(0.01, ncontexts)
+            probs <- rep(probUN.start, ncontexts)
             names(probs) <- contexts
             ep[[states[1]]] <- data.frame(prob=probs)
-            probs <- rep(0.5*(0.01+0.9), ncontexts)
+            probs <- rep(0.5*(probUN.start+probM.start), ncontexts)
             names(probs) <- contexts
             ep[[states[2]]] <- data.frame(prob=probs)
-            probs <- rep(0.9, ncontexts)
+            probs <- rep(probM.start, ncontexts)
             names(probs) <- contexts
             ep[[states[3]]] <- data.frame(prob=probs)
         }
@@ -165,7 +163,7 @@ callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0,
 #' Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
 #' 
 #' @return A list with fitted parameters, posteriors.
-callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
+callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=1000, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -194,12 +192,8 @@ callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transD
     distances <- data$distance
     
     ## Filter counts by cutoff
-    if (quantile.cutoff < 1) {
-        count.cutoff.upper <- as.integer(quantile(counts, quantile.cutoff))
-        counts[counts > count.cutoff.upper] <- count.cutoff.upper
-        # count.cutoff.lower <- as.integer(quantile(counts, 1-quantile.cutoff))
-        # counts[counts < count.cutoff.lower] <- count.cutoff.lower
-    }
+    mask <- counts[,'total'] > count.cutoff
+    counts[mask,] <- round(sweep(x = counts[mask,], MARGIN = 1, STATS = counts[mask,'total']/count.cutoff, FUN = '/'))
     data$observable <- counts # assign it now to have filtered values in there
     
     ## Subset by chromosomes
@@ -217,13 +211,15 @@ callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transD
         
         ### Initialization of emission distributions ###
         ep <- list()
+        probUN.start <- 0.01
+        probM.start <- 0.9
         if (!include.heterozygosity) {
-            ep[[states[1]]] <- data.frame(type='dbinom', prob=0.01)
-            ep[[states[2]]] <- data.frame(type='dbinom', prob=0.9)
+            ep[[states[1]]] <- data.frame(type='dbinom', prob=probUN.start)
+            ep[[states[2]]] <- data.frame(type='dbinom', prob=probM.start)
         } else {
-            ep[[states[1]]] <- data.frame(type='dbinom', prob=0.01)
-            ep[[states[2]]] <- data.frame(type='dbinom', prob=0.5*(0.01+0.9))
-            ep[[states[3]]] <- data.frame(type='dbinom', prob=0.9)
+            ep[[states[1]]] <- data.frame(type='dbinom', prob=probUN.start)
+            ep[[states[2]]] <- data.frame(type='dbinom', prob=0.5*(probUN.start+probM.start))
+            ep[[states[3]]] <- data.frame(type='dbinom', prob=probM.start)
         }
         ep <- do.call(rbind, ep)
         rownames(ep) <- states
@@ -315,7 +311,7 @@ callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transD
 #' The function will use the provided univariate Hidden Markov Models (HMMs) to build the multivariate emission density. Number of states are also taken from the combination of univaraite HMMs.
 #' 
 #' @return A list with fitted parameters, posteriors.
-multivariateSegmentation <- function(models, ID, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, max.states=Inf, verbosity=1) {
+multivariateSegmentation <- function(models, ID, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, max.states=Inf, verbosity=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -408,7 +404,7 @@ multivariateSegmentation <- function(models, ID, fit.on.chrom=NULL, transDist=10
 #' @inheritParams fitSignalBackground
 #' @return A list with fitted parameters, posteriors and input parameters.
 #' 
-callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=0.999, states=c("Background", "Methylated", "UNmethylated", "Heterozygous"), verbosity=1) {
+callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=1000, states=c("Background", "Methylated", "UNmethylated", "Heterozygous"), verbosity=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -439,9 +435,9 @@ callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=10000, eps=0.
     
     ### Fit HMMs for p- and m-counts ###
     messageU("Fitting two-component HMM: unmethylated counts", underline="=", overline='=')
-    mhmm <- fitSignalBackground(data, observable='counts.unmethylated', fit.on.chrom=fit.on.chrom, transDist=transDist, eps=eps, max.time=max.time, max.iter=max.iter, quantile.cutoff=quantile.cutoff, verbosity=verbosity)
+    mhmm <- fitSignalBackground(data, observable='counts.unmethylated', fit.on.chrom=fit.on.chrom, transDist=transDist, eps=eps, max.time=max.time, max.iter=max.iter, count.cutoff=count.cutoff, verbosity=verbosity)
     messageU("Fitting two-component HMM: methylated counts", underline="=", overline='=')
-    phmm <- fitSignalBackground(data, observable='counts.methylated', fit.on.chrom=fit.on.chrom, transDist=transDist, eps=eps, max.time=max.time, max.iter=max.iter, quantile.cutoff=quantile.cutoff, verbosity=verbosity)
+    phmm <- fitSignalBackground(data, observable='counts.methylated', fit.on.chrom=fit.on.chrom, transDist=transDist, eps=eps, max.time=max.time, max.iter=max.iter, count.cutoff=count.cutoff, verbosity=verbosity)
     hmms <- list(mhmm, phmm)
     names(hmms) <- modelnames
     
@@ -520,11 +516,11 @@ callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=10000, eps=0.
 #' @param eps Convergence threshold for the Baum-Welch algorithm.
 #' @param max.time Maximum running time in seconds for the Baum-Welch algorithm.
 #' @param max.iter Maximum number of iterations for the Baum-Welch algorithm.
-#' @param quantile.cutoff A quantile (between 0 and 1) serving as cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to 1 to disable this filtering.
+#' @param count.cutoff A cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to \code{Inf} to disable this filtering.
 #' @param verbosity Integer from c(0,1) specifying the verbosity of the fitting procedure.
 #' @return A list with fitted parameters, posteriors, and the input parameters.
 #' 
-fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=0.999, verbosity=1) {
+fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, cutoff=1000, verbosity=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -548,12 +544,8 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
     distances <- data$distance
     
     ## Filter counts by cutoff
-    if (quantile.cutoff < 1) {
-        count.cutoff.upper <- as.integer(quantile(counts, quantile.cutoff))
-        counts[counts > count.cutoff.upper] <- count.cutoff.upper
-        # count.cutoff.lower <- as.integer(quantile(counts, 1-quantile.cutoff))
-        # counts[counts < count.cutoff.lower] <- count.cutoff.lower
-    }
+    mask <- counts[,'total'] > count.cutoff
+    counts[mask,] <- round(sweep(x = counts[mask,], MARGIN = 1, STATS = counts[mask,'total']/count.cutoff, FUN = '/'))
     data$observable <- counts # assign it now to have filtered values in there
     colnames(data$observable) <- observable
     
@@ -657,7 +649,7 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
 #' @param verbosity Integer from c(0,1) specifying the verbosity of the fitting procedure.
 #' @return A list with fitted parameters, posteriors, and the input parameters.
 #' 
-fitRatio <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, verbosity=1) {
+fitRatio <- function(data, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, verbosity=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -768,12 +760,12 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=10000, eps=0.01, max.tim
 #' @param eps Convergence threshold for the Baum-Welch algorithm.
 #' @param max.time Maximum running time in seconds for the Baum-Welch algorithm.
 #' @param max.iter Maximum number of iterations for the Baum-Welch algorithm.
-#' @param quantile.cutoff A quantile (between 0 and 1) serving as cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to 1 to disable this filtering.
+#' @param count.cutoff A cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to \code{Inf} to disable this filtering.
 #' @param verbosity Integer from c(0,1) specifying the verbosity of the fitting procedure.
 #' @param initial.params An \code{\link{NcomponentHMM}} or a file that contains such an object. Parameters from this model will be used for initialization of the fitting procedure.
 #' @return A list with fitted parameters, posteriors, and the input parameters.
 #' 
-fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom=NULL, transDist=10000, eps=0.01, max.time=Inf, max.iter=Inf, quantile.cutoff=1, verbosity=1, initial.params=NULL) {
+fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=1000, verbosity=1, initial.params=NULL) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -796,12 +788,8 @@ fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom
     distances <- data$distance
     
     ## Filter counts by cutoff
-    if (quantile.cutoff < 1) {
-        count.cutoff.upper <- as.integer(quantile(counts, quantile.cutoff))
-        counts[counts > count.cutoff.upper] <- count.cutoff.upper
-        # count.cutoff.lower <- as.integer(quantile(counts, 1-quantile.cutoff))
-        # counts[counts < count.cutoff.lower] <- count.cutoff.lower
-    }
+    mask <- counts[,'total'] > count.cutoff
+    counts[mask,] <- round(sweep(x = counts[mask,], MARGIN = 1, STATS = counts[mask,'total']/count.cutoff, FUN = '/'))
     data$observable <- counts # assign it now to have filtered values in there
     colnames(data$observable) <- observable
     

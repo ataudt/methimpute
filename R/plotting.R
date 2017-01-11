@@ -173,9 +173,12 @@ plotHistogram <- function(model, binwidth=10) {
 }
 
 
-plotBoxplot <- function(model) {
+plotBoxplot <- function(model, datapoints=1000) {
   
     df <- data.frame(state=model$data$state, observable=model$data$observable)
+    if (datapoints < nrow(df)) {
+        df <- df[sample(1:nrow(df), datapoints, replace = FALSE), ]
+    }
     df <- suppressMessages( reshape2::melt(df) )
     names(df) <- c('state', 'status', 'observable')
     ggplt <- ggplot(df) + geom_boxplot(aes_string(x='state', y='observable', fill='status'))
