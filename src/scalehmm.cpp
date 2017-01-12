@@ -24,6 +24,7 @@ ScaleHMM::ScaleHMM(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & 
 	this->sumxi = Rcpp::NumericMatrix(this->NSTATES, this->NSTATES);
 	this->loglik = -INFINITY;
 	this->dloglik = INFINITY;
+	this->transDist = transDist;
 
 	// Initial probabilities
 	this->transProbs = Rcpp::clone(transProbs_initial);
@@ -96,6 +97,7 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs, const Rcpp::NumericVector & 
 	this->sumxi = Rcpp::NumericMatrix(this->NSTATES, this->NSTATES);
 	this->loglik = -INFINITY;
 	this->dloglik = INFINITY;
+	this->transDist = transDist;
 
 	// Initial probabilities
 	this->transProbs = Rcpp::clone(transProbs_initial);
@@ -172,6 +174,7 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVec
 	this->sumxi = Rcpp::NumericMatrix(this->NSTATES, this->NSTATES);
 	this->loglik = -INFINITY;
 	this->dloglik = INFINITY;
+	this->transDist = transDist;
 
 	// Initial probabilities
 	this->transProbs = Rcpp::clone(transProbs_initial);
@@ -220,6 +223,7 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVec
 	this->sumxi = Rcpp::NumericMatrix(this->NSTATES, this->NSTATES);
 	this->loglik = -INFINITY;
 	this->dloglik = INFINITY;
+	this->transDist = transDist;
 
 	// Initial probabilities
 	this->transProbs = Rcpp::clone(transProbs_initial);
@@ -268,6 +272,7 @@ ScaleHMM::ScaleHMM(const Rcpp::IntegerMatrix & multi_obs, const Rcpp::NumericVec
 	this->sumxi = Rcpp::NumericMatrix(this->NSTATES, this->NSTATES);
 	this->loglik = -INFINITY;
 	this->dloglik = INFINITY;
+	this->transDist = transDist;
 
 	// Initial probabilities
 	this->transProbs = Rcpp::clone(transProbs_initial);
@@ -388,6 +393,7 @@ Rcpp::List ScaleHMM::forward_backward(double eps, double maxiter, double maxtime
 	// Collect results in list
 	Rcpp::List result = Rcpp::List::create(Rcpp::Named("convergenceInfo") = convergenceInfo,
 																				 Rcpp::Named("transProbs") = this->transProbs,
+																				 Rcpp::Named("transDist") = this->transDist,
 																				 Rcpp::Named("startProbs") = this->startProbs,
 																				 Rcpp::Named("weights") = weights,
 																				 Rcpp::Named("posteriors") = this->gamma,
@@ -569,6 +575,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 		// Updating initial probabilities startProbs and transition matrix transProbs
 		this->update_startProbs();
 		this->update_transProbs();
+// 		this->update_transDist();
 
 		if (this->xvariate == UNIVARIATE)
 		{
@@ -689,6 +696,7 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 	// Collect results in list
 	Rcpp::List result = Rcpp::List::create(Rcpp::Named("convergenceInfo") = convergenceInfo,
 																				 Rcpp::Named("transProbs") = this->transProbs,
+																				 Rcpp::Named("transDist") = this->transDist,
 																				 Rcpp::Named("startProbs") = this->startProbs,
 																				 Rcpp::Named("weights") = weights,
 																				 Rcpp::Named("posteriors") = this->gamma,
@@ -1260,9 +1268,8 @@ void ScaleHMM::update_transProbs()
 {
 	if (this->verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
 
-	double transProbDistance;
 	double dist_f; // Correction factor due to distance dependency
-	double xi;
+	double xir; // By transProbs reduced xi
 	Rcpp::NumericVector numerators = Rcpp::NumericVector(this->NSTATES);
 	double denominator = 0.0;
 
@@ -1274,22 +1281,13 @@ void ScaleHMM::update_transProbs()
 			numerators[j] = 0.0;
 			for (int t=0; t<this->NDATA-1; t++)
 			{
-				// Calculate xi
-				if (this->distances[t+1] > 0)
-				{
-					transProbDistance = this->transProbs(i,j) * this->transExp[t+1] + ( 1.0 - this->transExp[t+1] ) / this->NSTATES;
-					dist_f = this->transExp[t+1] * this->transProbs(i,j) / transProbDistance;
-				}
-				else
-				{
-					transProbDistance = this->transProbs(i,j);
-					dist_f = 1;
-				}
-				xi = this->scalealpha(t,i) * transProbDistance * this->densities(j,t+1) * this->scalebeta(t+1,j);
+				// Calculate xir
+				dist_f = this->transExp[t+1] * this->transProbs(i,j);
+				xir = this->scalealpha(t,i) * this->densities(j,t+1) * this->scalebeta(t+1,j);
 
 
 				// Numerator
-				numerators[j] += xi * dist_f;
+				numerators[j] += xir * dist_f;
 			}
 		}
 		
@@ -1314,6 +1312,64 @@ void ScaleHMM::update_transProbs()
 	}
 }
 
+void ScaleHMM::update_transDist()
+{
+	if (this->verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	double xir;
+	double eps = 1e-4;
+	double kmax = 20;
+	double F, dFdX, FdivM; // F = dL/dX
+	double A, A1, A2;
+	double Ahelp;
+	double x = this->transDist;
+	// Update with Newton Method
+	for (int k=0; k<kmax; k++)
+	{
+		F = dFdX = 0.0;
+		#pragma omp parallel for
+		for (int i=0; i<this->NSTATES; i++)
+		{
+			for (int j=0; j<this->NSTATES; j++)
+			{
+				for(int t=0; t<this->NDATA-1; t++)
+				{
+					xir = this->scalealpha(t,i) * this->densities(j,t+1) * this->scalebeta(t+1,j);
+					Ahelp = (this->transProbs(i,j) - 1.0/this->NSTATES) * exp(-this->distances[t+1]/x);
+					A = Ahelp + 1.0/this->NSTATES;
+					A1 = Ahelp * this->distances[t+1] * pow(x,-2);
+					A2 = A1 * ( this->distances[t+1] * pow(x,-2) - 2 / x );
+					F += xir * A1;
+					dFdX += xir / A * ( A * A2 - A1*A1 );
+				}
+			}
+		}
+		FdivM = F/dFdX;
+		if (FdivM < x)
+		{
+			x = x-FdivM;
+		}
+		else if (FdivM >= x)
+		{
+			x = x/2.0;
+		}
+		if(fabs(F)<eps)
+		{
+			break;
+		}
+	}
+	this->transDist = x;
+
+	// Update transExp
+	for (int t=0; t<this->NDATA; t++)
+	{
+		this->transExp[t] = exp(- this->distances[t] / this->transDist);
+		if (std::isnan(this->transExp[t]))
+		{
+			throw nan_detected;
+		}
+	}
+
+}
 
 void ScaleHMM::print_uni_iteration(int iteration)
 {

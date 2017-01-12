@@ -55,6 +55,7 @@ class ScaleHMM  {
 		Rcpp::IntegerVector obs_unique; ///< vector [?] of unique observations
 		Rcpp::IntegerVector uobsind_per_t; ///< vector [NDATA] of indices of unique observations for each element in obs
 		Rcpp::NumericMatrix transProbs; ///< matrix [NSTATES x NSTATES] of transition probabilities
+		double transDist; ///< constant for decay of transition probabilities
 		Rcpp::NumericVector transExp; ///< vector [NDATA] with exponential factors for decay of transition probabilities
 // 		double transDist; ///< characteristic decaying constant for the transition probabilities
 		Rcpp::NumericVector startProbs; ///< initial probabilities [NSTATES]
@@ -86,6 +87,7 @@ class ScaleHMM  {
 		void calc_densities();
 		void update_transProbs();
 		void update_startProbs();
+		void update_transDist();
 		void print_uni_iteration(int iteration);
 		void print_multi_iteration(int iteration);
 		void print_multi_params();

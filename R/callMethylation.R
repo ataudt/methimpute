@@ -131,11 +131,11 @@ callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0,
     ### Construct result object ###
     ptm <- startTimedMessage("Compiling results ...")
     r <- list()
-    class(r) <- "NcomponentHMM"
+    class(r) <- "BinomialHMMcontext"
     if (hmm$error == "") {
         r$convergenceInfo <- hmm$convergenceInfo
         names(hmm$weights) <- states
-        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParams=hmm$emissionParams, weights=hmm$weights)
+        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams, weights=hmm$weights)
         r$params.initial <- params
         # States and posteriors
         rownames(hmm$posteriors) <- states
@@ -277,11 +277,11 @@ callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transD
     ### Construct result object ###
     ptm <- startTimedMessage("Compiling results ...")
     r <- list()
-    class(r) <- "NcomponentHMM"
+    class(r) <- "BinomialHMM"
     if (hmm$error == "") {
         r$convergenceInfo <- hmm$convergenceInfo
         names(hmm$weights) <- states
-        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParams=hmm$emissionParams, weights=hmm$weights)
+        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams, weights=hmm$weights)
         r$params.initial <- params
         # States and posteriors
         rownames(hmm$posteriors) <- states
@@ -374,7 +374,7 @@ multivariateSegmentation <- function(models, ID, fit.on.chrom=NULL, transDist=70
     if (hmm$error == "") {
         r$convergenceInfo <- hmm$convergenceInfo
         names(hmm$weights) <- statenames
-        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParamsList=params$emissionParamsList, weights=hmm$weights)
+        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParamsList=params$emissionParamsList, weights=hmm$weights)
         r$params.initial <- params
         # States and posteriors
         rownames(hmm$posteriors) <- statenames
@@ -480,7 +480,7 @@ callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=700, eps=0.01
     if (hmm$error == "") {
         r$convergenceInfo <- hmm$convergenceInfo
         names(hmm$weights) <- states
-        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParamsList=params$emissionParamsList, weights=hmm$weights)
+        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParamsList=params$emissionParamsList, weights=hmm$weights)
         r$params.initial <- params
         # States and posteriors
         rownames(hmm$posteriors) <- states
@@ -622,7 +622,7 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
     if (hmm$error == "") {
         r$convergenceInfo <- hmm$convergenceInfo
         names(hmm$weights) <- states
-        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParams=hmm$emissionParams, weights=hmm$weights)
+        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams, weights=hmm$weights)
         r$params.initial <- params
         # States and posteriors
         rownames(hmm$posteriors) <- states
@@ -732,7 +732,7 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=
     if (hmm$error == "") {
         r$convergenceInfo <- hmm$convergenceInfo
         names(hmm$weights) <- states
-        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParams=hmm$emissionParams, weights=hmm$weights)
+        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams, weights=hmm$weights)
         r$params.initial <- params
         # States and posteriors
         rownames(hmm$posteriors) <- states
@@ -881,7 +881,7 @@ fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom
       
         r$convergenceInfo <- hmm$convergenceInfo
         names(hmm$weights) <- states
-        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, emissionParams=hmm$emissionParams, weights=hmm$weights)
+        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams, weights=hmm$weights)
         r$params.initial <- params
         # States and posteriors
         rownames(hmm$posteriors) <- states
