@@ -84,6 +84,8 @@ class ScaleHMM  {
 		void calc_sumxi();
 		void calc_loglikelihood();
 		void calc_densities();
+		void update_transProbs();
+		void update_startProbs();
 		void print_uni_iteration(int iteration);
 		void print_multi_iteration(int iteration);
 		void print_multi_params();

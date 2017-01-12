@@ -343,8 +343,8 @@ Rcpp::List ScaleHMM::forward_backward(double eps, double maxiter, double maxtime
 		throw nan_detected;
 	}
 
-	this->calc_sumxi();
-	R_CheckUserInterrupt();
+// 	this->calc_sumxi();
+// 	R_CheckUserInterrupt();
 
 	this->calc_sumgamma();
 	R_CheckUserInterrupt();
@@ -531,8 +531,8 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 		}
 
 
-		this->calc_sumxi();
-		R_CheckUserInterrupt();
+// 		this->calc_sumxi();
+// 		R_CheckUserInterrupt();
 
 		this->calc_sumgamma();
 		R_CheckUserInterrupt();
@@ -567,69 +567,8 @@ Rcpp::List ScaleHMM::baumWelch(double eps, double maxiter, double maxtime)
 		}
 		
 		// Updating initial probabilities startProbs and transition matrix transProbs
-		if (this->verbosity>=2) Rprintf("  updating transition matrix\n");
-		for (int i=0; i<this->NSTATES; i++)
-		{
-			this->startProbs[i] = this->gamma(i,0);
-			if (this->verbosity>=4) Rprintf("  startProbs[%d] = %g\n", i, startProbs[i]);
-			if (this->sumgamma[i] == 0)
-			{
-// 				Rprintf("Not reestimating transProbs(%d,x) because sumgamma[%d] = 0\n", i, i);
-			}
-			else
-			{
-				for (int j=0; j<this->NSTATES; j++)
-				{
-					// Only for not t-dependent transitions
-// 					this->transProbs(i,j) = this->sumxi(i,j) / this->sumgamma[i];
-
-					// Newton-Raphson for t-dependent transitions
-					double eps = 1e-4;
-					double kmax = 20;
-					double F, dFdA, FdivM; // F = dL/dProb
-					double a = this->transProbs(i,j);
-					double a_distance;
-					// Update of prob with Newton Method
-					for (int k=0; k<kmax; k++)
-					{
-						F = dFdA = 0.0;
-						for(int t=0; t<this->NDATA-1; t++)
-						{
-							if (this->distances[t] > 0)
-							{
-								a_distance = a * this->transExp[t] + 1.0/this->NSTATES * ( 1.0 - this->transExp[t] );
-							}
-							else
-							{
-								a_distance = a;
-							}
-							F += a_distance * this->gamma(i,t);
-						}
-						F -= this->sumxi(i,j);
-						dFdA = this->sumgamma(i);
-						FdivM = F/dFdA;
-						if (FdivM < a)
-						{
-							a = a-FdivM;
-						}
-						else if (FdivM >= a)
-						{
-							a = a/2.0;
-						}
-						if(fabs(F)<eps)
-						{
-							break;
-						}
-					}
-					this->transProbs(i,j) = a;
-
-					if (std::isnan(this->transProbs(i,j)))
-					{
-						throw nan_detected;
-					}
-				}
-			}
-		}
+		this->update_startProbs();
+		this->update_transProbs();
 
 		if (this->xvariate == UNIVARIATE)
 		{
@@ -839,15 +778,15 @@ Rcpp::NumericVector ScaleHMM::calc_weights()
 	for (int i=0; i<this->NSTATES; i++)
 	{
 		// Calculate weights by summing posteriors (gamma)
-// 		double sum_over_gammas_per_state = 0;
-// 		for (int t=0; t<this->NDATA; t++)
-// 		{
-// 			sum_over_gammas_per_state += this->gamma(i,t);
-// 		}
-// 		weights[i] = sum_over_gammas_per_state / this->NDATA;
+		double sum_over_gammas_per_state = 0;
+		for (int t=0; t<this->NDATA; t++)
+		{
+			sum_over_gammas_per_state += this->gamma(i,t);
+		}
+		weights[i] = sum_over_gammas_per_state / this->NDATA;
 
-		// Weights by using sumgamma !Be careful if you swap states somewhere!
-		weights[i] = ( this->sumgamma[i] + this->gamma(i,this->NDATA-1) ) / this->NDATA;
+// 		// Weights by using sumgamma !Be careful if you swap states somewhere!
+// 		weights[i] = ( this->sumgamma[i] + this->gamma(i,this->NDATA-1) ) / this->NDATA;
 	}
 	return(weights);
 }
@@ -859,15 +798,15 @@ void ScaleHMM::calc_weights(Rcpp::NumericVector & weights)
 	for (int i=0; i<this->NSTATES; i++)
 	{
 		// Calculate weights by summing posteriors (gamma)
-// 		double sum_over_gammas_per_state = 0;
-// 		for (int t=0; t<this->NDATA; t++)
-// 		{
-// 			sum_over_gammas_per_state += this->gamma(i,t);
-// 		}
-// 		weights[i] = sum_over_gammas_per_state / this->NDATA;
+		double sum_over_gammas_per_state = 0;
+		for (int t=0; t<this->NDATA; t++)
+		{
+			sum_over_gammas_per_state += this->gamma(i,t);
+		}
+		weights[i] = sum_over_gammas_per_state / this->NDATA;
 
-		// Weights by using sumgamma !Be careful if you swap states somewhere!
-		weights[i] = ( this->sumgamma[i] + this->gamma(i,this->NDATA-1) ) / this->NDATA;
+// 		// Weights by using sumgamma !Be careful if you swap states somewhere!
+// 		weights[i] = ( this->sumgamma[i] + this->gamma(i,this->NDATA-1) ) / this->NDATA;
 	}
 }
 
@@ -1144,13 +1083,11 @@ void ScaleHMM::calc_sumgamma()
 		for (int t=0; t<this->NDATA; t++)
 		{
 			this->gamma(i,t) = this->scalealpha(t,i) * this->scalebeta(t,i) * this->scalefactoralpha[t];
+		}
+		for (int t=0; t<this->NDATA-1; t++)
+		{
 			this->sumgamma[i] += this->gamma(i,t);
 		}
-	}
-	// Subtract the last value because sumgamma goes only until NDATA-1 and we computed until NDATA to get also loggamma at NDATA
-	for (int i=0; i<this->NSTATES; i++)
-	{
-		this->sumgamma[i] -= this->gamma(i,NDATA-1);
 	}
 
 	if (this->verbosity>=6)
@@ -1308,6 +1245,75 @@ void ScaleHMM::calc_densities()
 
 // 	dtime = clock() - time;
 }
+
+void ScaleHMM::update_startProbs()
+{
+	if (this->verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+	for (int i=0; i<this->NSTATES; i++)
+	{
+		this->startProbs[i] = this->gamma(i,0);
+		if (this->verbosity>=4) Rprintf("  startProbs[%d] = %g\n", i, startProbs[i]);
+	}
+}
+
+void ScaleHMM::update_transProbs()
+{
+	if (this->verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
+
+	double transProbDistance;
+	double dist_f; // Correction factor due to distance dependency
+	double xi;
+	Rcpp::NumericVector numerators = Rcpp::NumericVector(this->NSTATES);
+	double denominator = 0.0;
+
+	#pragma omp parallel for
+	for (int i=0; i<this->NSTATES; i++)
+	{
+		for (int j=0; j<this->NSTATES; j++)
+		{
+			numerators[j] = 0.0;
+			for (int t=0; t<this->NDATA-1; t++)
+			{
+				// Calculate xi
+				if (this->distances[t+1] > 0)
+				{
+					transProbDistance = this->transProbs(i,j) * this->transExp[t+1] + ( 1.0 - this->transExp[t+1] ) / this->NSTATES;
+					dist_f = this->transExp[t+1] * this->transProbs(i,j) / transProbDistance;
+				}
+				else
+				{
+					transProbDistance = this->transProbs(i,j);
+					dist_f = 1;
+				}
+				xi = this->scalealpha(t,i) * transProbDistance * this->densities(j,t+1) * this->scalebeta(t+1,j);
+
+
+				// Numerator
+				numerators[j] += xi * dist_f;
+			}
+		}
+		
+		// Denominator
+		denominator = 0.0;
+		for (int j=0; j<this->NSTATES; j++)
+		{
+			denominator += numerators[j];
+		}
+
+		// Update
+		for (int j=0; j<this->NSTATES; j++)
+		{
+			this->transProbs(i,j) = numerators[j] / denominator;
+			// Check for nan
+			if (std::isnan(this->transProbs(i,j)))
+			{
+				throw nan_detected;
+			}
+		}
+
+	}
+}
+
 
 void ScaleHMM::print_uni_iteration(int iteration)
 {
