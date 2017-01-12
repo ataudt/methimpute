@@ -48,38 +48,46 @@ transCoord <- function(gr) {
 plotHistogramBinomial <- function(model, total.counts, binwidth=1) {
   
     ## Get cross section at total counts ##
-    counts <- model$data$observable[model$data$observable[,'total'] == total.counts,]
+    mask.crosssec <- model$data$observable[,'total'] == total.counts
+    counts.allcontexts <- model$data$observable[mask.crosssec,]
     
-    ## Histogram ##
-    ggplt <- ggplot(data.frame(counts=counts[,'counts.methylated'])) + geom_histogram(aes_string(x='counts', y='..density..'), binwidth=binwidth, color='black', fill='white')
-    ggplt <- ggplt + xlab(paste0("methylated counts\nat positions with total counts = ", total.counts))
-    ggplt <- ggplt + coord_cartesian(xlim=c(0,total.counts))
-    ggplt <- ggplt + theme_bw()
-    
-    ## Fits ##
-    if (!is.null(model$params$emissionParams)) {
-        x <- seq(0, total.counts, by = binwidth)
-        distr <- list(x=x)
-        for (irow in 1:nrow(model$params$emissionParams)) {
-            e <- model$params$emissionParams
-            if (e$type[irow] == 'dbinom') {
-                distr[[rownames(model$params$emissionParams)[irow]]] <- model$params$weights[irow] * dbinom(x, size=total.counts, prob=e[irow,'prob'])
-            }
-        }
-        distr <- as.data.frame(distr)
-        distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
-        distr$components <- sub('^X', '', distr$components)
-        distr$components <- factor(distr$components, levels=levels(model$data$state))
-        ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
+    contexts <- intersect(levels(model$data$context), unique(model$data$context))
+    ggplts <- list()
+    for (context in contexts) {
+        mask.context <- model$data$context[mask.crosssec] == context
+        counts <- counts.allcontexts[mask.context,]
+        ## Histogram ##
+        ggplt <- ggplot(data.frame(counts=counts[,'counts.methylated'])) + geom_histogram(aes_string(x='counts', y='..density..'), binwidth=binwidth, color='black', fill='white')
+        ggplt <- ggplt + xlab(paste0("methylated counts\nat positions with total counts = ", total.counts))
+        ggplt <- ggplt + coord_cartesian(xlim=c(0,total.counts))
         
-        ## Make legend
-        lprobs <- round(model$params$emissionParams[,'prob'], 4)
-        lweights <- round(model$params$weights, 2)
-        legend <- paste0(rownames(model$params$emissionParams), ", prob=", lprobs, ", weight=", lweights)
-        ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(rownames(model$params$emissionParams)), labels=legend) + theme(legend.position=c(1,1), legend.justification=c(1,1))
+        ## Fits ##
+        if (!is.null(model$params$emissionParams)) {
+            x <- seq(0, total.counts, by = binwidth)
+            distr <- list(x=x)
+            for (i1 in 1:length(model$params$emissionParams)) {
+                e <- model$params$emissionParams[[i1]]
+                distr[[names(model$params$emissionParams)[i1]]] <- model$params$weights[[context]][i1] * dbinom(x, size=total.counts, prob=e[context,'prob'])
+            }
+            distr <- as.data.frame(distr)
+            distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
+            distr$components <- sub('^X', '', distr$components)
+            distr$components <- factor(distr$components, levels=levels(model$data$state))
+            ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
+            
+            ## Make legend
+            lprobs <- round(sapply(model$params$emissionParams, function(x) { x[context,'prob'] }), 4)
+            lweights <- round(model$params$weights[[context]], 2)
+            legend <- paste0(names(model$params$emissionParams), ", prob=", lprobs, ", weight=", lweights)
+            ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(rownames(model$params$emissionParams)), labels=legend) + theme(legend.position=c(1,1), legend.justification=c(1,1))
+        }
+        ggplt <- ggplt + ggtitle(paste0("Context ", context))
+        ggplt <- ggplt + theme_bw()
+        ggplts[[context]] <- ggplt
     }
-    
-    return(ggplt)
+    cowplt <- cowplot::plot_grid(plotlist = ggplts, align='hv', ncol=1)
+        
+    return(cowplt)
       
 }
 
