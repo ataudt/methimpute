@@ -1,4 +1,4 @@
-Package: popmeth
+Package: methimpute
 Type: Package
 Title: Population analysis suite for Bisulfite-sequencing data
 Version: 0.1.0

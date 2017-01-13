@@ -83,9 +83,9 @@ plotHistogramBinomial <- function(model, total.counts, binwidth=1) {
         }
         ggplt <- ggplt + ggtitle(paste0("Context ", context))
         ggplt <- ggplt + theme_bw()
-        ggplts[[context]] <- ggplt
+        ggplts[[context]] <- ggplt + scale_y_log10()
     }
-    cowplt <- cowplot::plot_grid(plotlist = ggplts, align='hv', ncol=1)
+    cowplt <- cowplot::plot_grid(plotlist = ggplts, align='v', ncol=1)
         
     return(cowplt)
       
@@ -206,24 +206,39 @@ plotBoxplotRatio <- function(model) {
 
 plotScatter <- function(model, datapoints=1000) {
   
-    ## Find sensible limits
-    xmax <- quantile(model$data$counts.unmethylated, 0.99)
-    ymax <- quantile(model$data$counts.methylated, 0.99)
-    df <- data.frame(state=model$data$state, counts.unmethylated=model$data$counts.unmethylated, counts.methylated=model$data$counts.methylated)
-    if (datapoints < nrow(df)) {
-        df <- df[sample(1:nrow(df), datapoints, replace = FALSE), ]
+    contexts <- intersect(levels(model$data$context), unique(model$data$context))
+    ggplts <- list()
+    limits <- list()
+    for (context in contexts) {
+        data <- model$data[model$data$context == context]
+        ## Find sensible limits
+        xmax <- quantile(data$counts.unmethylated, 0.99)
+        ymax <- quantile(data$counts.methylated, 0.99)
+        limits[[context]] <- c(xmax, ymax)
+        df <- data.frame(state=data$state, counts.unmethylated=data$counts.unmethylated, counts.methylated=data$counts.methylated)
+        if (datapoints < nrow(df)) {
+            df <- df[sample(1:nrow(df), datapoints, replace = FALSE), ]
+        }
+        
+        ggplt <- ggplot(df, aes_string(x='counts.methylated', y='counts.unmethylated', col='state'))
+        ggplt <- ggplt + geom_point(alpha=0.3)
+        ggplt <- ggplt + coord_cartesian(xlim=c(0,xmax), ylim=c(0,ymax))
+        ggplt <- ggplt + theme_bw()
+        
+        ## Legend
+        lweights <- round(model$params$weights[[context]], 2)
+        legend <- paste0(names(model$params$weights[[context]]), ", weight=", lweights)
+        ggplt <- ggplt + scale_color_manual(values=getStateColors(names(model$params$weights[[context]])), labels=legend)
+        ggplt <- ggplt + ggtitle(paste0("Context ", context))
+        ggplt <- ggplt + theme(legend.position=c(1,1), legend.justification=c(1,1))
+        ggplts[[context]] <- ggplt
     }
+    xmax <- max(sapply(limits, '[[', 1))
+    ymax <- max(sapply(limits, '[[', 2))
+    ggplts <- lapply(ggplts, function(ggplt) { ggplt <- ggplt + coord_cartesian(xlim=c(0,xmax), ylim=c(0,ymax)); ggplt })
+    cowplt <- cowplot::plot_grid(plotlist = ggplts, align = 'h', nrow=1)
     
-    ggplt <- ggplot(df, aes_string(x='counts.methylated', y='counts.unmethylated', col='state')) + theme_bw()
-    ggplt <- ggplt + geom_point(alpha=0.3)
-    ggplt <- ggplt + coord_cartesian(xlim=c(0,xmax), ylim=c(0,ymax))
-    
-    ## Legend
-    lweights <- round(model$params$weights, 2)
-    legend <- paste0(names(model$params$weights), ", weight=", lweights)
-    ggplt <- ggplt + scale_color_manual(values=getStateColors(names(model$params$weights)), labels=legend)
-    
-    return(ggplt)
+    return(cowplt)
     
 }
 

@@ -3,7 +3,7 @@
 #' Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
 #' 
 #' @return A list with fitted parameters, posteriors.
-callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=1000, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
+callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -168,7 +168,7 @@ callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0,
 #' Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
 #' 
 #' @return A list with fitted parameters, posteriors.
-callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=1000, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
+callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -466,7 +466,7 @@ multivariateSegmentation <- function(models, ID, fit.on.chrom=NULL, transDist=70
 #' @inheritParams fitSignalBackground
 #' @return A list with fitted parameters, posteriors and input parameters.
 #' 
-callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=1000, states=c("Background", "Methylated", "UNmethylated", "Heterozygous"), verbosity=1) {
+callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, states=c("Background", "Methylated", "UNmethylated", "Heterozygous"), verbosity=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -827,7 +827,7 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=
 #' @param initial.params An \code{\link{NcomponentHMM}} or a file that contains such an object. Parameters from this model will be used for initialization of the fitting procedure.
 #' @return A list with fitted parameters, posteriors, and the input parameters.
 #' 
-fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=1000, verbosity=1, initial.params=NULL) {
+fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, initial.params=NULL) {
   
     ### Input checks ###
     if (is.null(max.time)) {
