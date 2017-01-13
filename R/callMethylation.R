@@ -3,7 +3,7 @@
 #' Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
 #' 
 #' @return A list with fitted parameters, posteriors.
-callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
+callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=1, initial.params=NULL, include.heterozygosity=FALSE) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -95,6 +95,7 @@ callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0,
     params$maxiter <- max.iter
     params$minreads <- min.reads
     params$verbosity <- verbosity
+    params$numThreads <- num.threads
     
     ### Call the C function ###
     on.exit(cleanup())
@@ -121,6 +122,7 @@ callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0,
         params2$maxiter <- max.iter
         params2$minreads <- min.reads
         params2$verbosity <- verbosity
+        params2$numThreads <- num.threads
         ptm <- startTimedMessage("Forward-Backward: Obtaining state sequence - no updates\n")
         message(" ... on all chromosomes")
         hmm <- fitBinomialTestHMMcontext(counts_total=counts[,'total'], counts_meth=counts[,'counts.methylated'], context=as.integer(context)-1, distances=distances, params=params2, algorithm=2)
@@ -168,7 +170,7 @@ callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0,
 #' Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
 #' 
 #' @return A list with fitted parameters, posteriors.
-callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, initial.params=NULL, include.heterozygosity=FALSE) {
+callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=1, initial.params=NULL, include.heterozygosity=FALSE) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -255,6 +257,7 @@ callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transD
         params$maxiter <- max.iter
         params$minreads <- min.reads
         params$verbosity <- verbosity
+        params$numThreads <- num.threads
         
         ### Call the C function ###
         on.exit(cleanup())
@@ -280,6 +283,7 @@ callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transD
             params2$maxiter <- max.iter
             params2$minreads <- min.reads
             params2$verbosity <- verbosity
+            params2$numThreads <- num.threads
             ptm <- startTimedMessage("Forward-Backward: Obtaining state sequence - no updates\n")
             message(" ... on all chromosomes")
             hmm <- fitBinomialTestHMM(counts_total=counts[,'total'], counts_meth=counts[,'counts.methylated'], distances=distances, params=params2, algorithm=2)
@@ -373,7 +377,7 @@ callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transD
 #' The function will use the provided univariate Hidden Markov Models (HMMs) to build the multivariate emission density. Number of states are also taken from the combination of univaraite HMMs.
 #' 
 #' @return A list with fitted parameters, posteriors.
-multivariateSegmentation <- function(models, ID, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, max.states=Inf, verbosity=1) {
+multivariateSegmentation <- function(models, ID, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, max.states=Inf, verbosity=1, num.threads=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -419,6 +423,7 @@ multivariateSegmentation <- function(models, ID, fit.on.chrom=NULL, transDist=70
     params$maxtime <- max.time
     params$maxiter <- max.iter
     params$verbosity <- verbosity
+    params$numThreads <- num.threads
     params$correlationMatrixInverse <- cormat$correlationMatrixInverse
     params$determinant <- cormat$determinant
     params$statedef <- cormat$statedef
@@ -466,7 +471,7 @@ multivariateSegmentation <- function(models, ID, fit.on.chrom=NULL, transDist=70
 #' @inheritParams fitSignalBackground
 #' @return A list with fitted parameters, posteriors and input parameters.
 #' 
-callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, states=c("Background", "Methylated", "UNmethylated", "Heterozygous"), verbosity=1) {
+callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, states=c("Background", "Methylated", "UNmethylated", "Heterozygous"), verbosity=1, num.threads=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -497,9 +502,9 @@ callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=700, eps=0.01
     
     ### Fit HMMs for p- and m-counts ###
     messageU("Fitting two-component HMM: unmethylated counts", underline="=", overline='=')
-    mhmm <- fitSignalBackground(data, observable='counts.unmethylated', fit.on.chrom=fit.on.chrom, transDist=transDist, eps=eps, max.time=max.time, max.iter=max.iter, count.cutoff=count.cutoff, verbosity=verbosity)
+    mhmm <- fitSignalBackground(data, observable='counts.unmethylated', fit.on.chrom=fit.on.chrom, transDist=transDist, eps=eps, max.time=max.time, max.iter=max.iter, count.cutoff=count.cutoff, verbosity=verbosity, num.threads=num.threads)
     messageU("Fitting two-component HMM: methylated counts", underline="=", overline='=')
-    phmm <- fitSignalBackground(data, observable='counts.methylated', fit.on.chrom=fit.on.chrom, transDist=transDist, eps=eps, max.time=max.time, max.iter=max.iter, count.cutoff=count.cutoff, verbosity=verbosity)
+    phmm <- fitSignalBackground(data, observable='counts.methylated', fit.on.chrom=fit.on.chrom, transDist=transDist, eps=eps, max.time=max.time, max.iter=max.iter, count.cutoff=count.cutoff, verbosity=verbosity, num.threads=num.threads)
     hmms <- list(mhmm, phmm)
     names(hmms) <- modelnames
     
@@ -525,6 +530,7 @@ callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=700, eps=0.01
     params$maxtime <- max.time
     params$maxiter <- max.iter
     params$verbosity <- verbosity
+    params$numThreads <- num.threads
     params$correlationMatrixInverse <- cormat$correlationMatrixInverse
     params$determinant <- cormat$determinant
     params$statedef <- statedef
@@ -580,9 +586,10 @@ callMethylation <- function(data, ID, fit.on.chrom=NULL, transDist=700, eps=0.01
 #' @param max.iter Maximum number of iterations for the Baum-Welch algorithm.
 #' @param count.cutoff A cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to \code{Inf} to disable this filtering.
 #' @param verbosity Integer from c(0,1) specifying the verbosity of the fitting procedure.
+#' @param num.threads Number of CPU to use for the computation.
 #' @return A list with fitted parameters, posteriors, and the input parameters.
 #' 
-fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, cutoff=1000, verbosity=1) {
+fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, cutoff=1000, verbosity=1, num.threads=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -647,6 +654,7 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
     params$maxtime <- max.time
     params$maxiter <- max.iter
     params$verbosity <- verbosity
+    params$numThreads <- num.threads
     
     ### Call the C function ###
     on.exit(cleanup())
@@ -671,6 +679,7 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
         params2$maxtime <- max.time
         params2$maxiter <- max.iter
         params2$verbosity <- verbosity
+        params2$numThreads <- num.threads
         ptm <- startTimedMessage("Viterbi: Obtaining state sequence\n")
         message(" ... on all chromosomes")
         hmm <- fitHMM(counts=counts, distances=distances, params=params2, algorithm=2)
@@ -709,9 +718,10 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
 #' @param max.time Maximum running time in seconds for the Baum-Welch algorithm.
 #' @param max.iter Maximum number of iterations for the Baum-Welch algorithm.
 #' @param verbosity Integer from c(0,1) specifying the verbosity of the fitting procedure.
+#' @param num.threads Number of CPU to use for the computation.
 #' @return A list with fitted parameters, posteriors, and the input parameters.
 #' 
-fitRatio <- function(data, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, verbosity=1) {
+fitRatio <- function(data, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, verbosity=1, num.threads=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -763,6 +773,7 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=
     params$maxtime <- max.time
     params$maxiter <- max.iter
     params$verbosity <- verbosity
+    params$numThreads <- num.threads
     
     ### Call the C function ###
     on.exit(cleanup())
@@ -783,6 +794,7 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=
         params2$maxtime <- max.time
         params2$maxiter <- max.iter
         params2$verbosity <- verbosity
+        params2$numThreads <- num.threads
         message("Viterbi: Obtaining state sequence")
         message(" ... on all chromosomes")
         hmm <- fitHMMratio(ratio=ratio, distances=distances, params=params2, algorithm=2)
@@ -824,10 +836,11 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=
 #' @param max.iter Maximum number of iterations for the Baum-Welch algorithm.
 #' @param count.cutoff A cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to \code{Inf} to disable this filtering.
 #' @param verbosity Integer from c(0,1) specifying the verbosity of the fitting procedure.
+#' @param num.threads Number of CPU to use for the computation.
 #' @param initial.params An \code{\link{NcomponentHMM}} or a file that contains such an object. Parameters from this model will be used for initialization of the fitting procedure.
 #' @return A list with fitted parameters, posteriors, and the input parameters.
 #' 
-fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, initial.params=NULL) {
+fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=1, initial.params=NULL) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -904,6 +917,7 @@ fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom
     params$maxtime <- max.time
     params$maxiter <- max.iter
     params$verbosity <- verbosity
+    params$numThreads <- num.threads
     
     ### Call the C function ###
     on.exit(cleanup())
@@ -928,6 +942,7 @@ fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom
         params2$maxtime <- max.time
         params2$maxiter <- max.iter
         params2$verbosity <- verbosity
+        params2$numThreads <- num.threads
         ptm <- startTimedMessage("Forward-Backward: Obtaining state sequence - no updates\n")
         message(" ... on all chromosomes")
         hmm <- fitHMM(counts=counts, distances=distances, params=params2, algorithm=2)

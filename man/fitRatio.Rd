@@ -5,7 +5,7 @@
 \title{Fit a three-component HMM for methylation levels}
 \usage{
 fitRatio(data, fit.on.chrom = NULL, transDist = 700, eps = 0.01,
-  max.time = Inf, max.iter = Inf, verbosity = 1)
+  max.time = Inf, max.iter = Inf, verbosity = 1, num.threads = 1)
 }
 \arguments{
 \item{data}{A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'distance' and 'ratio'.}
@@ -21,6 +21,8 @@ fitRatio(data, fit.on.chrom = NULL, transDist = 700, eps = 0.01,
 \item{max.iter}{Maximum number of iterations for the Baum-Welch algorithm.}
 
 \item{verbosity}{Integer from c(0,1) specifying the verbosity of the fitting procedure.}
+
+\item{num.threads}{Number of CPU to use for the computation.}
 }
 \value{
 A list with fitted parameters, posteriors, and the input parameters.

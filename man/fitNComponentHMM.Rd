@@ -6,7 +6,7 @@
 \usage{
 fitNComponentHMM(data, states = 0:5, observable = "counts",
   fit.on.chrom = NULL, transDist = 700, eps = 0.01, max.time = Inf,
-  max.iter = Inf, count.cutoff = 500, verbosity = 1,
+  max.iter = Inf, count.cutoff = 500, verbosity = 1, num.threads = 1,
   initial.params = NULL)
 }
 \arguments{
@@ -29,6 +29,8 @@ fitNComponentHMM(data, states = 0:5, observable = "counts",
 \item{count.cutoff}{A cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to \code{Inf} to disable this filtering.}
 
 \item{verbosity}{Integer from c(0,1) specifying the verbosity of the fitting procedure.}
+
+\item{num.threads}{Number of CPU to use for the computation.}
 
 \item{initial.params}{An \code{\link{NcomponentHMM}} or a file that contains such an object. Parameters from this model will be used for initialization of the fitting procedure.}
 }

@@ -6,8 +6,8 @@
 \usage{
 callMethylationBinomialContext(data, fit.on.chrom = NULL, min.reads = 0,
   transDist = 700, eps = 0.01, max.time = Inf, max.iter = Inf,
-  count.cutoff = 500, verbosity = 1, initial.params = NULL,
-  include.heterozygosity = FALSE)
+  count.cutoff = 500, verbosity = 1, num.threads = 1,
+  initial.params = NULL, include.heterozygosity = FALSE)
 }
 \value{
 A list with fitted parameters, posteriors.

@@ -7,7 +7,7 @@
 callMethylation(data, ID, fit.on.chrom = NULL, transDist = 700,
   eps = 0.01, max.time = Inf, max.iter = Inf, count.cutoff = 500,
   states = c("Background", "Methylated", "UNmethylated", "Heterozygous"),
-  verbosity = 1)
+  verbosity = 1, num.threads = 1)
 }
 \arguments{
 \item{data}{A \code{\link[GenomicRanges]{GRanges}} object with metadata column 'counts' (or any other column specified as \code{observable}).}
@@ -25,6 +25,8 @@ callMethylation(data, ID, fit.on.chrom = NULL, transDist = 700,
 \item{count.cutoff}{A cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to \code{Inf} to disable this filtering.}
 
 \item{verbosity}{Integer from c(0,1) specifying the verbosity of the fitting procedure.}
+
+\item{num.threads}{Number of CPU to use for the computation.}
 }
 \value{
 A list with fitted parameters, posteriors and input parameters.
