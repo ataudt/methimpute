@@ -6,7 +6,7 @@
 \usage{
 fitNComponentHMM(data, states = 0:5, observable = "counts",
   fit.on.chrom = NULL, transDist = 700, eps = 0.01, max.time = Inf,
-  max.iter = Inf, count.cutoff = 1000, verbosity = 1,
+  max.iter = Inf, count.cutoff = 500, verbosity = 1,
   initial.params = NULL)
 }
 \arguments{

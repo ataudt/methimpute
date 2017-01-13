@@ -2,26 +2,26 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 fitHMM <- function(counts, distances, params, algorithm) {
-    .Call('popmeth_fitHMM', PACKAGE = 'popmeth', counts, distances, params, algorithm)
+    .Call('methimpute_fitHMM', PACKAGE = 'methimpute', counts, distances, params, algorithm)
 }
 
 fitBinomialTestHMM <- function(counts_total, counts_meth, distances, params, algorithm) {
-    .Call('popmeth_fitBinomialTestHMM', PACKAGE = 'popmeth', counts_total, counts_meth, distances, params, algorithm)
+    .Call('methimpute_fitBinomialTestHMM', PACKAGE = 'methimpute', counts_total, counts_meth, distances, params, algorithm)
 }
 
 fitBinomialTestHMMcontext <- function(counts_total, counts_meth, context, distances, params, algorithm) {
-    .Call('popmeth_fitBinomialTestHMMcontext', PACKAGE = 'popmeth', counts_total, counts_meth, context, distances, params, algorithm)
+    .Call('methimpute_fitBinomialTestHMMcontext', PACKAGE = 'methimpute', counts_total, counts_meth, context, distances, params, algorithm)
 }
 
 fitHMMratio <- function(ratio, distances, params, algorithm) {
-    .Call('popmeth_fitHMMratio', PACKAGE = 'popmeth', ratio, distances, params, algorithm)
+    .Call('methimpute_fitHMMratio', PACKAGE = 'methimpute', ratio, distances, params, algorithm)
 }
 
 fitMultiHMM <- function(counts, distances, params) {
-    .Call('popmeth_fitMultiHMM', PACKAGE = 'popmeth', counts, distances, params)
+    .Call('methimpute_fitMultiHMM', PACKAGE = 'methimpute', counts, distances, params)
 }
 
 cleanup <- function() {
-    invisible(.Call('popmeth_cleanup', PACKAGE = 'popmeth'))
+    invisible(.Call('methimpute_cleanup', PACKAGE = 'methimpute'))
 }
 

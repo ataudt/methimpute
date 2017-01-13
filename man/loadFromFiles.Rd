@@ -2,7 +2,7 @@
 % Please edit documentation in R/loadFromFiles.R
 \name{loadFromFiles}
 \alias{loadFromFiles}
-\title{Load \pkg{popmeth} objects from file}
+\title{Load \pkg{methimpute} objects from file}
 \usage{
 loadFromFiles(files, check.class = c("GRanges", "binnedMethylome",
   "NcomponentHMM"))
@@ -16,7 +16,7 @@ loadFromFiles(files, check.class = c("GRanges", "binnedMethylome",
 A list of \code{\link{GRanges}}, \code{\link{aneuHMM}} or \code{\link{aneuBiHMM}} objects.
 }
 \description{
-Wrapper to load \pkg{\link{popmeth}} objects from file and check the class of the loaded objects.
+Wrapper to load \pkg{\link{methimpute}} objects from file and check the class of the loaded objects.
 }
 \examples{
 ## Get some files that you want to load

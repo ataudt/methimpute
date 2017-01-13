@@ -1,4 +1,4 @@
-#' @useDynLib popmeth
+#' @useDynLib methimpute
 #' @import IRanges
 #' @import GenomeInfoDb
 #' @import GenomicRanges

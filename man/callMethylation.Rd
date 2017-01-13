@@ -5,7 +5,7 @@
 \title{Call methylated regions}
 \usage{
 callMethylation(data, ID, fit.on.chrom = NULL, transDist = 700,
-  eps = 0.01, max.time = Inf, max.iter = Inf, count.cutoff = 1000,
+  eps = 0.01, max.time = Inf, max.iter = Inf, count.cutoff = 500,
   states = c("Background", "Methylated", "UNmethylated", "Heterozygous"),
   verbosity = 1)
 }

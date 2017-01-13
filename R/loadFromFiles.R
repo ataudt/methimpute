@@ -1,6 +1,6 @@
-#' Load \pkg{popmeth} objects from file
+#' Load \pkg{methimpute} objects from file
 #'
-#' Wrapper to load \pkg{\link{popmeth}} objects from file and check the class of the loaded objects.
+#' Wrapper to load \pkg{\link{methimpute}} objects from file and check the class of the loaded objects.
 #'
 #' @param files A list of \code{\link{GRanges}}, \code{\link{aneuHMM}} or \code{\link{aneuBiHMM}} objects or a character vector with files that contain such objects.
 #' @param check.class Any combination of \code{c('GRanges', 'aneuHMM', 'aneuBiHMM')}. If any of the loaded objects does not belong to the specified class, an error is thrown.
