@@ -138,6 +138,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
         stopTimedMessage(ptm)
         counts <- data$observable
         context <- data$context
+        transitionContext <- data$transitionContext
         params2 <- list()
         params2$startProbs_initial <- hmm$startProbs
         params2$transProbs_initial <- hmm$transProbs
