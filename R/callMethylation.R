@@ -48,7 +48,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
     ptm <- startTimedMessage("Adding transition context ...")
     data$transitionContext <- factor(c(NA, paste0(data$context[-length(data)], '-', data$context[-1])), level=transitionContexts)
     na.mask <- is.na(data$transitionContext)
-    data$transitionContext[na.mask] <- factor(c(NA, paste0(data$context[-1], '-', data$context[-length(data)]))[na.mask], level=transitionContexts)
+    data$transitionContext[na.mask] <- factor(c(NA, paste0(data$context[-1], '-', data$context[-length(data)]))[na.mask], levels=transitionContexts)
     transitionContext <- factor(data$transitionContext, levels=transitionContexts)
     stopTimedMessage(ptm)
     
@@ -63,6 +63,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
         counts <- counts[mask,]
         context <- context[mask]
         transitionContext <- transitionContext[mask]
+        distances <- distances[mask]
     }
   
     ### Initial probabilities ###
@@ -139,6 +140,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
         counts <- data$observable
         context <- data$context
         transitionContext <- data$transitionContext
+        distances <- data$distance
         params2 <- list()
         params2$startProbs_initial <- hmm$startProbs
         params2$transProbs_initial <- hmm$transProbs

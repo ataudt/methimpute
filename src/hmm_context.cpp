@@ -32,9 +32,17 @@ HMM_context::HMM_context(const Rcpp::IntegerVector & obs_total, const Rcpp::Inte
 	this->transExp = Rcpp::NumericVector(this->NDATA);
 	for (int t=1; t<this->NDATA; t++)
 	{
-		this->transExp[t] = exp(-this->distances[t] / transDist[transitionContext[t]]);
+		if (this->distances[t] == INFINITY)
+		{
+			this->transExp[t] = 0;
+		}
+		else
+		{
+			this->transExp[t] = exp(-this->distances[t] / transDist[transitionContext[t]]);
+		}
 		if (std::isnan(this->transExp[t]))
 		{
+			if (this->verbosity>=4) Rprintf("transExp[t=%d] = %g, distances[t] = %g, transitionContext[t] = %d, transDist[%d] = %g\n", t, transExp[t], distances[t], transitionContext[t], transitionContext[t], transDist[transitionContext[t]]);
 			throw nan_detected;
 		}
 	}
@@ -992,9 +1000,17 @@ void HMM_context::update_transDist()
 	// Update transExp
 	for (int t=1; t<this->NDATA; t++)
 	{
-		this->transExp[t] = exp(- this->distances[t] / this->transDist[this->transitionContext[t]]);
+		if (this->distances[t] == INFINITY)
+		{
+			this->transExp[t] = 0;
+		}
+		else
+		{
+			this->transExp[t] = exp(-this->distances[t] / transDist[transitionContext[t]]);
+		}
 		if (std::isnan(this->transExp[t]))
 		{
+			if (this->verbosity>=4) Rprintf("transExp[t=%d] = %g, distances[t] = %g, transitionContext[t] = %d, transDist[%d] = %g\n", t, transExp[t], distances[t], transitionContext[t], transitionContext[t], transDist[transitionContext[t]]);
 			throw nan_detected;
 		}
 	}
