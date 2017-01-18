@@ -1,5 +1,5 @@
-#ifndef SCALEHMM_H
-#define SCALEHMM_H
+#ifndef HMM_CONTEXT_H
+#define HMM_CONTEXT_H
 
 #include "densities.h"
 #include <Rcpp.h>
@@ -14,22 +14,14 @@
 
 enum whichvariate {UNIVARIATE, MULTIVARIATE};
 
-class ScaleHMM  {
+class HMM_context  {
 
 	public:
 		// Constructor and Destructor
-		ScaleHMM();
-		// Beta distribution
-		ScaleHMM(const Rcpp::NumericVector & obs, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::DataFrame emissionParams_initial, int verbosity);
-		// Zero Inflation + Negative Binomial
-		ScaleHMM(const Rcpp::IntegerVector & obs, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::DataFrame emissionParams_initial, int verbosity);
-		// Binomial test
-		ScaleHMM(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_meth, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::DataFrame emissionParams_initial, int min_obs, int verbosity);
-		// Binomial test context
-		ScaleHMM(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_meth, const Rcpp::IntegerVector & context, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::List emissionParams_initial, int min_obs, int verbosity);
-		// Multivariate
-		ScaleHMM(const Rcpp::IntegerMatrix & multi_obs, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::NumericMatrix transProbs_initial, double transDist, Rcpp::List emissionParamsList, int verbosity, const Rcpp::List & cor_mat_inv, const Rcpp::NumericVector & determinant, const Rcpp::DataFrame & statedef);
-		~ScaleHMM();
+		HMM_context();
+		// Binomial test context transition
+		HMM_context(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_meth, const Rcpp::IntegerVector & context, const Rcpp::IntegerVector & transitionContext, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::List transProbs_initial, Rcpp::NumericVector transDist, Rcpp::List emissionParams_initial, int min_obs, int verbosity);
+		~HMM_context();
 
 		// Member variables
 
@@ -46,7 +38,6 @@ class ScaleHMM  {
 		double get_posterior(int iN, int t);
 		double get_density(int iN, int t);
 		double get_startProbs(int i);
-		double get_transProbs(int i, int j);
 		double get_loglik();
 
 	private:
@@ -59,10 +50,10 @@ class ScaleHMM  {
 		Rcpp::NumericVector log1mObs; ///< vector [NDATA] of log(1-observations)
 		Rcpp::IntegerVector obs_unique; ///< vector [?] of unique observations
 		Rcpp::IntegerVector uobsind_per_t; ///< vector [NDATA] of indices of unique observations for each element in obs
-		Rcpp::NumericMatrix transProbs; ///< matrix [NSTATES x NSTATES] of transition probabilities
-		double transDist; ///< constant for decay of transition probabilities
+		Rcpp::List transProbsList; ///< List with matrices [NSTATES x NSTATES] of transition probabilities
+		Rcpp::NumericVector transDist; ///< constant for decay of transition probabilities
 		Rcpp::NumericVector transExp; ///< vector [NDATA] with exponential factors for decay of transition probabilities
-// 		double transDist; ///< characteristic decaying constant for the transition probabilities
+		Rcpp::IntegerVector transitionContext; ///< vector [NDATA] with transition contexts
 		Rcpp::NumericVector startProbs; ///< initial probabilities [NSTATES]
 		double loglik; ///< loglikelihood
 		Rcpp::NumericVector distances; ///< vector [NDATA] of distances between observations

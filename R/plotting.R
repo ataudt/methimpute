@@ -435,22 +435,53 @@ heatmapGenomewide <- function(models, ylabels=NULL, classes=NULL, reorder.by.cla
 #' @export
 heatmapTransitionProbs <- function(model, order=FALSE) {
   
-    # model <- suppressMessages( loadFromFiles(model, check.class=class.univariate.hmm)[[1]] )
-    A <- reshape2::melt(model$params$transProbs, varnames=c('from','to'), value.name='prob')
-    if (order) {
-        stateorder <- stateorderByTransition(model$params$transProbs)
-        A$from <- factor(A$from, levels=stateorder)
-        A$to <- factor(A$to, levels=stateorder)
-    } else {
-        A$from <- factor(A$from)
-        A$to <- factor(A$to)
+    if (is.list(model$params$transProbs)) {
+        As <- model$params$transProbs
+    } else if (is.matrix(model$params$transProbs)) {
+        As <- list(transitions=model$params$transProbs)
     }
-    ggplt <- ggplot(data=A) + geom_tile(aes_string(x='to', y='from', fill='prob')) + scale_fill_gradient(low="white", high="blue") + theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
+
+    ggplts <- list()
+    for (i1 in 1:length(As)) {
+        # model <- suppressMessages( loadFromFiles(model, check.class=class.univariate.hmm)[[1]] )
+        A <- reshape2::melt(As[[i1]], varnames=c('from','to'), value.name='prob')
+        if (order) {
+            stateorder <- stateorderByTransition(model$params$transProbs)
+            A$from <- factor(A$from, levels=stateorder)
+            A$to <- factor(A$to, levels=stateorder)
+        } else {
+            A$from <- factor(A$from)
+            A$to <- factor(A$to)
+        }
+        ggplt <- ggplot(data=A) + geom_tile(aes_string(x='to', y='from', fill='prob')) + scale_fill_gradient(low="white", high="blue", limits=c(0,1)) + theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
+        ggplt <- ggplt + ggtitle(names(model$params$transProbs)[i1])
+        ggplts[[names(model$params$transProbs)[i1]]] <- ggplt
+    }
+    if (length(ggplts) > 1) {
+        ggplts <- cowplot::plot_grid(plotlist = insertNULL(ggplts), align='hv')
+    }
     
-    return(ggplt)
+    return(ggplts)
   
 }
 
+insertNULL <- function(plotlist) {
+    n <- 0.5 * ( sqrt(8*length(plotlist)+1) - 1 )
+    plotlist2 <- list()
+    i3 <- 1
+    for (i1 in 1:n) {
+        for (i2 in 1:i1) {
+            plotlist2[[length(plotlist2)+1]] <- plotlist[[i3]]
+            i3 <- i3 + 1
+        }
+        if (i1 < n) {
+            for (i2 in (i1+1):n) {
+                plotlist2[length(plotlist2)+1] <- list(NULL)
+            }
+        }
+    }
+    return(plotlist2)
+}
 
 #' Histograms faceted by state
 #' 

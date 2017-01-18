@@ -14,9 +14,9 @@
 #'hmms <- loadFromFiles(files[1:10])
 #'lapply(hmms, plot, type='profile')
 #'
-loadFromFiles <- function(files, check.class=c('GRanges', 'binnedMethylome','NcomponentHMM')) {
+loadFromFiles <- function(files, check.class=c('GRanges', 'binnedMethylome','NcomponentHMM','BinomialHMM','BinomialHMMcontext')) {
 
-    available.classes <- c('GRanges', 'binnedMethylome', 'NcomponentHMM')
+    available.classes <- c('GRanges', 'binnedMethylome', 'NcomponentHMM', 'BinomialHMM', 'BinomialHMMcontext')
     # ptm <- startTimedMessage("Loading data from files ...")
     if (is.null(files)) {
         # stopTimedMessage(ptm)

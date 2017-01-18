@@ -1268,23 +1268,23 @@ void ScaleHMM::update_transProbs()
 {
 	if (this->verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
 
-	double dist_f; // Correction factor due to distance dependency
-	double xir; // By transProbs reduced xi
-	Rcpp::NumericVector numerators = Rcpp::NumericVector(this->NSTATES);
-	double denominator = 0.0;
+	Rcpp::NumericMatrix transProbsCurrent = Rcpp::clone(this->transProbs);
 
 	#pragma omp parallel for
 	for (int i=0; i<this->NSTATES; i++)
 	{
+		double dist_f; // Correction factor due to distance dependency
+		double xir; // By transProbs reduced xi
+		double denominator = 0.0;
+		std::vector<double> numerators(this->NSTATES);
 		for (int j=0; j<this->NSTATES; j++)
 		{
 			numerators[j] = 0.0;
 			for (int t=0; t<this->NDATA-1; t++)
 			{
 				// Calculate xir
-				dist_f = this->transExp[t+1] * this->transProbs(i,j);
+				dist_f = this->transExp[t+1] * transProbsCurrent(i,j);
 				xir = this->scalealpha(t,i) * this->densities(j,t+1) * this->scalebeta(t+1,j);
-
 
 				// Numerator
 				numerators[j] += xir * dist_f;
