@@ -169,6 +169,11 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
         r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams)
         r$params.initial <- params
         # States and posteriors
+        data$posteriorMax <- NA
+        for (i1 in 0:(nrow(hmm$posteriors)-1)) {
+            mask <- hmm$states == i1
+            data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
+        }
         rownames(hmm$posteriors) <- states
         data$posteriors <- t(hmm$posteriors)
         data$state <- factor(states, levels=states)[hmm$states+1]
@@ -336,6 +341,11 @@ callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0,
         r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams)
         r$params.initial <- params
         # States and posteriors
+        data$posteriorMax <- NA
+        for (i1 in 0:(nrow(hmm$posteriors)-1)) {
+            mask <- hmm$states == i1
+            data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
+        }
         rownames(hmm$posteriors) <- states
         data$posteriors <- t(hmm$posteriors)
         data$state <- factor(states, levels=states)[hmm$states+1]
@@ -497,6 +507,11 @@ callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transD
             r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams, weights=hmm$weights)
             r$params.initial <- params
             # States and posteriors
+            data$posteriorMax <- NA
+            for (i1 in 0:(nrow(hmm$posteriors)-1)) {
+                mask <- hmm$states == i1
+                data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
+            }
             rownames(hmm$posteriors) <- states
             data$posteriors <- t(hmm$posteriors)
             data$state <- factor(states, levels=states)[hmm$states+1]
@@ -640,6 +655,11 @@ multivariateSegmentation <- function(models, ID, fit.on.chrom=NULL, transDist=70
         r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParamsList=params$emissionParamsList, weights=hmm$weights)
         r$params.initial <- params
         # States and posteriors
+        data$posteriorMax <- NA
+        for (i1 in 0:(nrow(hmm$posteriors)-1)) {
+            mask <- hmm$states == i1
+            data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
+        }
         rownames(hmm$posteriors) <- statenames
         data$posteriors <- t(hmm$posteriors)
         data$state <- factor(statenames, levels=statenames)[hmm$states+1]
@@ -747,6 +767,11 @@ callMethylationSignalBackground <- function(data, ID, fit.on.chrom=NULL, transDi
         r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParamsList=params$emissionParamsList, weights=hmm$weights)
         r$params.initial <- params
         # States and posteriors
+        data$posteriorMax <- NA
+        for (i1 in 0:(nrow(hmm$posteriors)-1)) {
+            mask <- hmm$states == i1
+            data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
+        }
         rownames(hmm$posteriors) <- states
         data$posteriors <- t(hmm$posteriors)
         data$state <- factor(states, levels=states)[hmm$states+1]
@@ -892,6 +917,11 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
         r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams, weights=hmm$weights)
         r$params.initial <- params
         # States and posteriors
+        data$posteriorMax <- NA
+        for (i1 in 0:(nrow(hmm$posteriors)-1)) {
+            mask <- hmm$states == i1
+            data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
+        }
         rownames(hmm$posteriors) <- states
         data$posteriors <- t(hmm$posteriors)
         data$state <- factor(states, levels=states)[hmm$states+1]
@@ -1005,6 +1035,11 @@ fitRatio <- function(data, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=
         r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams, weights=hmm$weights)
         r$params.initial <- params
         # States and posteriors
+        data$posteriorMax <- NA
+        for (i1 in 0:(nrow(hmm$posteriors)-1)) {
+            mask <- hmm$states == i1
+            data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
+        }
         rownames(hmm$posteriors) <- states
         data$posteriors <- t(hmm$posteriors)
         rownames(hmm$densities) <- states
@@ -1157,6 +1192,11 @@ fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom
         r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams, weights=hmm$weights)
         r$params.initial <- params
         # States and posteriors
+        data$posteriorMax <- NA
+        for (i1 in 0:(nrow(hmm$posteriors)-1)) {
+            mask <- hmm$states == i1
+            data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
+        }
         rownames(hmm$posteriors) <- states
         data$posteriors <- t(hmm$posteriors)
         data$state <- factor(states, levels=states)[hmm$states+1]
