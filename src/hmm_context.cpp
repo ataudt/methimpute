@@ -225,17 +225,24 @@ Rcpp::List HMM_context::baumWelch(double eps, double maxiter, double maxtime)
 	Rcpp::NumericVector probs0, probs1;
 	if (this->xvariate == UNIVARIATE)
 	{
-		if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST)
-		{ 
-			if (this->NSTATES == 2)
+		if (this->NSTATES == 2)
+		{
+			Rcpp::NumericVector probs0Current = this->emissionDensities[0]->get_probs();
+			Rcpp::NumericVector probs1Current = this->emissionDensities[1]->get_probs();
+			for (int c=0; c<probs0Current.size(); c++)
 			{
-				probs0.push_back(this->emissionDensities[0]->get_prob());
-				probs1.push_back(this->emissionDensities[1]->get_prob());
+				probs0.push_back(probs0Current[c]);
+				probs1.push_back(probs1Current[c]);
 			}
-			else if (this->NSTATES == 3)
+		}
+		else if (this->NSTATES == 3)
+		{
+			Rcpp::NumericVector probs0Current = this->emissionDensities[0]->get_probs();
+			Rcpp::NumericVector probs1Current = this->emissionDensities[2]->get_probs();
+			for (int c=0; c<probs0Current.size(); c++)
 			{
-				probs0.push_back(this->emissionDensities[0]->get_prob());
-				probs1.push_back(this->emissionDensities[2]->get_prob());
+				probs0.push_back(probs0Current[c]);
+				probs1.push_back(probs1Current[c]);
 			}
 		}
 	}
@@ -277,17 +284,24 @@ Rcpp::List HMM_context::baumWelch(double eps, double maxiter, double maxtime)
 		// Store information about parameters
 		if (this->xvariate == UNIVARIATE)
 		{
-			if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST)
-			{ 
-				if (this->NSTATES == 2)
+			if (this->NSTATES == 2)
+			{
+				Rcpp::NumericVector probs0Current = this->emissionDensities[0]->get_probs();
+				Rcpp::NumericVector probs1Current = this->emissionDensities[1]->get_probs();
+				for (int c=0; c<probs0Current.size(); c++)
 				{
-					probs0.push_back(this->emissionDensities[0]->get_prob());
-					probs1.push_back(this->emissionDensities[1]->get_prob());
+					probs0.push_back(probs0Current[c]);
+					probs1.push_back(probs1Current[c]);
 				}
-				else if (this->NSTATES == 3)
+			}
+			else if (this->NSTATES == 3)
+			{
+				Rcpp::NumericVector probs0Current = this->emissionDensities[0]->get_probs();
+				Rcpp::NumericVector probs1Current = this->emissionDensities[2]->get_probs();
+				for (int c=0; c<probs0Current.size(); c++)
 				{
-					probs0.push_back(this->emissionDensities[0]->get_prob());
-					probs1.push_back(this->emissionDensities[2]->get_prob());
+					probs0.push_back(probs0Current[c]);
+					probs1.push_back(probs1Current[c]);
 				}
 			}
 		}
@@ -366,7 +380,6 @@ Rcpp::List HMM_context::baumWelch(double eps, double maxiter, double maxtime)
 				{
 					int rows[] = {i};
 					this->emissionDensities[i]->update(this->gamma, rows);
-					if (this->verbosity>=4) Rprintf("  emissionDensities[%d]: prob = %g\n", i, emissionDensities[i]->get_prob());
 				}
 			} else if (this->NSTATES == 3) { // epi-heterozygosity
 					Rcpp::NumericVector rs = this->emissionDensities[0]->get_probs();
@@ -411,15 +424,9 @@ Rcpp::List HMM_context::baumWelch(double eps, double maxiter, double maxtime)
 		}
 	}
 
-// 	// Store information about parameters
-// 	if (this->xvariate == UNIVARIATE)
-// 	{
-// 		if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST)
-// 		{ 
-				Rcpp::List parameterInfo = Rcpp::List::create(Rcpp::Named("probsUN") = probs0,
-																											Rcpp::Named("probsM") = probs1);
-// 		}
-// 	}
+	// Store information about parameters
+	Rcpp::List parameterInfo = Rcpp::List::create(Rcpp::Named("probsUN") = probs0,
+																								Rcpp::Named("probsM") = probs1);
 
 	// Convergence information
 	this->baumWelchTime_real = difftime(time(NULL),this->baumWelchStartTime_sec);

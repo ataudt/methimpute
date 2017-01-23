@@ -14,6 +14,7 @@ getStateColors <- function(states=NULL) {
     if (is.null(states)) {
         return(state.colors)
     } else {
+        states <- as.character(states)
         states.other <- setdiff(states, names(state.colors))
         if (length(states.other) > 0) {
             state.colors.other <- getDistinctColors(states.other)
@@ -48,16 +49,18 @@ transCoord <- function(gr) {
 plotHistogramBinomial <- function(model, total.counts, binwidth=1) {
   
     ## Get cross section at total counts ##
-    mask.crosssec <- model$data$observable[,'total'] == total.counts
-    counts.allcontexts <- model$data$observable[mask.crosssec,]
+    counts.total <- model$data$counts.methylated + model$data$counts.unmethylated
+    counts.methylated <- model$data$counts.methylated
+    mask.crosssec <- counts.total == total.counts
+    counts.methylated <- counts.methylated[mask.crosssec]
     
     contexts <- intersect(levels(model$data$context), unique(model$data$context))
     ggplts <- list()
     for (context in contexts) {
         mask.context <- model$data$context[mask.crosssec] == context
-        counts <- counts.allcontexts[mask.context,]
         ## Histogram ##
-        ggplt <- ggplot(data.frame(counts=counts[,'counts.methylated'])) + geom_histogram(aes_string(x='counts', y='..density..'), binwidth=binwidth, color='black', fill='white')
+        ggplt <- ggplot(data.frame(counts=counts.methylated[mask.context])) + geom_histogram(aes_string(x='counts', y='..density..'), binwidth=binwidth, color='black', fill='white')
+        ggplt <- ggplt + theme_bw()
         ggplt <- ggplt + xlab(paste0("methylated counts\nat positions with total counts = ", total.counts))
         ggplt <- ggplt + coord_cartesian(xlim=c(0,total.counts))
         
@@ -79,11 +82,10 @@ plotHistogramBinomial <- function(model, total.counts, binwidth=1) {
             lprobs <- round(sapply(model$params$emissionParams, function(x) { x[context,'prob'] }), 4)
             lweights <- round(model$params$weights[[context]], 2)
             legend <- paste0(names(model$params$emissionParams), ", prob=", lprobs, ", weight=", lweights)
-            ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(rownames(model$params$emissionParams)), labels=legend) + theme(legend.position=c(1,1), legend.justification=c(1,1))
+            ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(rownames(model$params$emissionParams)), labels=legend) + theme(legend.position=c(0.5,0.99), legend.justification=c(0.5,1))
         }
         ggplt <- ggplt + ggtitle(paste0("Context ", context))
-        ggplt <- ggplt + theme_bw()
-        ggplts[[context]] <- ggplt + scale_y_log10()
+        ggplts[[context]] <- ggplt
     }
     cowplt <- cowplot::plot_grid(plotlist = ggplts, align='v', ncol=1)
         
@@ -540,5 +542,33 @@ plotStateScatter <- function(segmentation, bins, x, y, col=NULL, datapoints=1000
     ggplt <- ggplt + facet_wrap(~ state)
     ggplt <- ggplt + scale_color_manual(values=getDistinctColors(levels(df$color)))
     
+    return(ggplt)
+}
+
+
+#' Plot convergence info
+#' 
+#' 
+#' 
+#' @param 
+#' @return A \code{\link[ggplot2]{ggplot}}.
+plotConvergence <- function(model) {
+    
+    info <- model$convergenceInfo$prefit
+    if (is.null(info)) {
+        info <- model$convergenceInfo
+    }
+    # ## Plot loglikelihood
+    # df <- data.frame(iteration=0:(length(info$logliks)-1), loglik=info$logliks)
+    # ggplt <- ggplot(df) + geom_line(aes_string(x='iteration', y='loglik')) + theme_bw()
+    # ggplt <- ggplt + scale_x_continuous(breaks=df$iteration, limits=c(2, length(info$logliks)-1))
+    
+    ## Plot parameters
+    df <- reshape2::melt(info$parameterInfo, value.name='prob')
+    ggplt <- ggplot(df) + geom_line(aes_string(x='iteration', y='prob', col='state')) + theme_bw()
+    ggplt <- ggplt + theme(panel.grid.minor.x = element_blank())
+    ggplt <- ggplt + facet_wrap(~ context)
+    ggplt <- ggplt + scale_x_continuous(breaks=sort(unique(df$iteration))) + scale_y_continuous(limits=c(0,1))
+    ggplt <- ggplt + scale_color_manual(values=getStateColors(unique(df$state)))
     return(ggplt)
 }
