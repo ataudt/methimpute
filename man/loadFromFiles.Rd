@@ -5,7 +5,7 @@
 \title{Load \pkg{methimpute} objects from file}
 \usage{
 loadFromFiles(files, check.class = c("GRanges", "binnedMethylome",
-  "NcomponentHMM"))
+  "NcomponentHMM", "BinomialHMM", "BinomialHMMcontext"))
 }
 \arguments{
 \item{files}{A list of \code{\link{GRanges}}, \code{\link{aneuHMM}} or \code{\link{aneuBiHMM}} objects or a character vector with files that contain such objects.}

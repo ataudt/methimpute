@@ -2,39 +2,17 @@
 % Please edit documentation in R/callMethylation.R
 \name{callMethylation}
 \alias{callMethylation}
-\title{Call methylated regions}
+\title{Methylation calling with a binomial-test HMM}
 \usage{
-callMethylation(data, ID, fit.on.chrom = NULL, transDist = 700,
+callMethylation(data, fit.on.chrom = NULL, min.reads = 0, transDist = Inf,
   eps = 0.01, max.time = Inf, max.iter = Inf, count.cutoff = 500,
-  states = c("Background", "Methylated", "UNmethylated", "Heterozygous"),
-  verbosity = 1, num.threads = 1)
-}
-\arguments{
-\item{data}{A \code{\link[GenomicRanges]{GRanges}} object with metadata column 'counts' (or any other column specified as \code{observable}).}
-
-\item{fit.on.chrom}{A character vector giving the chromosomes on which the HMM will be fitted.}
-
-\item{transDist}{The exponential decaying constant for the distance-dependent transition matrix. Should be given in the same units as \code{distances}.}
-
-\item{eps}{Convergence threshold for the Baum-Welch algorithm.}
-
-\item{max.time}{Maximum running time in seconds for the Baum-Welch algorithm.}
-
-\item{max.iter}{Maximum number of iterations for the Baum-Welch algorithm.}
-
-\item{count.cutoff}{A cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to \code{Inf} to disable this filtering.}
-
-\item{verbosity}{Integer from c(0,1) specifying the verbosity of the fitting procedure.}
-
-\item{num.threads}{Number of CPU to use for the computation.}
+  verbosity = 1, num.threads = 1, initial.params = NULL,
+  include.heterozygosity = TRUE)
 }
 \value{
-A list with fitted parameters, posteriors and input parameters.
+A list with fitted parameters, posteriors.
 }
 \description{
-Call methylated, unmethylated and heterozygous regions by fitting a multivariate Hidden Markov Model to the data.
-}
-\details{
-In a first step, the function will use \code{\link{fitSignalBackground}} to obtain the distribution parameters for a signal-background model for methylated and unmethylated read counts, respectively. The resulting distributions are used in a second step to fit a multivariate HMM with states \code{c("Background", "Methylated", "UNmethylated", "Heterozygous")}.
+Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
 }
 

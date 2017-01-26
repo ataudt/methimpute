@@ -12,7 +12,12 @@ importRene <- function(file, chrom.lengths=NULL, temp.store=tempfile("importRene
   	classes <- c('character', 'numeric', 'character', 'NULL', 'character', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric')
     ptm <- startTimedMessage("Reading file ", file, " ...")
 	  data.raw <- read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
-  	data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=c('F'='+', 'R'='-')[data.raw$V3], methylated=data.raw$V10, context=data.raw$V5, counts.unmethylated=data.raw$V7-data.raw$V6, counts.methylated=data.raw$V6)
+  	data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=c('F'='+', 'R'='-')[data.raw$V3], methylated=data.raw$V10, context=data.raw$V5)
+  	counts <- array(NA, dim=c(length(data), 3), dimnames=list(NULL, c("unmethylated", "methylated", "total")))
+  	counts[,"unmethylated"] <- data.raw$V7 - data.raw$V6
+  	counts[,"methylated"] <- data.raw$V6
+  	counts[,"total"] <- data.raw$V7
+  	data$counts <- counts
   	rm(data.raw)
   	stopTimedMessage(ptm)
   	

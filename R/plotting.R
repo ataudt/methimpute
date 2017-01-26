@@ -46,13 +46,11 @@ transCoord <- function(gr) {
 #' Plot a histogram of count values and fitted distributions.
 #' 
 #' @export
-plotHistogramBinomial <- function(model, total.counts, binwidth=1) {
+plotHistogram <- function(model, total.counts, binwidth=1) {
   
     ## Get cross section at total counts ##
-    counts.total <- model$data$counts.methylated + model$data$counts.unmethylated
-    counts.methylated <- model$data$counts.methylated
-    mask.crosssec <- counts.total == total.counts
-    counts.methylated <- counts.methylated[mask.crosssec]
+    mask.crosssec <- counts[,'total'] == total.counts
+    counts.methylated <- counts[mask.crosssec,'methylated']
     
     contexts <- intersect(levels(model$data$context), unique(model$data$context))
     ggplts <- list()
@@ -138,8 +136,7 @@ plotRatioBoxplot <- function(model) {
 #' 
 #' Plot a histogram of count values and fitted distributions.
 #' 
-#' @export
-plotHistogram <- function(model, binwidth=10) {
+plotHistogram2 <- function(model, binwidth=10) {
     
     ## Assign variables
     counts <- model$data$observable
@@ -214,15 +211,15 @@ plotScatter <- function(model, datapoints=1000) {
     for (context in contexts) {
         data <- model$data[model$data$context == context]
         ## Find sensible limits
-        xmax <- quantile(data$counts.unmethylated, 0.99)
-        ymax <- quantile(data$counts.methylated, 0.99)
+        xmax <- quantile(data$counts[,'unmethylated'], 0.99)
+        ymax <- quantile(data$counts[,'methylated'], 0.99)
         limits[[context]] <- c(xmax, ymax)
-        df <- data.frame(state=data$state, counts.unmethylated=data$counts.unmethylated, counts.methylated=data$counts.methylated)
+        df <- data.frame(state=data$state, unmethylated=data$counts[,'unmethylated'], methylated=data$counts[,'methylated'])
         if (datapoints < nrow(df)) {
             df <- df[sample(1:nrow(df), datapoints, replace = FALSE), ]
         }
         
-        ggplt <- ggplot(df, aes_string(x='counts.methylated', y='counts.unmethylated', col='state'))
+        ggplt <- ggplot(df, aes_string(x='methylated', y='unmethylated', col='state'))
         ggplt <- ggplt + geom_point(alpha=0.3)
         ggplt <- ggplt + coord_cartesian(xlim=c(0,xmax), ylim=c(0,ymax))
         ggplt <- ggplt + theme_bw()
@@ -548,9 +545,9 @@ plotStateScatter <- function(segmentation, bins, x, y, col=NULL, datapoints=1000
 
 #' Plot convergence info
 #' 
+#' Plot the convergence of the probability parameter in different sequence contexts.
 #' 
-#' 
-#' @param 
+#' @param model A \code{\link{BinomialHMM}} object or file that contains such an object.
 #' @return A \code{\link[ggplot2]{ggplot}}.
 plotConvergence <- function(model) {
     

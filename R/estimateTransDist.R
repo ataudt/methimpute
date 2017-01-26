@@ -97,6 +97,10 @@ distanceCorrelation <- function(data, distances=0:50) {
     return(r)
 }
     
+#' Obtain \code{transDist} parameter.
+#' 
+#' Obtain an estimate for the \code{transDist} parameter in function \code{\link{callMethylation}} by fitting an exponential to the supplied correlations.
+#' 
 #' @param distcor The list produced by \code{\link{distanceCorrelation}}.
 estimateTransDist <- function(distcor) {
   
