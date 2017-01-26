@@ -9,7 +9,12 @@ distanceCorrelation <- function(data, distances=0:50) {
     contexts <- intersect(levels(data$context), unique(data$context))
     
     ## Add ratio column
-    data$ratio <- data$counts.methylated / (data$counts.methylated + data$counts.unmethylated)
+    data$ratio <- data$counts[,'methylated'] / data$counts[,'total']
+    ### Add distance to bins ###
+    ptm <- startTimedMessage("Adding distance ...")
+    data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
+    data$distance[data$distance < 0] <- Inf 
+    stopTimedMessage(ptm)
   
     ## Loop through distances
     ptm <- startTimedMessage("Calculating correlations\n")
