@@ -6,6 +6,11 @@
 callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=1, initial.params=NULL, include.heterozygosity=TRUE) {
   
     ### Input checks ###
+    if (!is.null(fit.on.chrom)) {
+        if (!fit.on.chrom %in% seqlevels(data)) {
+            stop("Cannot find 'fit.on.chrom' = ", fit.on.chrom, " in the data.")
+        }
+    }
   
     ### Add distance to bins ###
     ptm <- startTimedMessage("Adding distance ...")

@@ -87,7 +87,7 @@ distanceCorrelation <- function(data, distances=0:50) {
             ggplts[[i1]] <- ggplts[[i1]] + scale_alpha_continuous(name='log(weight+1)', limits=c(0,maxweight))
         }
     }
-    cowplt <- cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv')
+    cowplt <- suppressWarnings( cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv') )
             
     ## Plot correlation
     df <- do.call(rbind, cors)
@@ -174,7 +174,7 @@ estimateTransDist <- function(distcor) {
             ggplts[[i1]] <- ggplts[[i1]] + scale_alpha_continuous(name='log(weight+1)', limits=c(0,maxweight))
         }
     }
-    cowplt <- cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv')
+    cowplt <- suppressWarnings( cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv') )
             
     return(list(params=params.list, plot=cowplt))
 }
