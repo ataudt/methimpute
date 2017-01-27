@@ -1,3 +1,65 @@
+#' Inflate an imported methylation extractor file
+#' 
+#' Inflate an imported methylation extractor file to more cytosines. This is useful to obtain a full methylome, including non-covered cytosines.
+#' 
+#' @param methylome A \code{\link[GenomicRanges]{GRanges}} with methylation counts. 
+#' @param methylome.full A \code{\link[GenomicRanges]{GRanges}} with positions for all cytosines or a file with such an object.
+#' @return The \code{methylome.full} object with added metadata column 'counts'.
+#' 
+inflateMethylome <- function(methylome, methylome.full) {
+    
+    if (is.character(methylome.full)) {
+        temp.env <- new.env()
+        methylome.full <- get(load(methylome.full, envir=temp.env), envir=temp.env) 
+    }
+    if (is.character(methylome)) {
+        temp.env <- new.env()
+        methylome <- get(load(methylome, envir=temp.env), envir=temp.env) 
+    }
+  	counts <- array(0, dim=c(length(methylome.full), 3), dimnames=list(NULL, c("unmethylated", "methylated", "total")))
+  	ind <- findOverlaps(methylome.full, methylome)
+  	counts[ind@from,] <- methylome$counts[ind@to,]
+  	methylome.full$counts <- counts
+  	return(methylome.full)
+    
+}
+
+#' Import a BSSeeker methylation extractor file
+#' 
+#' Import a BSSeeker methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
+#' 
+#' @param file The file to import.
+#' @param chrom.lengths A named vector containing the chromosome lengths.
+#' @param temp.store A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.
+#' @return A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'methylated' and 'context'.
+#' 
+importBSSeeker <- function(file, chrom.lengths=NULL, temp.store=tempfile("importBSSeeker")) {
+    
+    # classes <- c(seqnames='character', nucleotide='character', position='numeric', context='character', context.dinucleotide='character', methylation.level='numeric', counts.methylated='numeric', counts.total='numeric')
+    classes <- c('character', 'character', 'numeric', 'character', 'character', 'numeric', 'numeric', 'numeric')
+    ptm <- startTimedMessage("Reading file ", file, " ...")
+	  data.raw <- read.table(file, skip=0, sep='\t', comment.char='', colClasses=classes)
+	  data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V3, end=data.raw$V3), strand=c('C'='+', 'G'='-')[data.raw$V2], context=data.raw$V4)
+  	counts <- array(NA, dim=c(length(data), 3), dimnames=list(NULL, c("unmethylated", "methylated", "total")))
+  	counts[,"unmethylated"] <- data.raw$V8 - data.raw$V7
+  	counts[,"methylated"] <- data.raw$V7
+  	counts[,"total"] <- data.raw$V8
+  	data$counts <- counts
+  	rm(data.raw)
+  	stopTimedMessage(ptm)
+	  
+  	## Assign seqlengths
+  	if (!is.null(chrom.lengths)) {
+      	seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
+  	}
+  	
+    ## Make factors
+    data$context <- factor(data$context)
+    
+  	return(data)
+}
+
+
 #' Import a Rene methylation extractor file
 #' 
 #' Import a Rene methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.

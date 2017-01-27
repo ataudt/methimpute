@@ -49,6 +49,7 @@ transCoord <- function(gr) {
 plotHistogram <- function(model, total.counts, binwidth=1) {
   
     ## Get cross section at total counts ##
+    counts <- model$data$counts
     mask.crosssec <- counts[,'total'] == total.counts
     counts.methylated <- counts[mask.crosssec,'methylated']
     

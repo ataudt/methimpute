@@ -59,7 +59,7 @@ distanceCorrelation <- function(data, distances=0:50) {
         cor.array[,,as.character(i1),'correlation'] <- cor.matrix
         cor.array[,,as.character(i1),'weight'] <- weight.matrix
     }
-    message("\nFinished calculating correlations in ", appendLF = FALSE)
+    message("\nFinished calculating correlations in", appendLF = FALSE)
     stopTimedMessage(ptm)
     
     ## Context correlation plots

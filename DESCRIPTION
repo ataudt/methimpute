@@ -9,7 +9,8 @@ Description: This package implements functions for calling methylated and unmeth
 Depends:
     R (>= 3.3.0),
     GenomicRanges,
-    ggplot2
+    ggplot2,
+    cowplot
 Imports:
     Rcpp (>= 0.12.4.5),
     methods,
