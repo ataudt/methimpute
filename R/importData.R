@@ -21,7 +21,7 @@ inflateMethylome <- function(methylome, methylome.full) {
         stopTimedMessage(ptm)
     }
     ptm <- startTimedMessage("Inflating methylome ...")
-  	counts <- array(0, dim=c(length(methylome.full), 3), dimnames=list(NULL, c("unmethylated", "methylated", "total")))
+  	counts <- array(0, dim=c(length(methylome.full), 2), dimnames=list(NULL, c("methylated", "total")))
   	ind <- findOverlaps(methylome.full, methylome)
   	counts[ind@from,] <- methylome$counts[ind@to,]
   	methylome.full$counts <- counts
