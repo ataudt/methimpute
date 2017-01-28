@@ -212,10 +212,10 @@ plotScatter <- function(model, datapoints=1000) {
     for (context in contexts) {
         data <- model$data[model$data$context == context]
         ## Find sensible limits
-        xmax <- quantile(data$counts[,'unmethylated'], 0.99)
+        xmax <- quantile(data$counts[,'total']-data$counts[,'methylated'], 0.99)
         ymax <- quantile(data$counts[,'methylated'], 0.99)
         limits[[context]] <- c(xmax, ymax)
-        df <- data.frame(state=data$state, unmethylated=data$counts[,'unmethylated'], methylated=data$counts[,'methylated'])
+        df <- data.frame(state=data$state, unmethylated=data$counts[,'total']-data$counts[,'methylated'], methylated=data$counts[,'methylated'])
         if (datapoints < nrow(df)) {
             df <- df[sample(1:nrow(df), datapoints, replace = FALSE), ]
         }

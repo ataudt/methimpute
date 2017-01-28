@@ -46,8 +46,7 @@ importBSSeeker <- function(file, chrom.lengths=NULL, temp.store=tempfile("import
     ptm <- startTimedMessage("Reading file ", file, " ...")
 	  data.raw <- read.table(file, skip=0, sep='\t', comment.char='', colClasses=classes)
 	  data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V3, end=data.raw$V3), strand=c('C'='+', 'G'='-')[data.raw$V2], context=data.raw$V4)
-  	counts <- array(NA, dim=c(length(data), 3), dimnames=list(NULL, c("unmethylated", "methylated", "total")))
-  	counts[,"unmethylated"] <- data.raw$V8 - data.raw$V7
+  	counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
   	counts[,"methylated"] <- data.raw$V7
   	counts[,"total"] <- data.raw$V8
   	data$counts <- counts
@@ -81,8 +80,7 @@ importRene <- function(file, chrom.lengths=NULL, temp.store=tempfile("importRene
     ptm <- startTimedMessage("Reading file ", file, " ...")
 	  data.raw <- read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
   	data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=c('F'='+', 'R'='-')[data.raw$V3], methylated=data.raw$V10, context=data.raw$V5)
-  	counts <- array(NA, dim=c(length(data), 3), dimnames=list(NULL, c("unmethylated", "methylated", "total")))
-  	counts[,"unmethylated"] <- data.raw$V7 - data.raw$V6
+  	counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
   	counts[,"methylated"] <- data.raw$V6
   	counts[,"total"] <- data.raw$V7
   	data$counts <- counts
