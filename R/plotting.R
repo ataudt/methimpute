@@ -470,14 +470,14 @@ insertNULL <- function(plotlist) {
     plotlist2 <- list()
     i3 <- 1
     for (i1 in 1:n) {
-        for (i2 in 1:i1) {
-            plotlist2[[length(plotlist2)+1]] <- plotlist[[i3]]
-            i3 <- i3 + 1
-        }
-        if (i1 < n) {
-            for (i2 in (i1+1):n) {
+        if (i1 > 1) {
+            for (i2 in 1:(n-i1)) {
                 plotlist2[length(plotlist2)+1] <- list(NULL)
             }
+        }
+        for (i2 in i1:n) {
+            plotlist2[[length(plotlist2)+1]] <- plotlist[[i3]]
+            i3 <- i3 + 1
         }
     }
     return(plotlist2)
@@ -566,7 +566,7 @@ plotConvergence <- function(model) {
     ggplt <- ggplot(df) + geom_line(aes_string(x='iteration', y='prob', col='state')) + theme_bw()
     ggplt <- ggplt + theme(panel.grid.minor.x = element_blank())
     ggplt <- ggplt + facet_wrap(~ context)
-    ggplt <- ggplt + scale_x_continuous(breaks=sort(unique(df$iteration))) + scale_y_continuous(limits=c(0,1))
+    ggplt <- ggplt + scale_y_continuous(limits=c(0,1))
     ggplt <- ggplt + scale_color_manual(values=getStateColors(unique(df$state)))
     return(ggplt)
 }
