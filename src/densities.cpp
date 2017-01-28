@@ -635,6 +635,11 @@ void BinomialTestContext::update(const Rcpp::NumericMatrix & weights, const int 
 			}
 		}
 		this->prob[c] = numerator/denominator; // Update prob
+		if (this->prob[c] > 1)
+		{
+			if (verbosity >= 4) Rprintf("prob[c=%d] = %g\n", c, prob[c]);
+		  throw nan_detected;
+		}
 	}
 	
 // 	dtime = clock() - time;
@@ -648,7 +653,7 @@ void BinomialTestContext::update_constrained_context(const Rcpp::NumericMatrix &
 	double kmax = 20;
 	double F, dFdProb, FdivM; // F = dL/dProb
 	double n, m;
-	double p, r;
+	double p, r, pnew;
 
 	// Update of prob with Newton Method
 // 	time = clock();
@@ -674,13 +679,18 @@ void BinomialTestContext::update_constrained_context(const Rcpp::NumericMatrix &
 				}
 			}
 			FdivM = F/dFdProb;
-			if (FdivM < p)
+			pnew = p - FdivM;
+			if ((pnew >= 0) and (pnew <= 1))
 			{
-				p = p-FdivM;
+				p = pnew;
 			}
-			else if (FdivM >= p)
+			else if (pnew < 0)
 			{
 				p = p/2.0;
+			}
+			else if (pnew > 1)
+			{
+			  p = p + (1-p)/2.0;
 			}
 			if(fabs(F)<eps)
 			{
@@ -688,6 +698,11 @@ void BinomialTestContext::update_constrained_context(const Rcpp::NumericMatrix &
 			}
 		}
 		this->prob[c] = p;
+		if (this->prob[c] > 1)
+		{
+			if (verbosity >= 4) Rprintf("prob[c=%d] = %g\n", c, prob[c]);
+		  throw nan_detected;
+		}
 	}
 
 // 	dtime = clock() - time;
