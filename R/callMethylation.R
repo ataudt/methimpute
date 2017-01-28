@@ -23,7 +23,8 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
     ncontexts <- length(contexts)
     transitionContexts <- character()
     for (c1 in 1:length(contexts)) {
-        for (c2 in c1:length(contexts)) {
+        # for (c2 in c1:length(contexts)) {
+        for (c2 in 1:length(contexts)) {
             transitionContexts[length(transitionContexts)+1] <- paste0(contexts[c1], '-', contexts[c2])
         }
     }
@@ -50,8 +51,8 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
     ### Add transition context to bins ###
     ptm <- startTimedMessage("Adding transition context ...")
     data$transitionContext <- factor(c(NA, paste0(data$context[-length(data)], '-', data$context[-1])), level=transitionContexts)
-    na.mask <- is.na(data$transitionContext)
-    data$transitionContext[na.mask] <- factor(c(NA, paste0(data$context[-1], '-', data$context[-length(data)]))[na.mask], levels=transitionContexts)
+    # na.mask <- is.na(data$transitionContext)
+    # data$transitionContext[na.mask] <- factor(c(NA, paste0(data$context[-1], '-', data$context[-length(data)]))[na.mask], levels=transitionContexts)
     transitionContext <- factor(data$transitionContext, levels=transitionContexts)
     stopTimedMessage(ptm)
     
@@ -72,13 +73,10 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
     ### Initial probabilities ###
     if (is.null(initial.params)) {
         transProbs_initial <- list()
-        for (c1 in 1:length(contexts)) {
-            for (c2 in c1:length(contexts)) {
-                context.transition <- paste0(contexts[c1], '-', contexts[c2])
-                s <- 0.9
-                transProbs_initial[[context.transition]] <- matrix((1-s)/(numstates-1), ncol=numstates, nrow=numstates, dimnames=list(from=states, to=states))
-                diag(transProbs_initial[[context.transition]]) <- s
-            }
+        for (context.transition in transitionContexts) {
+            s <- 0.9
+            transProbs_initial[[context.transition]] <- matrix((1-s)/(numstates-1), ncol=numstates, nrow=numstates, dimnames=list(from=states, to=states))
+            diag(transProbs_initial[[context.transition]]) <- s
         }
         startProbs_initial <- rep(1/numstates, numstates)
         names(startProbs_initial) <- states

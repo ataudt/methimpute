@@ -458,7 +458,8 @@ heatmapTransitionProbs <- function(model, order=FALSE) {
         ggplts[[names(model$params$transProbs)[i1]]] <- ggplt
     }
     if (length(ggplts) > 1) {
-        ggplts <- cowplot::plot_grid(plotlist = insertNULL(ggplts), align='hv')
+        # ggplts <- insertNULL(ggplts)
+        ggplts <- cowplot::plot_grid(plotlist = ggplts, align='hv')
     }
     
     return(ggplts)
