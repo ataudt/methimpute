@@ -35,11 +35,10 @@ inflateMethylome <- function(methylome, methylome.full) {
 #' Import a BSSeeker methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 #' 
 #' @param file The file to import.
-#' @param chrom.lengths A named vector containing the chromosome lengths.
-#' @param temp.store A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.
+#' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
 #' @return A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'methylated' and 'context'.
 #' 
-importBSSeeker <- function(file, chrom.lengths=NULL, temp.store=tempfile("importBSSeeker")) {
+importBSSeeker <- function(file, chrom.lengths=NULL) {
     
     # classes <- c(seqnames='character', nucleotide='character', position='numeric', context='character', context.dinucleotide='character', methylation.level='numeric', counts.methylated='numeric', counts.total='numeric')
     classes <- c('character', 'character', 'numeric', 'character', 'character', 'numeric', 'numeric', 'numeric')
@@ -53,8 +52,16 @@ importBSSeeker <- function(file, chrom.lengths=NULL, temp.store=tempfile("import
   	rm(data.raw)
   	stopTimedMessage(ptm)
 	  
+  	
   	## Assign seqlengths
   	if (!is.null(chrom.lengths)) {
+  	    if (is.character(chrom.lengths)) {
+  	        df <- read.table(chrom.lengths, header=TRUE)
+  	        chrom.lengths <- df[,2]
+  	        names(chrom.lengths) <- df[,1]
+  	    }
+      	# Filter by chromosomes supplied in chrom.lengths
+      	data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
       	seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
   	}
   	
@@ -70,11 +77,10 @@ importBSSeeker <- function(file, chrom.lengths=NULL, temp.store=tempfile("import
 #' Import a Rene methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 #' 
 #' @param file The file to import.
-#' @param chrom.lengths A named vector containing the chromosome lengths.
-#' @param temp.store A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.
+#' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
 #' @return A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'methylated' and 'context'.
 #' 
-importRene <- function(file, chrom.lengths=NULL, temp.store=tempfile("importRene")) {
+importRene <- function(file, chrom.lengths=NULL) {
   
   	classes <- c('character', 'numeric', 'character', 'NULL', 'character', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric')
     ptm <- startTimedMessage("Reading file ", file, " ...")
@@ -89,6 +95,13 @@ importRene <- function(file, chrom.lengths=NULL, temp.store=tempfile("importRene
   	
   	## Assign seqlengths
   	if (!is.null(chrom.lengths)) {
+  	    if (is.character(chrom.lengths)) {
+  	        df <- read.table(chrom.lengths, header=TRUE)
+  	        chrom.lengths <- df[,2]
+  	        names(chrom.lengths) <- df[,1]
+  	    }
+      	# Filter by chromosomes supplied in chrom.lengths
+      	data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
       	seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
   	}
   	
@@ -103,7 +116,7 @@ importRene <- function(file, chrom.lengths=NULL, temp.store=tempfile("importRene
 #' Import a Bismarck methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 #' 
 #' @param files The files to import.
-#' @param chrom.lengths A named vector containing the chromosome lengths.
+#' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
 #' @param temp.store A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.
 #' @return A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'methylated' and 'context'.
 #' 
@@ -190,6 +203,13 @@ importBismarck <- function(files, chrom.lengths=NULL, temp.store=tempfile("impor
   
   	## Assign seqlengths
   	if (!is.null(chrom.lengths)) {
+  	    if (is.character(chrom.lengths)) {
+  	        df <- read.table(chrom.lengths, header=TRUE)
+  	        chrom.lengths <- df[,2]
+  	        names(chrom.lengths) <- df[,1]
+  	    }
+      	# Filter by chromosomes supplied in chrom.lengths
+      	data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
       	seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
   	}
   	

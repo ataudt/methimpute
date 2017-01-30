@@ -4,10 +4,12 @@
 \alias{estimateTransDist}
 \title{Obtain \code{transDist} parameter.}
 \usage{
-estimateTransDist(distcor)
+estimateTransDist(distcor, skip = 2)
 }
 \arguments{
 \item{distcor}{The list produced by \code{\link{distanceCorrelation}}.}
+
+\item{skip}{Skip the first n cytosines for the fitting. This can be necessary to avoid periodicity artifacts due to the context definition.}
 }
 \description{
 Obtain an estimate for the \code{transDist} parameter in function \code{\link{callMethylation}} by fitting an exponential to the supplied correlations.

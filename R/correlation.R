@@ -79,9 +79,11 @@ distanceCorrelation <- function(data, distances=0:50) {
         }
     }
     maxweight <- max(maxweights, na.rm = TRUE)
+    miny <- min(cor.array, na.rm = TRUE)
     for (i1 in 1:length(ggplts)) {
         if (!is.null(ggplts[[i1]])) {
             ggplts[[i1]] <- ggplts[[i1]] + scale_alpha_continuous(name='log(weight+1)', limits=c(0,maxweight))
+            ggplts[[i1]] <- ggplts[[i1]] + coord_cartesian(ylim=c(min(0, miny), 1))
         }
     }
     cowplt <- suppressWarnings( cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv') )
@@ -114,6 +116,7 @@ estimateTransDist <- function(distcor, skip=2) {
     ggplts <- list()
     maxweights <- numeric()
     params.list <- list()
+    miny <- min(cor.array, na.rm = TRUE)
     for (c1 in 1:length(contexts)) {
         for (c2 in 1:length(contexts)) {
             context.transition <- paste0(contexts[c1], '-', contexts[c2])
@@ -160,7 +163,6 @@ estimateTransDist <- function(distcor, skip=2) {
                 df$logweight <- log(df$weight+1)
                 ggplt <- ggplot(df) + theme_bw() + geom_line(aes_string(x='distance', y='correlation', alpha='logweight'))
                 ggplt <- ggplt + xlab('distance in [bp]') + ggtitle(context.transition)
-                ggplt <- ggplt + coord_cartesian(ylim=c(0,1))
                 ggplt <- ggplt + geom_line(aes_string(x='distance', y='correlation.fit'), col='blue')
                 ggplt <- ggplt + ggtitle(paste0(context.transition, ": a0 = ", round(p$a0, 2), ", D = ", round(p$D)))
                 ggplts[[context.transition]] <- ggplt
@@ -172,6 +174,7 @@ estimateTransDist <- function(distcor, skip=2) {
     for (i1 in 1:length(ggplts)) {
         if (!is.null(ggplts[[i1]])) {
             ggplts[[i1]] <- ggplts[[i1]] + scale_alpha_continuous(name='log(weight+1)', limits=c(0,maxweight))
+            ggplts[[i1]] <- ggplts[[i1]] + coord_cartesian(ylim=c(min(0, miny), 1))
         }
     }
     cowplt <- suppressWarnings( cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv') )

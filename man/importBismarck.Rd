@@ -10,7 +10,7 @@ importBismarck(files, chrom.lengths = NULL,
 \arguments{
 \item{files}{The files to import.}
 
-\item{chrom.lengths}{A named vector containing the chromosome lengths.}
+\item{chrom.lengths}{A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.}
 
 \item{temp.store}{A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.}
 }

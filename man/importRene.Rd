@@ -4,14 +4,12 @@
 \alias{importRene}
 \title{Import a Rene methylation extractor file}
 \usage{
-importRene(file, chrom.lengths = NULL, temp.store = tempfile("importRene"))
+importRene(file, chrom.lengths = NULL)
 }
 \arguments{
 \item{file}{The file to import.}
 
-\item{chrom.lengths}{A named vector containing the chromosome lengths.}
-
-\item{temp.store}{A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.}
+\item{chrom.lengths}{A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.}
 }
 \value{
 A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'methylated' and 'context'.
