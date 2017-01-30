@@ -462,6 +462,7 @@ void BinomialTest::update_constrained(const Rcpp::NumericMatrix & weights, const
 	double F, dFdProb, FdivM; // F = dL/dProb
 	double n, m;
 	double p = this->prob;
+	double pnew;
 
 	// Update of prob with Newton Method
 // 	time = clock();
@@ -481,13 +482,18 @@ void BinomialTest::update_constrained(const Rcpp::NumericMatrix & weights, const
 			}
 		}
 		FdivM = F/dFdProb;
-		if (FdivM < p)
+		pnew = p - FdivM;
+		if ((pnew >= 0) and (pnew <= 1))
 		{
-			p = p-FdivM;
+			p = pnew;
 		}
-		else if (FdivM >= p)
+		else if (pnew < 0)
 		{
 			p = p/2.0;
+		}
+		else if (pnew > 1)
+		{
+			p = p + (1-p)/2.0;
 		}
 		if(fabs(F)<eps)
 		{

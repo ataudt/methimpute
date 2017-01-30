@@ -571,3 +571,126 @@ plotConvergence <- function(model) {
     ggplt <- ggplt + scale_color_manual(values=getStateColors(unique(df$state)))
     return(ggplt)
 }
+
+
+plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, range=1000, category.column=NULL) {
+  
+    ## Variables
+    categories <- 'none'
+    if (!is.null(category.column)) {
+        categories <- levels(mcols(data)[,category.column])
+    }
+  
+    overlaps <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
+    ## Upstream and downstream annotation
+    annotation.up <- resize(x = annotation, width = 1, fix = 'start')
+    annotation.down <- resize(x = annotation, width = 1, fix = 'end')
+    for (context in levels(data$context)) {
+        message("Upstream and downstream counts for context ", context)
+        data.context <- data[data$context == context]
+        for (category in categories) {
+            message("  category ", category)
+            if (!is.null(category.column)) {
+                data.category <- data.context[mcols(data.context)[,category.column] == category]
+            } else {
+                data.category <- data.context
+            }
+            for (i1 in 1:(range %/% windowsize)) {
+                anno.up <- suppressWarnings( promoters(x = annotation.up, upstream = i1*windowsize, downstream = 0) )
+                anno.up <- suppressWarnings( resize(x = anno.up, width = windowsize, fix = 'start') )
+                ind <- findOverlaps(anno.up, data.category)
+                overlaps[context, category, as.character(i1), 'mean', 'upstream'] <- mean(data.category$posteriorMeth[ind@to])
+                overlaps[context, category, as.character(i1), 'weight', 'upstream'] <- length(ind@to)
+                # overlaps[context, category, as.character(-i1*windowsize), 'mean']] <- mean(data.category$posteriorMeth[ind@to])
+                # overlaps[context, category, as.character(-i1*windowsize), 'weight']] <- length(ind@to)
+            }
+            for (i1 in 1:(range %/% windowsize)) {
+                anno.down <- suppressWarnings( promoters(x = annotation.down, upstream = 0, downstream = i1*windowsize) )
+                anno.down <- suppressWarnings( resize(x = anno.down, width = windowsize, fix = 'end') )
+                ind <- findOverlaps(anno.down, data.category)
+                overlaps[context, category, as.character(i1), 'mean', 'downstream'] <- mean(data.category$posteriorMeth[ind@to])
+                overlaps[context, category, as.character(i1), 'weight', 'downstream'] <- length(ind@to)
+                # overlaps[context, category, as.character((i1-1)*windowsize), 'mean']] <- mean(data.category$posteriorMeth[ind@to])
+                # overlaps[context, category, as.character((i1-1)*windowsize), 'weight']] <- length(ind@to)
+            }
+        }
+    }
+
+    ## Inside annotation
+    ioverlaps <- array(NA, dim=c(length(levels(data$context)), length(categories), insidewindows, 2, 1), dimnames=list(context=levels(data$context), category=categories, distance=1:insidewindows, what=c('mean', 'weight'), where=c('inside')))
+    mask.plus <- as.logical(strand(annotation) == '+' | strand(annotation) == '*')
+    mask.minus <- !mask.plus
+    widths <- width(annotation)
+    for (context in levels(data$context)) {
+        message("Inside counts for context ", context)
+        data.context <- data[data$context == context]
+        for (category in categories) {
+            message("  category ", category)
+            if (!is.null(category.column)) {
+                data.category <- data.context[mcols(data.context)[,category.column] == category]
+            } else {
+                data.category <- data.context
+            }
+            for (i1 in 1:insidewindows) {
+                anno.in <- annotation
+                end(anno.in[mask.plus]) <- start(annotation[mask.plus]) + round(widths[mask.plus] * i1 / insidewindows)
+                start(anno.in[mask.plus]) <- start(annotation[mask.plus]) + round(widths[mask.plus] * (i1-1) / insidewindows)
+                start(anno.in[mask.minus]) <- end(annotation[mask.minus]) - round(widths[mask.minus] * i1 / insidewindows)
+                end(anno.in[mask.minus]) <- end(annotation[mask.minus]) - round(widths[mask.minus] * (i1-1) / insidewindows)
+                ind <- findOverlaps(anno.in, data.category)
+                ioverlaps[context, category, as.character(i1), 'mean', 'inside'] <- mean(data.category$posteriorMeth[ind@to])
+                ioverlaps[context, category, as.character(i1), 'weight', 'inside'] <- length(ind@to)
+                # overlaps[context, category, as.character((i1-1)*windowsize), 'mean']] <- mean(data.category$posteriorMeth[ind@to])
+                # overlaps[context, category, as.character((i1-1)*windowsize), 'weight']] <- length(ind@to)
+            }
+        }
+    }
+    
+    dfo <- reshape2::melt(overlaps)
+    df <- dfo[dfo$what == 'mean',]
+    names(df)[6] <- 'mean'
+    df$distance <- as.numeric(df$distance)
+    # Adjust distances for plot
+    df$distance[df$where == 'upstream'] <- -df$distance[df$where == 'upstream'] * windowsize
+    df$distance[df$where == 'downstream'] <- (df$distance[df$where == 'downstream']-1) * windowsize + range
+    
+    dfo <- reshape2::melt(ioverlaps)
+    idf <- dfo[dfo$what == 'mean',]
+    names(idf)[6] <- 'mean'
+    idf$distance <- as.numeric(idf$distance)
+    # Adjust distances for plot
+    idf$distance <- (idf$distance-1) * range / insidewindows
+    
+    breaks <- c(c(-1, -0.5, 0, 0.5, 1, 1.5, 2) * range)
+    labels <- c(-range, -range/2, '0%', '50%', '100%', range/2, range)
+    
+    weights <- apply(overlaps, c(1,2,4), sum)[,,'weight']
+    iweights <- apply(ioverlaps, c(1,2,4), sum)[,,'weight']
+    df <- rbind(df, idf)
+    if (!is.null(category.column)) {
+        df$weight <- diag((weights + iweights)[df$context, df$category])
+    } else {
+        df$weight <- (weights + iweights)[df$context]
+    }
+    df$weight <- log(df$weight+1)
+    
+    ggplt <- ggplot(df) + geom_line(aes_string(x='distance', y='mean', col='context', alpha='weight'))
+    ggplt <- ggplt + scale_alpha_continuous(name='log(weight+1)', range=c(0.5,1))
+    ggplt <- ggplt + scale_x_continuous(breaks=breaks, labels=labels)
+    ggplt <- ggplt + xlab('Distance from annotation') + ylab('Posterior of methylation')
+    if (!is.null(category.column)) {
+        ggplt <- ggplt + facet_wrap(~ category)
+    }
+    ggplt
+    
+    return(ggplt)
+}
+
+
+
+
+
+
+
+
+

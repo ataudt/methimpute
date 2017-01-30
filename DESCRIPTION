@@ -26,6 +26,7 @@ Imports:
     reshape2,
     Rsamtools,
     GenomicAlignments,
+    minpack.lm,
     ggdendro,
     ReorderCluster
 Suggests:

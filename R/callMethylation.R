@@ -37,6 +37,8 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
             stop("Names of 'transDist' must be ", paste0(names(transDistvec), collapse=', '), ".")
         }
         transDistvec[names(transDist)] <- transDist
+        rev.names <- sapply(strsplit(names(transDist), '-'), function(x) { paste0(rev(x), collapse = '-')})
+        transDistvec[rev.names] <- transDist
     }
     if (!include.heterozygosity) {
         states <- c('UNmethylated', 'Methylated')
