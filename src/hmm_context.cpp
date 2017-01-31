@@ -768,31 +768,31 @@ void HMM_context::calc_sumxi()
 		}
 	}	
 
-		double transProbDistance, transProbHelp;
+	double transProbDistance, transProbHelp;
 
-		for (int t=0; t<this->NDATA-1; t++)
-		{
-			transProbs = Rcpp::as<Rcpp::NumericMatrix>(this->transProbsList[this->transitionContext[t+1]]);
-			transProbHelp = 1.0/this->NSTATES * ( 1.0 - this->transExp[t+1] );
+	for (int t=0; t<this->NDATA-1; t++)
+	{
+		transProbs = Rcpp::as<Rcpp::NumericMatrix>(this->transProbsList[this->transitionContext[t+1]]);
+		transProbHelp = 1.0/this->NSTATES * ( 1.0 - this->transExp[t+1] );
 // 		#pragma omp parallel for
-			for (int i=0; i<this->NSTATES; i++)
+		for (int i=0; i<this->NSTATES; i++)
+		{
+			for (int j=0; j<this->NSTATES; j++)
 			{
-				for (int j=0; j<this->NSTATES; j++)
+				if (this->distances[t+1] > 0)
 				{
-					if (this->distances[t+1] > 0)
-					{
-						transProbDistance = transProbs(i,j) * this->transExp[t+1] + transProbHelp;
-					}
-					else
-					{
-						transProbDistance = transProbs(i,j);
-					}
-					xi = this->scalealpha(t,i) * transProbDistance * this->densities(j,t+1) * this->scalebeta(t+1,j);
-// 					xi = this->scalealpha(t,i) * transProbs(i,j) * this->densities(j,t+1) * this->scalebeta(t+1,j);
-					this->sumxi(i,j) += xi;
+					transProbDistance = transProbs(i,j) * this->transExp[t+1] + transProbHelp;
 				}
+				else
+				{
+					transProbDistance = transProbs(i,j);
+				}
+				xi = this->scalealpha(t,i) * transProbDistance * this->densities(j,t+1) * this->scalebeta(t+1,j);
+// 					xi = this->scalealpha(t,i) * transProbs(i,j) * this->densities(j,t+1) * this->scalebeta(t+1,j);
+				this->sumxi(i,j) += xi;
 			}
 		}
+	}
 
 }
 
