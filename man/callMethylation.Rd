@@ -2,17 +2,42 @@
 % Please edit documentation in R/callMethylation.R
 \name{callMethylation}
 \alias{callMethylation}
-\title{Methylation calling with a binomial-test HMM}
+\title{Call methylation status}
 \usage{
-callMethylation(data, fit.on.chrom = NULL, min.reads = 0, transDist = Inf,
-  eps = 0.01, max.time = Inf, max.iter = Inf, count.cutoff = 500,
-  verbosity = 1, num.threads = 1, initial.params = NULL,
-  include.heterozygosity = TRUE)
+callMethylation(data, fit.on.chrom = NULL, transDist = Inf, eps = 0.01,
+  max.time = Inf, max.iter = Inf, count.cutoff = 500, verbosity = 1,
+  num.threads = 1, initial.params = NULL, include.intermediate = TRUE)
+}
+\arguments{
+\item{data}{A \code{\link{methimputeData}} object.}
+
+\item{fit.on.chrom}{A character vector specifying the chromosomes on which the HMM will be fitted.}
+
+\item{transDist}{The decaying constant for the distance-dependent transition matrix. Either a single numeric or a named numeric vector, where the vector names correspond to the transition contexts. Such a vector can be obtained from \code{\link{estimateTransDist}}.}
+
+\item{eps}{Convergence threshold for the Baum-Welch algorithm.}
+
+\item{max.time}{Maximum running time in seconds for the Baum-Welch algorithm.}
+
+\item{max.iter}{Maximum number of iterations for the Baum-Welch algorithm.}
+
+\item{count.cutoff}{A cutoff for the counts to remove artificially high counts from mapping artifacts. Set to \code{Inf} to disable this filtering (not recommended).}
+
+\item{verbosity}{An integer from 1 to 5 specifying the verbosity of the fitting procedure. Values > 1 are only for debugging.}
+
+\item{num.threads}{Number of CPU to use for the computation. Parallelization is implemented on the number of states, which is 2 or 3, so setting \code{num.threads > 3} will not give additional performance increase.}
+
+\item{initial.params}{A \code{\link{methimputeBinomialHMM}} object. This parameter is useful to continue the fitting procedure for a \code{\link{methimputeBinomialHMM}} object.}
+
+\item{include.intermediate}{A logical specifying wheter or not the intermediate component should be included in the HMM.}
 }
 \value{
-A list with fitted parameters, posteriors.
+A \code{\link{methimputeBinomialHMM}} object.
 }
 \description{
-Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
+Call methylation status of cytosines (or bins) with a Hidden Markov Model.
+}
+\details{
+The Hidden Markov model uses a binomial test for the emission densities. Transition probabilities are modeled with a distance dependent decay, specified by the parameter \code{transDist}.
 }
 

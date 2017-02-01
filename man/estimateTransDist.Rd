@@ -2,16 +2,16 @@
 % Please edit documentation in R/correlation.R
 \name{estimateTransDist}
 \alias{estimateTransDist}
-\title{Obtain \code{transDist} parameter.}
+\title{\code{transDist} parameter}
 \usage{
 estimateTransDist(distcor, skip = 2)
 }
 \arguments{
-\item{distcor}{The list produced by \code{\link{distanceCorrelation}}.}
+\item{distcor}{The output produced by \code{\link{distanceCorrelation}}.}
 
 \item{skip}{Skip the first n cytosines for the fitting. This can be necessary to avoid periodicity artifacts due to the context definition.}
 }
 \description{
-Obtain an estimate for the \code{transDist} parameter in function \code{\link{callMethylation}} by fitting an exponential to the supplied correlations.
+Obtain an estimate for the \code{transDist} parameter (used in function \code{\link{callMethylation}}) by fitting an exponential function to the supplied correlations (from \code{\link{distanceCorrelation}}).
 }
 

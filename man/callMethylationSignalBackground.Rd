@@ -6,8 +6,8 @@
 \usage{
 callMethylationSignalBackground(data, ID, fit.on.chrom = NULL,
   transDist = 700, eps = 0.01, max.time = Inf, max.iter = Inf,
-  count.cutoff = 500, states = c("Background", "Methylated", "UNmethylated",
-  "Heterozygous"), verbosity = 1, num.threads = 1)
+  count.cutoff = 500, states = c("Background", "Methylated", "Unmethylated",
+  "Intermediate"), verbosity = 1, num.threads = 1)
 }
 \arguments{
 \item{data}{A \code{\link[GenomicRanges]{GRanges}} object with metadata column 'counts' (or any other column specified as \code{observable}).}
@@ -35,6 +35,6 @@ A list with fitted parameters, posteriors and input parameters.
 Call methylated, unmethylated and heterozygous regions by fitting a multivariate Hidden Markov Model to the data.
 }
 \details{
-In a first step, the function will use \code{\link{fitSignalBackground}} to obtain the distribution parameters for a signal-background model for methylated and unmethylated read counts, respectively. The resulting distributions are used in a second step to fit a multivariate HMM with states \code{c("Background", "Methylated", "UNmethylated", "Heterozygous")}.
+In a first step, the function will use \code{\link{fitSignalBackground}} to obtain the distribution parameters for a signal-background model for methylated and unmethylated read counts, respectively. The resulting distributions are used in a second step to fit a multivariate HMM with states \code{c("Background", "Methylated", "Unmethylated", "Intermediate")}.
 }
 

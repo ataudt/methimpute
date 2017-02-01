@@ -2,14 +2,19 @@
 % Please edit documentation in R/correlation.R
 \name{distanceCorrelation}
 \alias{distanceCorrelation}
-\title{Estimate the \code{transDist} parameter}
+\title{Distance correlation}
 \usage{
 distanceCorrelation(data, distances = 0:50)
 }
+\arguments{
+\item{distances}{An integer vector specifying the distances for which the correlation will be calculated.}
+
+\item{A}{\code{\link{methimputeData}} object.}
+}
 \value{
-A list() containing a data.frame and a ggplot.
+A list() with an array containing the correlation values and the corresponding \code{\link[ggplot2]{ggplot}}.
 }
 \description{
-Estimate the \code{transDist} parameter from data.
+Compute the distance correlation from a \code{\link{methimputeData}} object.
 }
 

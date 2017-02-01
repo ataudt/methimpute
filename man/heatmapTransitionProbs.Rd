@@ -7,7 +7,7 @@
 heatmapTransitionProbs(model, order = FALSE)
 }
 \arguments{
-\item{model}{A \code{\link{multiHMM}} object or file that contains such an object.}
+\item{model}{A \code{\link{methimputeBinomialHMM}} object.}
 
 \item{order}{Set to \code{TRUE} if you want to order the heatmap.}
 }

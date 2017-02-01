@@ -29,7 +29,7 @@ Get a set of distinct colors selected from \code{\link{colors}}.
 The function computes the euclidian distance between all \code{\link{colors}} and iteratively selects those that have the furthest closes distance to the set of already selected colors.
 }
 \examples{
-cols <- AneuFinder:::getDistinctColors(5)
+cols <- getDistinctColors(5)
 pie(rep(1,5), labels=cols, col=cols)
 
 }

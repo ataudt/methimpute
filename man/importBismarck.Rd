@@ -15,7 +15,7 @@ importBismarck(files, chrom.lengths = NULL,
 \item{temp.store}{A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.}
 }
 \value{
-A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'methylated' and 'context'.
+A \code{\link{methimputeData}} object.
 }
 \description{
 Import a Bismarck methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.

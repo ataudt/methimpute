@@ -12,7 +12,7 @@ importRene(file, chrom.lengths = NULL)
 \item{chrom.lengths}{A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.}
 }
 \value{
-A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'methylated' and 'context'.
+A \code{\link{methimputeData}} object.
 }
 \description{
 Import a Rene methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.

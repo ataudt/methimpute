@@ -7,7 +7,7 @@
 plotConvergence(model)
 }
 \arguments{
-\item{model}{A \code{\link{BinomialHMM}} object or file that contains such an object.}
+\item{model}{A \code{\link{methimputeBinomialHMM}} object.}
 }
 \value{
 A \code{\link[ggplot2]{ggplot}}.

@@ -15,8 +15,9 @@
 #' @author Aaron Taudt
 #' @importFrom grDevices col2rgb rgb2hsv
 #' @importFrom stats dist
+#' @export
 #' @examples
-#'cols <- AneuFinder:::getDistinctColors(5)
+#'cols <- getDistinctColors(5)
 #'pie(rep(1,5), labels=cols, col=cols)
 #'
 getDistinctColors <- function(n, start.color='blue4', exclude.colors=c('white','black','gray','grey','\\<yellow\\>', 'yellow1', 'lemonchiffon'), exclude.brightness.above=1, exclude.rgb.above=210) {

@@ -1,8 +1,12 @@
-#' Estimate the \code{transDist} parameter
+#' Distance correlation
 #' 
-#' Estimate the \code{transDist} parameter from data.
+#' Compute the distance correlation from a \code{\link{methimputeData}} object.
 #' 
-#' @return A list() containing a data.frame and a ggplot.
+#' @param A \code{\link{methimputeData}} object.
+#' @param distances An integer vector specifying the distances for which the correlation will be calculated.
+#' @return A list() with an array containing the correlation values and the corresponding \code{\link[ggplot2]{ggplot}}.
+#' 
+#' @export
 distanceCorrelation <- function(data, distances=0:50) {
     
     ## Contexts
@@ -102,12 +106,14 @@ distanceCorrelation <- function(data, distances=0:50) {
     return(r)
 }
     
-#' Obtain \code{transDist} parameter.
+#' \code{transDist} parameter
 #' 
-#' Obtain an estimate for the \code{transDist} parameter in function \code{\link{callMethylation}} by fitting an exponential to the supplied correlations.
+#' Obtain an estimate for the \code{transDist} parameter (used in function \code{\link{callMethylation}}) by fitting an exponential function to the supplied correlations (from \code{\link{distanceCorrelation}}).
 #' 
-#' @param distcor The list produced by \code{\link{distanceCorrelation}}.
+#' @param distcor The output produced by \code{\link{distanceCorrelation}}.
 #' @param skip Skip the first n cytosines for the fitting. This can be necessary to avoid periodicity artifacts due to the context definition.
+#' 
+#' @export
 estimateTransDist <- function(distcor, skip=2) {
   
     ## Context correlation fits and plots

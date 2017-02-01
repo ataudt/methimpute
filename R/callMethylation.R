@@ -1,9 +1,24 @@
-#' Methylation calling with a binomial-test HMM
+#' Call methylation status
 #' 
-#' Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
+#' Call methylation status of cytosines (or bins) with a Hidden Markov Model.
 #' 
-#' @return A list with fitted parameters, posteriors.
-callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=1, initial.params=NULL, include.heterozygosity=TRUE) {
+#' The Hidden Markov model uses a binomial test for the emission densities. Transition probabilities are modeled with a distance dependent decay, specified by the parameter \code{transDist}.
+#' 
+#' @param data A \code{\link{methimputeData}} object.
+#' @param fit.on.chrom A character vector specifying the chromosomes on which the HMM will be fitted.
+#' @param transDist The decaying constant for the distance-dependent transition matrix. Either a single numeric or a named numeric vector, where the vector names correspond to the transition contexts. Such a vector can be obtained from \code{\link{estimateTransDist}}.
+#' @param eps Convergence threshold for the Baum-Welch algorithm.
+#' @param max.time Maximum running time in seconds for the Baum-Welch algorithm.
+#' @param max.iter Maximum number of iterations for the Baum-Welch algorithm.
+#' @param count.cutoff A cutoff for the counts to remove artificially high counts from mapping artifacts. Set to \code{Inf} to disable this filtering (not recommended).
+#' @param verbosity An integer from 1 to 5 specifying the verbosity of the fitting procedure. Values > 1 are only for debugging.
+#' @param num.threads Number of CPU to use for the computation. Parallelization is implemented on the number of states, which is 2 or 3, so setting \code{num.threads > 3} will not give additional performance increase.
+#' @param initial.params A \code{\link{methimputeBinomialHMM}} object. This parameter is useful to continue the fitting procedure for a \code{\link{methimputeBinomialHMM}} object.
+#' @param include.intermediate A logical specifying wheter or not the intermediate component should be included in the HMM.
+#' @return A \code{\link{methimputeBinomialHMM}} object.
+#' 
+#' @export
+callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=1, initial.params=NULL, include.intermediate=TRUE) {
   
     ### Input checks ###
     if (!is.null(fit.on.chrom)) {
@@ -19,6 +34,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
     stopTimedMessage(ptm)
     
     ### Assign variables ###
+    min.reads <- 0
     contexts <- intersect(levels(data$context), unique(data$context))
     ncontexts <- length(contexts)
     transitionContexts <- character()
@@ -40,10 +56,10 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
         rev.names <- sapply(strsplit(names(transDist), '-'), function(x) { paste0(rev(x), collapse = '-')})
         transDistvec[rev.names] <- transDist
     }
-    if (!include.heterozygosity) {
-        states <- c('UNmethylated', 'Methylated')
+    if (!include.intermediate) {
+        states <- c('Unmethylated', 'Methylated')
     } else {
-        states <- c('UNmethylated', 'Heterozygous', 'Methylated')
+        states <- c('Unmethylated', 'Intermediate', 'Methylated')
     }
     numstates <- length(states)
     counts <- data$counts
@@ -53,8 +69,6 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
     ### Add transition context to bins ###
     ptm <- startTimedMessage("Adding transition context ...")
     data$transitionContext <- factor(c(NA, paste0(data$context[-length(data)], '-', data$context[-1])), level=transitionContexts)
-    # na.mask <- is.na(data$transitionContext)
-    # data$transitionContext[na.mask] <- factor(c(NA, paste0(data$context[-1], '-', data$context[-length(data)]))[na.mask], levels=transitionContexts)
     transitionContext <- factor(data$transitionContext, levels=transitionContexts)
     stopTimedMessage(ptm)
     
@@ -87,7 +101,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
         ep <- list()
         probUN.start <- 0.01
         probM.start <- 0.9
-        if (!include.heterozygosity) {
+        if (!include.intermediate) {
             probs <- rep(probUN.start, ncontexts)
             names(probs) <- contexts
             ep[[states[1]]] <- data.frame(prob=probs)
@@ -108,7 +122,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
         names(ep) <- states
         emissionParams_initial <- ep
     } else {
-        model.init <- loadFromFiles(initial.params, check.class='BinomialHMMcontext')[[1]]
+        model.init <- loadFromFiles(initial.params, check.class='methimputeBinomialHMM')[[1]]
         transProbs_initial <- model.init$params$transProbs
         startProbs_initial <- model.init$params$startProbs
         emissionParams_initial <- model.init$params$emissionParams
@@ -136,10 +150,10 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
         stopTimedMessage(ptm)
         ## Cast convergence info
         parray <- array(NA, dim=c(length(contexts), length(hmm$convergenceInfo$logliks), length(states)), dimnames=list(context=contexts, iteration=0:(length(hmm$convergenceInfo$logliks)-1), state=states))
-        parray[,,'UNmethylated'] <- hmm$convergenceInfo$parameterInfo$probsUN
+        parray[,,'Unmethylated'] <- hmm$convergenceInfo$parameterInfo$probsUN
         parray[,,'Methylated'] <- hmm$convergenceInfo$parameterInfo$probsM
-        if ('Heterozygous' %in% states) {
-            parray[,,'Heterozygous'] <- (parray[,,'UNmethylated'] + parray[,,'Methylated']) / 2
+        if ('Intermediate' %in% states) {
+            parray[,,'Intermediate'] <- (parray[,,'Unmethylated'] + parray[,,'Methylated']) / 2
         }
         convergenceInfo <- hmm$convergenceInfo
         convergenceInfo$parameterInfo <- parray[,-1,]
@@ -155,10 +169,10 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
         convergenceInfo <- list(prefit=list(), fit=list())
         convergenceInfo$prefit$fit.on.chrom <- fit.on.chrom
         parray <- array(NA, dim=c(length(contexts), length(hmm$convergenceInfo$logliks), length(states)), dimnames=list(context=contexts, iteration=0:(length(hmm$convergenceInfo$logliks)-1), state=states))
-        parray[,,'UNmethylated'] <- hmm$convergenceInfo$parameterInfo$probsUN
+        parray[,,'Unmethylated'] <- hmm$convergenceInfo$parameterInfo$probsUN
         parray[,,'Methylated'] <- hmm$convergenceInfo$parameterInfo$probsM
-        if ('Heterozygous' %in% states) {
-            parray[,,'Heterozygous'] <- (parray[,,'UNmethylated'] + parray[,,'Methylated']) / 2
+        if ('Intermediate' %in% states) {
+            parray[,,'Intermediate'] <- (parray[,,'Unmethylated'] + parray[,,'Methylated']) / 2
         }
         convergenceInfo$prefit <- hmm$convergenceInfo
         convergenceInfo$prefit$parameterInfo <- parray[,-1,]
@@ -192,7 +206,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
     ### Construct result object ###
     ptm <- startTimedMessage("Compiling results ...")
     r <- list()
-    class(r) <- "BinomialHMMcontext"
+    class(r) <- "methimputeBinomialHMM"
     if (hmm$error == "") {
         r$convergenceInfo <- convergenceInfo
         names(hmm$weights) <- states
@@ -226,385 +240,6 @@ callMethylation <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=Inf,
     
     return(r)
 }
-
-
-
-#' Methylation calling with a binomial-test HMM
-#' 
-#' Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
-#' 
-#' @return A list with fitted parameters, posteriors.
-callMethylationBinomialContext <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=1, initial.params=NULL, include.heterozygosity=TRUE) {
-  
-    ### Input checks ###
-    if (is.null(max.time)) {
-        max.time <- Inf
-    }
-    if (is.null(max.iter)) {
-        max.iter <- Inf
-    }
-  
-    ### Add distance to bins ###
-    ptm <- startTimedMessage("Adding distance ...")
-    data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
-    data$distance[data$distance < 0] <- Inf 
-    stopTimedMessage(ptm)
-    
-    ### Assign variables ###
-    contexts <- intersect(levels(data$context), unique(data$context))
-    ncontexts <- length(contexts)
-    if (!include.heterozygosity) {
-        states <- c('UNmethylated', 'Methylated')
-    } else {
-        states <- c('UNmethylated', 'Heterozygous', 'Methylated')
-    }
-    numstates <- length(states)
-    counts <- data$counts
-    distances <- data$distance
-    context <- factor(data$context, levels=contexts)
-    
-    ## Filter counts by cutoff
-    mask <- counts[,'total'] > count.cutoff
-    counts[mask,] <- round(sweep(x = counts[mask,], MARGIN = 1, STATS = counts[mask,'total']/count.cutoff, FUN = '/'))
-    data$counts <- counts # assign it now to have filtered values in there
-    
-    ## Subset by chromosomes
-    if (!is.null(fit.on.chrom)) {
-        counts <- counts[as.logical(data@seqnames %in% fit.on.chrom),]
-        context <- context[as.logical(data@seqnames %in% fit.on.chrom)]
-    }
-  
-    ### Initial probabilities ###
-    if (is.null(initial.params)) {
-        s <- 0.9
-        transProbs_initial <- matrix((1-s)/(numstates-1), ncol=numstates, nrow=numstates, dimnames=list(from=states, to=states))
-        diag(transProbs_initial) <- s
-        startProbs_initial <- rep(1/numstates, numstates)
-        names(startProbs_initial) <- states
-        
-        ### Initialization of emission distributions ###
-        ep <- list()
-        probUN.start <- 0.01
-        probM.start <- 0.9
-        if (!include.heterozygosity) {
-            probs <- rep(probUN.start, ncontexts)
-            names(probs) <- contexts
-            ep[[states[1]]] <- data.frame(prob=probs)
-            probs <- rep(probM.start, ncontexts)
-            names(probs) <- contexts
-            ep[[states[2]]] <- data.frame(prob=probs)
-        } else {
-            probs <- rep(probUN.start, ncontexts)
-            names(probs) <- contexts
-            ep[[states[1]]] <- data.frame(prob=probs)
-            probs <- rep(0.5*(probUN.start+probM.start), ncontexts)
-            names(probs) <- contexts
-            ep[[states[2]]] <- data.frame(prob=probs)
-            probs <- rep(probM.start, ncontexts)
-            names(probs) <- contexts
-            ep[[states[3]]] <- data.frame(prob=probs)
-        }
-        names(ep) <- states
-        emissionParams_initial <- ep
-    } else {
-        model.init <- loadFromFiles(initial.params, check.class='NcomponentHMM')[[1]]
-        transProbs_initial <- model.init$params$transProbs
-        startProbs_initial <- model.init$params$startProbs
-        emissionParams_initial <- model.init$params$emissionParams
-    }
-  
-    ### Define parameters for C function ###
-    params <- list()
-    params$startProbs_initial <- startProbs_initial
-    params$transProbs_initial <- transProbs_initial
-    params$emissionParams_initial <- emissionParams_initial
-    params$transDist <- transDist
-    params$eps <- eps
-    params$maxtime <- max.time
-    params$maxiter <- max.iter
-    params$minreads <- min.reads
-    params$verbosity <- verbosity
-    params$numThreads <- num.threads
-    
-    ### Call the C function ###
-    on.exit(cleanup())
-    if (is.null(fit.on.chrom)) {
-        ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
-        hmm <- fitBinomialTestHMMcontext(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], context=as.integer(context)-1, distances=distances, params=params, algorithm=1)
-        message("Time spent in Baum-Welch:", appendLF=FALSE)
-        stopTimedMessage(ptm)
-    } else {
-        ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
-        message(" ... on chromosomes ", paste0(fit.on.chrom, collapse=', '))
-        hmm <- fitBinomialTestHMMcontext(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], context=as.integer(context)-1, distances=distances, params=params, algorithm=1)
-        message("Time spent in Baum-Welch:", appendLF=FALSE)
-        stopTimedMessage(ptm)
-        counts <- data$counts
-        context <- data$context
-        params2 <- list()
-        params2$startProbs_initial <- hmm$startProbs
-        params2$transProbs_initial <- hmm$transProbs
-        params2$emissionParams_initial <- hmm$emissionParams
-        params2$transDist <- transDist
-        params2$eps <- eps
-        params2$maxtime <- max.time
-        params2$maxiter <- max.iter
-        params2$minreads <- min.reads
-        params2$verbosity <- verbosity
-        params2$numThreads <- num.threads
-        ptm <- startTimedMessage("Forward-Backward: Obtaining state sequence - no updates\n")
-        message(" ... on all chromosomes")
-        hmm <- fitBinomialTestHMMcontext(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], context=as.integer(context)-1, distances=distances, params=params2, algorithm=2)
-        message("Time spent in Forward-Backward:", appendLF=FALSE)
-        stopTimedMessage(ptm)
-    }
-    
-    ### Construct result object ###
-    ptm <- startTimedMessage("Compiling results ...")
-    r <- list()
-    class(r) <- "BinomialHMMcontext"
-    if (hmm$error == "") {
-        r$convergenceInfo <- hmm$convergenceInfo
-        names(hmm$weights) <- states
-        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams)
-        r$params.initial <- params
-        # States and posteriors
-        data$posteriorMax <- NA
-        for (i1 in 0:(nrow(hmm$posteriors)-1)) {
-            mask <- hmm$states == i1
-            data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
-        }
-        rownames(hmm$posteriors) <- states
-        data$posteriors <- t(hmm$posteriors)
-        data$state <- factor(states, levels=states)[hmm$states+1]
-        ## Segmentation
-        data.collapse <- data
-        mcols(data.collapse) <- NULL
-        data.collapse$state <- data$state
-        df <- suppressMessages( collapseBins(as.data.frame(data.collapse), column2collapseBy = 'state') )
-        segments <- methods::as(df, 'GRanges')
-        seqlengths(segments) <- seqlengths(data)[seqlevels(segments)]
-        ## Context-dependent weights
-        r$params$weights <- list()
-        for (context in contexts) {
-            r$params$weights[[context]] <- colMeans(data$posteriors[data$context==context,])
-        }
-    }
-    r$data <- data
-    r$segments <- segments
-    stopTimedMessage(ptm)
-    
-    return(r)
-}
-
-
-
-#' Methylation calling with a binomial-test HMM
-#' 
-#' Call methylation status of cytosines (or bins) with a Hidden Markov Model using a binomial test for the emission probabilities.
-#' 
-#' @return A list with fitted parameters, posteriors.
-callMethylationBinomial <- function(data, fit.on.chrom=NULL, min.reads=0, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=1, initial.params=NULL, include.heterozygosity=TRUE) {
-  
-    ### Input checks ###
-    if (is.null(max.time)) {
-        max.time <- Inf
-    }
-    if (is.null(max.iter)) {
-        max.iter <- Inf
-    }
-  
-    contexts <- intersect(levels(data$context), unique(data$context))
-    data.allcontext <- data
-    datas <- split(data, data$context)
-    
-    rs <- list()
-    for (context in contexts) {
-        messageU("Working on context ", context, overline = '-', underline = '-')
-        data <- datas[[as.character(context)]]
-        ### Add distance to bins ###
-        ptm <- startTimedMessage("Adding distance ...")
-        data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
-        data$distance[data$distance < 0] <- Inf 
-        stopTimedMessage(ptm)
-        
-        ### Assign variables ###
-        if (!include.heterozygosity) {
-            states <- c('UNmethylated', 'Methylated')
-        } else {
-            states <- c('UNmethylated', 'Heterozygous', 'Methylated')
-        }
-        numstates <- length(states)
-        counts <- data$counts
-        distances <- data$distance
-        
-        ## Filter counts by cutoff
-        mask <- counts[,'total'] > count.cutoff
-        counts[mask,] <- round(sweep(x = counts[mask,], MARGIN = 1, STATS = counts[mask,'total']/count.cutoff, FUN = '/'))
-        data$counts <- counts # assign it now to have filtered values in there
-        
-        ## Subset by chromosomes
-        if (!is.null(fit.on.chrom)) {
-            counts <- counts[as.logical(data@seqnames %in% fit.on.chrom),]
-        }
-      
-        ### Initial probabilities ###
-        if (is.null(initial.params)) {
-            s <- 0.9
-            transProbs_initial <- matrix((1-s)/(numstates-1), ncol=numstates, nrow=numstates, dimnames=list(from=states, to=states))
-            diag(transProbs_initial) <- s
-            startProbs_initial <- rep(1/numstates, numstates)
-            names(startProbs_initial) <- states
-            
-            ### Initialization of emission distributions ###
-            ep <- list()
-            probUN.start <- 0.01
-            probM.start <- 0.9
-            if (!include.heterozygosity) {
-                ep[[states[1]]] <- data.frame(type='dbinom', prob=probUN.start)
-                ep[[states[2]]] <- data.frame(type='dbinom', prob=probM.start)
-            } else {
-                ep[[states[1]]] <- data.frame(type='dbinom', prob=probUN.start)
-                ep[[states[2]]] <- data.frame(type='dbinom', prob=0.5*(probUN.start+probM.start))
-                ep[[states[3]]] <- data.frame(type='dbinom', prob=probM.start)
-            }
-            ep <- do.call(rbind, ep)
-            rownames(ep) <- states
-            emissionParams_initial <- ep
-        } else {
-            model.init <- loadFromFiles(initial.params, check.class='NcomponentHMM')[[1]]
-            transProbs_initial <- model.init$params$transProbs
-            startProbs_initial <- model.init$params$startProbs
-            emissionParams_initial <- model.init$params$emissionParams
-        }
-      
-        ### Define parameters for C function ###
-        params <- list()
-        params$startProbs_initial <- startProbs_initial
-        params$transProbs_initial <- transProbs_initial
-        params$emissionParams_initial <- emissionParams_initial
-        params$transDist <- transDist
-        params$eps <- eps
-        params$maxtime <- max.time
-        params$maxiter <- max.iter
-        params$minreads <- min.reads
-        params$verbosity <- verbosity
-        params$numThreads <- num.threads
-        
-        ### Call the C function ###
-        on.exit(cleanup())
-        if (is.null(fit.on.chrom)) {
-            ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
-            hmm <- fitBinomialTestHMM(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], distances=distances, params=params, algorithm=1)
-            message("Time spent in Baum-Welch:", appendLF=FALSE)
-            stopTimedMessage(ptm)
-        } else {
-            ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
-            message(" ... on chromosomes ", paste0(fit.on.chrom, collapse=', '))
-            hmm <- fitBinomialTestHMM(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], distances=distances, params=params, algorithm=1)
-            message("Time spent in Baum-Welch:", appendLF=FALSE)
-            stopTimedMessage(ptm)
-            counts <- data$counts
-            params2 <- list()
-            params2$startProbs_initial <- hmm$startProbs
-            params2$transProbs_initial <- hmm$transProbs
-            params2$emissionParams_initial <- hmm$emissionParams
-            params2$transDist <- transDist
-            params2$eps <- eps
-            params2$maxtime <- max.time
-            params2$maxiter <- max.iter
-            params2$minreads <- min.reads
-            params2$verbosity <- verbosity
-            params2$numThreads <- num.threads
-            ptm <- startTimedMessage("Forward-Backward: Obtaining state sequence - no updates\n")
-            message(" ... on all chromosomes")
-            hmm <- fitBinomialTestHMM(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], distances=distances, params=params2, algorithm=2)
-            message("Time spent in Forward-Backward:", appendLF=FALSE)
-            stopTimedMessage(ptm)
-        }
-        
-        ### Construct result object ###
-        ptm <- startTimedMessage("Compiling results ...")
-        r <- list()
-        class(r) <- "BinomialHMM"
-        if (hmm$error == "") {
-            r$convergenceInfo <- hmm$convergenceInfo
-            names(hmm$weights) <- states
-            r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams, weights=hmm$weights)
-            r$params.initial <- params
-            # States and posteriors
-            data$posteriorMax <- NA
-            for (i1 in 0:(nrow(hmm$posteriors)-1)) {
-                mask <- hmm$states == i1
-                data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
-            }
-            rownames(hmm$posteriors) <- states
-            data$posteriors <- t(hmm$posteriors)
-            data$state <- factor(states, levels=states)[hmm$states+1]
-            ## Segmentation
-            data.collapse <- data
-            mcols(data.collapse) <- NULL
-            data.collapse$state <- data$state
-            df <- suppressMessages( collapseBins(as.data.frame(data.collapse), column2collapseBy = 'state') )
-            segments <- methods::as(df, 'GRanges')
-            seqlengths(segments) <- seqlengths(data)[seqlevels(segments)]
-        }
-        r$data <- data
-        r$segments <- segments
-        stopTimedMessage(ptm)
-        rs[[as.character(context)]] <- r
-    }
-        
-    ### Combine all contexts ###
-    messageU("Combining contexts")
-    r <- list()
-    class(r) <- "BinomialHMM"
-    r$convergenceInfo <- lapply(rs, '[[', 'convergenceInfo')
-    ## Parameters
-    r$params <- list()
-    r$params$startProbs <- lapply(rs, function(r) { r$params$startProbs })
-    r$params$transProbs <- lapply(rs, function(r) { r$params$transProbs })
-    r$params$transDist <- lapply(rs, function(r) { r$params$transDist })
-    r$params$emissionParams <- list()
-    for (state in states) {
-        r$params$emissionParams[[state]] <- as.data.frame(do.call(rbind, lapply(rs, function(r) { r$params$emissionParams[state,'prob'] })))
-        names(r$params$emissionParams[[state]]) <- 'prob'
-    }
-    r$params$weights <- lapply(rs, function(r) { r$params$weights })
-    ## Initial values
-    r$params.initial <- rs[[1]]$params.initial
-    r$params.initial$startProbs_initial <- lapply(rs, function(r) { r$params.initial$startProbs_initial })
-    r$params.initial$transProbs_initial <- lapply(rs, function(r) { r$params.initial$transProbs_initial })
-    r$params.initial$transDist <- lapply(rs, function(r) { r$params.initial$transDist })
-    r$params.initial$emissionParams_initial <- list()
-    for (state in states) {
-        r$params.initial$emissionParams_initial[[state]] <- as.data.frame(do.call(rbind, lapply(rs, function(r) { r$params.initial$emissionParams_initial[state,'prob'] })))
-        names(r$params.initial$emissionParams_initial[[state]]) <- 'prob'
-    }
-    ## Data
-    ptm <- startTimedMessage("Combining data ...")
-    r$data <- GRangesList()
-    for (context in contexts) {
-        r$data[[context]] <- rs[[context]]$data
-    }
-    r$data <- sort(unlist(r$data, use.names=FALSE))
-    ## Add distance to bins
-    r$data$distance <- c(-1, start(r$data)[-1] - end(r$data)[-length(r$data)] - 1)
-    r$data$distance[r$data$distance < 0] <- Inf 
-    stopTimedMessage(ptm)
-    ## Segmentation
-    ptm <- startTimedMessage("Segmentation ...")
-    data.collapse <- r$data
-    mcols(data.collapse) <- NULL
-    data.collapse$state <- r$data$state
-    df <- suppressMessages( collapseBins(as.data.frame(data.collapse), column2collapseBy = 'state') )
-    segments <- methods::as(df, 'GRanges')
-    seqlengths(segments) <- seqlengths(r$data)[seqlevels(segments)]
-    r$segments <- segments
-    stopTimedMessage(ptm)
-    return(r)
-}
-
 
 
 #' Make a multivariate segmentation
@@ -708,12 +343,12 @@ multivariateSegmentation <- function(models, ID, fit.on.chrom=NULL, transDist=70
 #' 
 #' Call methylated, unmethylated and heterozygous regions by fitting a multivariate Hidden Markov Model to the data.
 #' 
-#' In a first step, the function will use \code{\link{fitSignalBackground}} to obtain the distribution parameters for a signal-background model for methylated and unmethylated read counts, respectively. The resulting distributions are used in a second step to fit a multivariate HMM with states \code{c("Background", "Methylated", "UNmethylated", "Heterozygous")}.
+#' In a first step, the function will use \code{\link{fitSignalBackground}} to obtain the distribution parameters for a signal-background model for methylated and unmethylated read counts, respectively. The resulting distributions are used in a second step to fit a multivariate HMM with states \code{c("Background", "Methylated", "Unmethylated", "Intermediate")}.
 #' 
 #' @inheritParams fitSignalBackground
 #' @return A list with fitted parameters, posteriors and input parameters.
 #' 
-callMethylationSignalBackground <- function(data, ID, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, states=c("Background", "Methylated", "UNmethylated", "Heterozygous"), verbosity=1, num.threads=1) {
+callMethylationSignalBackground <- function(data, ID, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, states=c("Background", "Methylated", "Unmethylated", "Intermediate"), verbosity=1, num.threads=1) {
   
     ### Input checks ###
     if (is.null(max.time)) {
@@ -727,7 +362,7 @@ callMethylationSignalBackground <- function(data, ID, fit.on.chrom=NULL, transDi
     ### Assign variables ###
     modelnames <- c('unmethylated', 'methylated')
     components <- c('background', 'signal')
-    states.full <- c("Background", "Methylated", "UNmethylated", "Heterozygous")
+    states.full <- c("Background", "Methylated", "Unmethylated", "Intermediate")
     numstates <- length(states)
     
     ### State definition and mapping ###
@@ -959,124 +594,6 @@ fitSignalBackground <- function(data, observable='counts', fit.on.chrom=NULL, tr
 }
 
 
-#' Fit a three-component HMM for methylation levels
-#' 
-#' Fit a three-component Hidden Markov Model to the supplied counts. The transition matrix is distance-dependent with exponential decaying constant \code{transDist}. Components are modeled as beta distributions.
-#' 
-#' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'distance' and 'ratio'.
-#' @param fit.on.chrom A character vector giving the chromosomes on which the HMM will be fitted.
-#' @param transDist The exponential decaying constant for the distance-dependent transition matrix. Should be given in the same units as \code{distances}.
-#' @param eps Convergence threshold for the Baum-Welch algorithm.
-#' @param max.time Maximum running time in seconds for the Baum-Welch algorithm.
-#' @param max.iter Maximum number of iterations for the Baum-Welch algorithm.
-#' @param verbosity Integer from c(0,1) specifying the verbosity of the fitting procedure.
-#' @param num.threads Number of CPU to use for the computation.
-#' @return A list with fitted parameters, posteriors, and the input parameters.
-#' 
-fitRatio <- function(data, fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, verbosity=1, num.threads=1) {
-  
-    ### Input checks ###
-    if (is.null(max.time)) {
-        max.time <- Inf
-    }
-    if (is.null(max.iter)) {
-        max.iter <- Inf
-    }
-  
-    ### Add distance to bins ###
-    ptm <- startTimedMessage("Adding distance ...")
-    data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
-    data$distance[data$distance < 0] <- Inf 
-    stopTimedMessage(ptm)
-    
-    ### Assign variables ###
-    states <- c("UNmethylated", "Heterozygous", "Methylated")
-    numstates <- length(states)
-    ratio <- data$ratio
-    distances <- data$distance
-    
-    ## Subset by chromosomes
-    if (!is.null(fit.on.chrom)) {
-        ratio <- ratio[as.logical(data@seqnames %in% fit.on.chrom)]
-    }
-  
-    ### Initial probabilities ###
-    s <- 0.9
-    transProbs_initial <- matrix((1-s)/(numstates-1), ncol=numstates, nrow=numstates, dimnames=list(from=states, to=states))
-    diag(transProbs_initial) <- s
-    startProbs_initial <- rep(1/numstates, numstates)
-    names(startProbs_initial) <- states
-    
-    ### Initialization of emission distributions ###
-    ep <- list()
-    ep[["UNmethylated"]] <- data.frame(type='dbeta', a=1, b=4)
-    ep[["Heterozygous"]] <- data.frame(type='dbeta', a=10, b=10)
-    ep[["Methylated"]] <- data.frame(type='dbeta', a=4, b=1)
-    ep <- do.call(rbind, ep)
-    emissionParams_initial <- ep
-  
-    ### Define parameters for C function ###
-    params <- list()
-    params$startProbs_initial <- startProbs_initial
-    params$transProbs_initial <- transProbs_initial
-    params$emissionParams_initial <- emissionParams_initial
-    params$transDist <- transDist
-    params$eps <- eps
-    params$maxtime <- max.time
-    params$maxiter <- max.iter
-    params$verbosity <- verbosity
-    params$numThreads <- num.threads
-    
-    ### Call the C function ###
-    on.exit(cleanup())
-    if (is.null(fit.on.chrom)) {
-        message("Baum-Welch: Fitting HMM parameters")
-        hmm <- fitHMMratio(ratio=ratio, distances=distances, params=params, algorithm=1)
-    } else {
-        message("Baum-Welch: Fitting HMM parameters")
-        message(" ... on chromosomes ", paste0(fit.on.chrom, collapse=', '))
-        hmm <- fitHMMratio(ratio=ratio, distances=distances, params=params, algorithm=1)
-        ratio <- data$ratio
-        params2 <- list()
-        params2$startProbs_initial <- startProbs_initial # do not assign fitted startProbs because we don't know if the old first bin is also the new first bin
-        params2$transProbs_initial <- hmm$transProbs
-        params2$emissionParams_initial <- hmm$emissionParams
-        params2$transDist <- transDist
-        params2$eps <- eps
-        params2$maxtime <- max.time
-        params2$maxiter <- max.iter
-        params2$verbosity <- verbosity
-        params2$numThreads <- num.threads
-        message("Viterbi: Obtaining state sequence")
-        message(" ... on all chromosomes")
-        hmm <- fitHMMratio(ratio=ratio, distances=distances, params=params2, algorithm=2)
-    }
-    
-    ### Construct result object ###
-    ptm <- startTimedMessage("Compiling results ...")
-    r <- list()
-    if (hmm$error == "") {
-        r$convergenceInfo <- hmm$convergenceInfo
-        names(hmm$weights) <- states
-        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams, weights=hmm$weights)
-        r$params.initial <- params
-        # States and posteriors
-        data$posteriorMax <- NA
-        for (i1 in 0:(nrow(hmm$posteriors)-1)) {
-            mask <- hmm$states == i1
-            data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
-        }
-        rownames(hmm$posteriors) <- states
-        data$posteriors <- t(hmm$posteriors)
-        rownames(hmm$densities) <- states
-        data$densities <- t(hmm$densities)
-        data$state <- factor(states, levels=states)[hmm$states+1]
-    }
-    r$data <- data
-    stopTimedMessage(ptm)
-    
-    return(r)
-}
 
 
 #' Fit an n-component HMM

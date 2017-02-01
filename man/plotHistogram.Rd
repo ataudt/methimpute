@@ -6,7 +6,20 @@
 \usage{
 plotHistogram(model, total.counts, binwidth = 1)
 }
+\arguments{
+\item{model}{A \code{\link{methimputeBinomialHMM}} object.}
+
+\item{total.counts}{The number of total counts for which the histogram is to be plotted.}
+
+\item{binwidth}{The bin width for the histogram.}
+}
+\value{
+A \code{\link[ggplot2]{ggplot}} object.
+}
 \description{
 Plot a histogram of count values and fitted distributions.
+}
+\seealso{
+\code{\link{plotting}}
 }
 
