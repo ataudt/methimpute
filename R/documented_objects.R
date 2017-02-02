@@ -1,3 +1,40 @@
+#' Toy data for arabidopsis (200.000bp of chr1)
+#'
+#' A \code{\link{methimputeData}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains the first 200.000 cytosines of chr1 from arabidopsis.
+#'
+#' @docType data
+#' @name arabidopsis_toydata
+#' @format A \code{\link{methimputeData}} object.
+#' @examples
+#'data(arabidopsis_toydata)
+#'print(arabidopsis_toydata)
+NULL
+
+#' Gene coordinates for arabidopsis (chr1)
+#'
+#' A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains gene coordinates of chr1 from arabidopsis.
+#'
+#' @docType data
+#' @name arabidopsis_genes
+#' @format A \code{\link[GenomicRanges]{GRanges}} object.
+#' @examples
+#'data(arabidopsis_genes)
+#'print(arabidopsis_genes)
+NULL
+
+#' Transposable element coordinates for arabidopsis (chr1)
+#'
+#' A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains transposable element coordinates of chr1 from arabidopsis.
+#'
+#' @docType data
+#' @name arabidopsis_TEs
+#' @format A \code{\link[GenomicRanges]{GRanges}} object.
+#' @examples
+#'data(arabidopsis_TEs)
+#'print(arabidopsis_TEs)
+NULL
+
+
 #' methimpute objects
 #'
 #' @description

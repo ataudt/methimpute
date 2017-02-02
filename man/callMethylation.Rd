@@ -4,9 +4,10 @@
 \alias{callMethylation}
 \title{Call methylation status}
 \usage{
-callMethylation(data, fit.on.chrom = NULL, transDist = Inf, eps = 0.01,
+callMethylation(data, fit.on.chrom = NULL, transDist = Inf, eps = 1,
   max.time = Inf, max.iter = Inf, count.cutoff = 500, verbosity = 1,
-  num.threads = 1, initial.params = NULL, include.intermediate = TRUE)
+  num.threads = 2 + include.intermediate, initial.params = NULL,
+  include.intermediate = TRUE)
 }
 \arguments{
 \item{data}{A \code{\link{methimputeData}} object.}
@@ -39,5 +40,14 @@ Call methylation status of cytosines (or bins) with a Hidden Markov Model.
 }
 \details{
 The Hidden Markov model uses a binomial test for the emission densities. Transition probabilities are modeled with a distance dependent decay, specified by the parameter \code{transDist}.
+}
+\examples{
+## Get some toy data
+file <- system.file("data","arabidopsis_toydata.RData",
+                    package="methimpute")
+data <- get(load(file))
+print(data)
+model <- callMethylation(data)
+print(model)
 }
 

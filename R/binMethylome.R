@@ -6,6 +6,7 @@
 #' @param binsize The window size used for binning.
 #' @return A \code{\link[GenomicRanges]{GRanges}} object.
 #' 
+#' @importFrom stats aggregate
 binCounts <- function(data, binsize) {
   
     ptm <- startTimedMessage("Making fixed-width bins with ", binsize, "bp ...")
@@ -20,7 +21,7 @@ binCounts <- function(data, binsize) {
     
     ptm <- startTimedMessage("Aggregating counts ...")
     ind <- findOverlaps(data, bins, select='first')
-    df <- aggregate(as.data.frame(mcols(data)[,c('counts.unmethylated', 'counts.methylated')]), by=list(ind), FUN=sum)
+    df <- stats::aggregate(as.data.frame(mcols(data)[,c('counts.unmethylated', 'counts.methylated')]), by=list(ind), FUN=sum)
     bins$counts.unmethylated <- 0
     bins$counts.methylated <- 0
     bins$counts.unmethylated[df$Group.1] <- df$counts.unmethylated
@@ -88,6 +89,7 @@ binPositions <- function(data, binsize) {
 #' @param binsize The window size used for binning.
 #' @return A list() with \code{\link[GenomicRanges]{GRanges}} objects.
 #' 
+#' @importFrom stats aggregate
 binMethylome <- function(data, binsize) {
   
     ptm <- startTimedMessage("Making fixed-width bins with ", binsize, "bp ...")
@@ -120,7 +122,7 @@ binMethylome <- function(data, binsize) {
         data.context$status.methylated <- data.context$methylated == 1
         data.context$status.unmethylated <- !data.context$status.methylated
         ind <- findOverlaps(data.context, bins, select='first')
-        dfa <- aggregate(as.data.frame(mcols(data.context)[,c('status.methylated', 'status.unmethylated', 'counts.unmethylated', 'counts.methylated')]), by=list(index=ind), FUN=sum, na.rm=TRUE)
+        dfa <- stats::aggregate(as.data.frame(mcols(data.context)[,c('status.methylated', 'status.unmethylated', 'counts.unmethylated', 'counts.methylated')]), by=list(index=ind), FUN=sum, na.rm=TRUE)
         
         bins$status.methylated <- 0
         bins$status.methylated[dfa$index] <- dfa$status.methylated

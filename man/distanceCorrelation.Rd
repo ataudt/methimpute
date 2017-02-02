@@ -7,14 +7,23 @@
 distanceCorrelation(data, distances = 0:50)
 }
 \arguments{
-\item{distances}{An integer vector specifying the distances for which the correlation will be calculated.}
+\item{data}{A \code{\link{methimputeData}} object.}
 
-\item{A}{\code{\link{methimputeData}} object.}
+\item{distances}{An integer vector specifying the distances for which the correlation will be calculated.}
 }
 \value{
 A list() with an array containing the correlation values and the corresponding \code{\link[ggplot2]{ggplot}}.
 }
 \description{
 Compute the distance correlation from a \code{\link{methimputeData}} object.
+}
+\examples{
+## Get some toy data
+file <- system.file("data","arabidopsis_toydata.RData",
+                    package="methimpute")
+data <- get(load(file))
+distcor <- distanceCorrelation(data)
+print(distcor$plot)
+
 }
 

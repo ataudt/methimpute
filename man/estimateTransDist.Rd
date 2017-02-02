@@ -11,7 +11,19 @@ estimateTransDist(distcor, skip = 2)
 
 \item{skip}{Skip the first n cytosines for the fitting. This can be necessary to avoid periodicity artifacts due to the context definition.}
 }
+\value{
+A list() with fitted \code{transDist} parameters and the corresponding \code{\link[ggplot2]{ggplot}}.
+}
 \description{
 Obtain an estimate for the \code{transDist} parameter (used in function \code{\link{callMethylation}}) by fitting an exponential function to the supplied correlations (from \code{\link{distanceCorrelation}}).
+}
+\examples{
+## Get some toy data
+file <- system.file("data","arabidopsis_toydata.RData",
+                    package="methimpute")
+data <- get(load(file))
+distcor <- distanceCorrelation(data)
+fit <- estimateTransDist(distcor)
+print(fit)
 }
 

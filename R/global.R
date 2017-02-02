@@ -1,8 +1,8 @@
 #' @useDynLib methimpute
+#' @import Rcpp
 #' @import IRanges
 #' @import GenomeInfoDb
 #' @import GenomicRanges
-#' @import ggplot2
 #' @importFrom methods as is
 NULL
 

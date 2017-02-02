@@ -39,13 +39,14 @@ inflateMethylome <- function(methylome, methylome.full) {
 #' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
 #' @return A \code{\link{methimputeData}} object.
 #' 
+#' @importFrom utils read.table
 #' @export
 importBSSeeker <- function(file, chrom.lengths=NULL) {
     
     # classes <- c(seqnames='character', nucleotide='character', position='numeric', context='character', context.dinucleotide='character', methylation.level='numeric', counts.methylated='numeric', counts.total='numeric')
     classes <- c('character', 'character', 'numeric', 'character', 'character', 'numeric', 'numeric', 'numeric')
     ptm <- startTimedMessage("Reading file ", file, " ...")
-	  data.raw <- read.table(file, skip=0, sep='\t', comment.char='', colClasses=classes)
+	  data.raw <- utils::read.table(file, skip=0, sep='\t', comment.char='', colClasses=classes)
 	  data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V3, end=data.raw$V3), strand=c('C'='+', 'G'='-')[data.raw$V2], context=data.raw$V4)
   	counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
   	counts[,"methylated"] <- data.raw$V7
@@ -58,7 +59,7 @@ importBSSeeker <- function(file, chrom.lengths=NULL) {
   	## Assign seqlengths
   	if (!is.null(chrom.lengths)) {
   	    if (is.character(chrom.lengths)) {
-  	        df <- read.table(chrom.lengths, header=TRUE)
+  	        df <- utils::read.table(chrom.lengths, header=TRUE)
   	        chrom.lengths <- df[,2]
   	        names(chrom.lengths) <- df[,1]
   	    }
@@ -82,11 +83,12 @@ importBSSeeker <- function(file, chrom.lengths=NULL) {
 #' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
 #' @return A \code{\link{methimputeData}} object.
 #' 
+#' @importFrom utils read.table
 importRene <- function(file, chrom.lengths=NULL) {
   
   	classes <- c('character', 'numeric', 'character', 'NULL', 'character', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric')
     ptm <- startTimedMessage("Reading file ", file, " ...")
-	  data.raw <- read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
+	  data.raw <- utils::read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
   	data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=c('F'='+', 'R'='-')[data.raw$V3], methylated=data.raw$V10, context=data.raw$V5)
   	counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
   	counts[,"methylated"] <- data.raw$V6
@@ -98,7 +100,7 @@ importRene <- function(file, chrom.lengths=NULL) {
   	## Assign seqlengths
   	if (!is.null(chrom.lengths)) {
   	    if (is.character(chrom.lengths)) {
-  	        df <- read.table(chrom.lengths, header=TRUE)
+  	        df <- utils::read.table(chrom.lengths, header=TRUE)
   	        chrom.lengths <- df[,2]
   	        names(chrom.lengths) <- df[,1]
   	    }
@@ -122,6 +124,7 @@ importRene <- function(file, chrom.lengths=NULL) {
 #' @param temp.store A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.
 #' @return A \code{\link{methimputeData}} object.
 #' 
+#' @importFrom utils read.table
 #' @export
 importBismarck <- function(files, chrom.lengths=NULL, temp.store=tempfile("importBismarck")) {
   
@@ -142,7 +145,7 @@ importBismarck <- function(files, chrom.lengths=NULL, temp.store=tempfile("impor
 	      savename <- file.path(temp.store, paste0(basename(file), '.RData'))
 	      if (!file.exists(savename)) {
       	    ptm <- startTimedMessage("Reading file ", file, " ...")
-        	  data.raw <- read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
+        	  data.raw <- utils::read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
           	data <- GRanges(seqnames=data.raw$V3, ranges=IRanges(start=data.raw$V4, end=data.raw$V4), strand="*", methylated=factor(data.raw$V2, levels=c("-", "+")), context=data.raw$V5)
           	rm(data.raw)
           	stopTimedMessage(ptm)
@@ -207,7 +210,7 @@ importBismarck <- function(files, chrom.lengths=NULL, temp.store=tempfile("impor
   	## Assign seqlengths
   	if (!is.null(chrom.lengths)) {
   	    if (is.character(chrom.lengths)) {
-  	        df <- read.table(chrom.lengths, header=TRUE)
+  	        df <- utils::read.table(chrom.lengths, header=TRUE)
   	        chrom.lengths <- df[,2]
   	        names(chrom.lengths) <- df[,1]
   	    }

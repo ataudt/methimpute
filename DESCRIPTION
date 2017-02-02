@@ -1,7 +1,7 @@
 Package: methimpute
 Type: Package
 Title: Population analysis suite for Bisulfite-sequencing data
-Version: 0.1.0
+Version: 0.99.0
 Date: 2016-04-29
 Author: Aaron Taudt
 Maintainer: Aaron Taudt <aaron.taudt@gmail.com>
@@ -16,19 +16,11 @@ Imports:
     methods,
     utils,
     grDevices,
-    graphics,
     stats,
-    foreach,
-    doParallel,
-    S4Vectors,
     GenomeInfoDb,
     IRanges,
     reshape2,
-    Rsamtools,
-    GenomicAlignments,
     minpack.lm,
-    ggdendro,
-    ReorderCluster
 Suggests:
     knitr,
     testthat,
@@ -40,3 +32,4 @@ LazyLoad: yes
 VignetteBuilder: knitr
 Packaged: 2014-05-03 00:00:00 CET+1; Taudt
 RoxygenNote: 5.0.1
+biocViews: Software, DNAMethylation, Epigenetics, HiddenMarkovModel

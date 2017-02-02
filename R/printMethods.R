@@ -1,11 +1,12 @@
 #' Print model object
 #' 
-#' @param model A \code{\link{BinomialHMMcontext}} object.
+#' @param x A \code{\link{methimputeBinomialHMM}} object.
 #' @param ... Ignored.
+#' @return An invisible \code{NULL}.
 #' @export
-print.BinomialHMMcontext <- function(model, ...) {
+print.methimputeBinomialHMM <- function(x, ...) {
     
-    print(model$data)
+    print(x$data)
     message("Use the list operator $ to access all elements of this object.")
   
 }

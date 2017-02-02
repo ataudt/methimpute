@@ -2,11 +2,19 @@
 #' 
 #' Compute the distance correlation from a \code{\link{methimputeData}} object.
 #' 
-#' @param A \code{\link{methimputeData}} object.
+#' @param data A \code{\link{methimputeData}} object.
 #' @param distances An integer vector specifying the distances for which the correlation will be calculated.
 #' @return A list() with an array containing the correlation values and the corresponding \code{\link[ggplot2]{ggplot}}.
 #' 
 #' @export
+#' @examples 
+#'## Get some toy data
+#'file <- system.file("data","arabidopsis_toydata.RData",
+#'                     package="methimpute")
+#'data <- get(load(file))
+#'distcor <- distanceCorrelation(data)
+#'print(distcor$plot)
+#'
 distanceCorrelation <- function(data, distances=0:50) {
     
     ## Contexts
@@ -112,8 +120,20 @@ distanceCorrelation <- function(data, distances=0:50) {
 #' 
 #' @param distcor The output produced by \code{\link{distanceCorrelation}}.
 #' @param skip Skip the first n cytosines for the fitting. This can be necessary to avoid periodicity artifacts due to the context definition.
+#' @return A list() with fitted \code{transDist} parameters and the corresponding \code{\link[ggplot2]{ggplot}}.
+#' 
+#' @importFrom stats na.omit coefficients
+#' @importFrom minpack.lm nlsLM
 #' 
 #' @export
+#' @examples 
+#'## Get some toy data
+#'file <- system.file("data","arabidopsis_toydata.RData",
+#'                     package="methimpute")
+#'data <- get(load(file))
+#'distcor <- distanceCorrelation(data)
+#'fit <- estimateTransDist(distcor)
+#'print(fit)
 estimateTransDist <- function(distcor, skip=2) {
   
     ## Context correlation fits and plots
@@ -135,11 +155,11 @@ estimateTransDist <- function(distcor, skip=2) {
                 y <- df$correlation[(skip+1):nrow(df)]
                 x <- df$distance[(skip+1):nrow(df)]
                 weight <- df$weight[(skip+1):nrow(df)]
-                startvalues <- list(a0 = na.omit(y)[1], D = 50)
+                startvalues <- list(a0 = stats::na.omit(y)[1], D = 50)
                 p <- tryCatch({
                   fit <- minpack.lm::nlsLM(y ~ a0 * exp(-x/D), start=startvalues, weights=weight)
                   s <- summary(fit)
-                  c <- coefficients(s)
+                  c <- stats::coefficients(s)
                   params <- c[1:length(startvalues)]
                   names(params) <- names(startvalues)
                   as.list(params)
@@ -147,11 +167,11 @@ estimateTransDist <- function(distcor, skip=2) {
                   NULL
                 })
                 if (is.null(p)) {
-                    startvalues <- list(a0 = na.omit(y)[1])
+                    startvalues <- list(a0 = stats::na.omit(y)[1])
                     p <- tryCatch({
                       fit <- minpack.lm::nlsLM(y ~ a0 * exp(-x/Inf), start=startvalues, weights=weight)
                       s <- summary(fit)
-                      c <- coefficients(s)
+                      c <- stats::coefficients(s)
                       params <- c[1:length(startvalues)]
                       names(params) <- names(startvalues)
                       params <- as.list(params)
@@ -161,6 +181,11 @@ estimateTransDist <- function(distcor, skip=2) {
                       startvalues$D <- Inf
                       startvalues
                     })
+                }
+                
+                ## Check if we have negative D
+                if (p$D <= 0) {
+                    p$D <- Inf
                 }
                 params.list[[context.transition]] <- p
                 

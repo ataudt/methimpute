@@ -1,3 +1,33 @@
+#' methimpute plotting functions
+#' 
+#' This page provides an overview of all \pkg{\link{methimpute}} plotting functions.
+#'
+#' @param model A \code{\link{methimputeBinomialHMM}} object.
+#' @return A \code{\link[ggplot2]{ggplot}} object.
+#' @name plotting
+#' @import ggplot2
+#' @importFrom cowplot plot_grid
+#' @examples 
+#'## Get some toy data
+#'file <- system.file("data","arabidopsis_toydata.RData",
+#'                     package="methimpute")
+#'data <- get(load(file))
+#'print(data)
+#'model <- callMethylation(data)
+#'## Make nice plots
+#'plotHistogram(model, total.counts=5)
+#'plotScatter(model)
+#'plotTransitionProbs(model)
+#'plotConvergence(model)
+#'
+#'## Get annotation data and make an enrichment profile
+#'# Note that this looks a bit ugly because our toy data
+#'# has only 200000 datapoints.
+#'data(arabidopsis_genes)
+#'plotEnrichment(model$data, annotation=arabidopsis_genes)
+#'
+NULL
+
 #' Get state colors
 #'
 #' Get the colors that are used for plotting.
@@ -41,16 +71,10 @@ transCoord <- function(gr) {
 }
 
 
-#' Plot a count histogram
-#' 
-#' Plot a histogram of count values and fitted distributions.
-#' 
-#' @param model A \code{\link{methimputeBinomialHMM}} object.
+#' @describeIn plotting Plot a histogram of count values and fitted distributions.
 #' @param total.counts The number of total counts for which the histogram is to be plotted.
 #' @param binwidth The bin width for the histogram.
-#' @return A \code{\link[ggplot2]{ggplot}} object.
-#' @seealso \code{\link{plotting}}
-#' 
+#' @importFrom stats dbinom
 #' @export
 plotHistogram <- function(model, total.counts, binwidth=1) {
   
@@ -75,7 +99,7 @@ plotHistogram <- function(model, total.counts, binwidth=1) {
             distr <- list(x=x)
             for (i1 in 1:length(model$params$emissionParams)) {
                 e <- model$params$emissionParams[[i1]]
-                distr[[names(model$params$emissionParams)[i1]]] <- model$params$weights[[context]][i1] * dbinom(x, size=total.counts, prob=e[context,'prob'])
+                distr[[names(model$params$emissionParams)[i1]]] <- model$params$weights[[context]][i1] * stats::dbinom(x, size=total.counts, prob=e[context,'prob'])
             }
             distr <- as.data.frame(distr)
             distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
@@ -99,77 +123,8 @@ plotHistogram <- function(model, total.counts, binwidth=1) {
 }
 
 
-#' Plot a count histogram
-#' 
-#' Plot a histogram of count values and fitted distributions.
-#' 
-plotHistogram2 <- function(model, binwidth=10) {
-    
-    ## Assign variables
-    counts <- model$data$observable
-    maxcounts <- max(counts)
-    
-    ## Plot histogram
-    ggplt <- ggplot(data.frame(counts)) + geom_histogram(aes_string(x='counts', y='..density..'), binwidth=binwidth, color='black', fill='white') + xlab("counts")
-    ggplt <- ggplt + coord_cartesian(xlim=c(0,quantile(counts, 0.995)))
-    ggplt <- ggplt + theme_bw()
-    
-    ## Add distributions
-    if (!is.null(model$params$emissionParams)) {
-        x <- seq(0, maxcounts, by = binwidth)
-        distr <- list(x=x)
-        for (irow in 1:nrow(model$params$emissionParams)) {
-            e <- model$params$emissionParams
-            if (e$type[irow] == 'delta') {
-                distr[[rownames(model$params$emissionParams)[irow]]] <- rep(0, length(x))
-                distr[[rownames(model$params$emissionParams)[irow]]][1] <- model$params$weights[irow]
-            } else if (e$type[irow] == 'dnbinom') {
-                distr[[rownames(model$params$emissionParams)[irow]]] <- model$params$weights[irow] * dnbinom(x, size=e[irow,'size'], prob=e[irow,'prob'])
-            }
-        }
-        distr <- as.data.frame(distr)
-        distr$total <- rowSums(distr[,2:(1+nrow(model$params$emissionParams))])
-        distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
-        distr$components <- sub('^X', '', distr$components)
-        distr$components <- factor(distr$components, levels=c(levels(model$data$state), 'total'))
-        ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
-        
-        ## Make legend
-        lmeans <- round(model$params$emissionParams[,'mu'], 2)
-        lvars <- round(model$params$emissionParams[,'var'], 2)
-        lweights <- round(model$params$weights, 2)
-        legend <- paste0(rownames(model$params$emissionParams), ", mean=", lmeans, ", var=", lvars, ", weight=", lweights)
-        legend <- c(legend, paste0('total, mean=', round(mean(counts),2), ', var=', round(var(counts),2)))
-        ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(c(rownames(model$params$emissionParams),'total')), labels=legend) + theme(legend.position=c(1,1), legend.justification=c(1,1))
-    }
-    
-    return(ggplt)
-}
-
-
-plotBoxplot <- function(model, datapoints=1000) {
-  
-    df <- data.frame(state=model$data$state, observable=model$data$observable)
-    if (datapoints < nrow(df)) {
-        df <- df[sample(1:nrow(df), datapoints, replace = FALSE), ]
-    }
-    df <- suppressMessages( reshape2::melt(df) )
-    names(df) <- c('state', 'status', 'observable')
-    ggplt <- ggplot(df) + geom_boxplot(aes_string(x='state', y='observable', fill='status'))
-    return(ggplt)
-    
-}
-
-
-#' Scatter plot of methylation status calls
-#' 
-#' Plot a scatter plot of read counts colored by methylation status
-#' 
-#' @param model A \code{\link{methimputeBinomialHMM}} object.
+#' @describeIn plotting Plot a scatter plot of read counts colored by methylation status.
 #' @param datapoints The number of randomly selected datapoints for the plot.
-#' @return A \code{\link[ggplot2]{ggplot}} object.
-#' @seealso \code{\link{plotting}}
-#' 
 #' @export
 plotScatter <- function(model, datapoints=1000) {
   
@@ -210,18 +165,10 @@ plotScatter <- function(model, datapoints=1000) {
 }
 
 
-#' Heatmap of transition probabilities
-#'
-#' Plot a heatmap of transition probabilities for a \code{\link{multiHMM}} model.
-#'
-#' @param model A \code{\link{methimputeBinomialHMM}} object.
-#' @param order Set to \code{TRUE} if you want to order the heatmap.
-#' @return A \code{\link[ggplot2]{ggplot}} object.
+#' @describeIn plotting Plot a heatmap of transition probabilities.
 #' @importFrom reshape2 melt
-#' @seealso \code{\link{plotting}}
-#' 
 #' @export
-heatmapTransitionProbs <- function(model, order=FALSE) {
+plotTransitionProbs <- function(model) {
   
     if (is.list(model$params$transProbs)) {
         As <- model$params$transProbs
@@ -233,14 +180,8 @@ heatmapTransitionProbs <- function(model, order=FALSE) {
     for (i1 in 1:length(As)) {
         # model <- suppressMessages( loadFromFiles(model, check.class=class.univariate.hmm)[[1]] )
         A <- reshape2::melt(As[[i1]], varnames=c('from','to'), value.name='prob')
-        if (order) {
-            stateorder <- stateorderByTransition(model$params$transProbs)
-            A$from <- factor(A$from, levels=stateorder)
-            A$to <- factor(A$to, levels=stateorder)
-        } else {
-            A$from <- factor(A$from)
-            A$to <- factor(A$to)
-        }
+        A$from <- factor(A$from)
+        A$to <- factor(A$to)
         ggplt <- ggplot(data=A) + geom_tile(aes_string(x='to', y='from', fill='prob')) + scale_fill_gradient(low="white", high="blue", limits=c(0,1)) + theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
         ggplt <- ggplt + ggtitle(names(model$params$transProbs)[i1])
         ggplts[[names(model$params$transProbs)[i1]]] <- ggplt
@@ -272,74 +213,7 @@ insertNULL <- function(plotlist) {
     return(plotlist2)
 }
 
-#' Histograms faceted by state
-#' 
-#' Make histograms of variables in \code{bins} faceted by state in \code{segmentation}.
-#' 
-#' @param segmentation A segmentation with metadata column 'state'.
-#' @param bins A \code{\link{binnedMethylome}}.
-#' @param plotcol A character vector specifying the meta-data columns for which to produce the faceted plot.
-#' @param binwidth Bin width for the histogram.
-#' @return A \code{\link[ggplot2]{ggplot}}.
-#' @importFrom reshape2 melt
-plotStateHistograms <- function(segmentation, bins, plotcol, binwidth) {
-  
-    states <- levels(segmentation$state)
-    segmentation.split <- split(segmentation, segmentation$state)
-    mind <- findOverlaps(bins, segmentation.split, select='first')
-    bins$state <- factor(names(segmentation.split)[mind], levels=states)
-    
-    df <- data.frame(state=bins$state, mcols(bins)[,plotcol])
-    names(df)[2:ncol(df)] <- plotcol
-    dfm <- reshape2::melt(df, id.vars = 'state', measure.vars = plotcol, variable.name = 'plotcol')
-    ggplt <- ggplot(dfm) + geom_freqpoly(aes_string(x='value', y='..density..', col='plotcol'), binwidth = binwidth)
-    ggplt <- ggplt + theme_bw()
-    ggplt <- ggplt + facet_wrap(~ state)
-    
-    return(ggplt)
-}
-
-
-#' Scatter plots faceted by state
-#' 
-#' Make scatter plots of two variables in \code{bins} faceted by state in \code{segmentation}.
-#' 
-#' @param segmentation A segmentation with metadata column 'state'.
-#' @param bins A \code{\link{binnedMethylome}}.
-#' @param x A character specifying the meta-data column that should go on the x-axis.
-#' @param y A character specifying the meta-data column that should go on the y-axis.
-#' @param col A character specifying the meta-data column that should be used for coloring.
-#' @return A \code{\link[ggplot2]{ggplot}}.
-plotStateScatter <- function(segmentation, bins, x, y, col=NULL, datapoints=1000) {
-  
-    states <- levels(segmentation$state)
-    segmentation.split <- split(segmentation, segmentation$state)
-    mind <- findOverlaps(bins, segmentation.split, select='first')
-    bins$seg.state <- factor(names(segmentation.split)[mind], levels=states)
-    
-    df <- data.frame(state = bins$seg.state, x = mcols(bins)[,x], y = mcols(bins)[,y], color=mcols(bins)[,col])
-    df <- df[sample(1:nrow(df), size=datapoints, replace=FALSE),]
-    if (!is.null(col)) {
-        ggplt <- ggplot(df) + geom_jitter(aes_string(x='x', y='y', col='color'), alpha=0.1)
-    } else {
-        ggplt <- ggplot(df) + geom_jitter(aes_string(x='x', y='y'), alpha=0.1)
-    }
-    ggplt <- ggplt + theme_bw()
-    ggplt <- ggplt + xlab(x) + ylab(y)
-    ggplt <- ggplt + facet_wrap(~ state)
-    ggplt <- ggplt + scale_color_manual(values=getDistinctColors(levels(df$color)))
-    
-    return(ggplt)
-}
-
-
-#' Plot convergence info
-#' 
-#' Plot the convergence of the probability parameter in different sequence contexts.
-#' 
-#' @param model A \code{\link{methimputeBinomialHMM}} object.
-#' @return A \code{\link[ggplot2]{ggplot}}.
-#' 
+#' @describeIn plotting Plot the convergence of the probability parameters.
 #' @export
 plotConvergence <- function(model) {
     
@@ -363,19 +237,13 @@ plotConvergence <- function(model) {
 }
 
 
-#' Plot enrichment profile
-#' 
-#' Plot an enrichment profile around an annotation.
-#' 
+#' @describeIn plotting Plot an enrichment profile around an annotation.
 #' @param data A \code{\link{methimputeData}} object or the \code{$data} entry of a \code{\link{methimputeBinomialHMM}} object.
 #' @param annotation A \code{\link[GenomicRanges]{GRanges}} object with coordinates for the annotation.
 #' @param windowsize Resolution in base-pairs for the curve upstream and downstream of the annotation.
 #' @param insidewindows Number of data points for the curve inside the annotation.
 #' @param range Distance upstream and downstream for which the enrichment profile is calculated.
 #' @param category.column The name of a column in \code{data} that will be used for facetting of the plot.
-#' @return A \code{\link[ggplot2]{ggplot}} object.
-#' @seealso \code{\link{plotting}}
-#' 
 #' @export
 plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, range=1000, category.column=NULL) {
   
@@ -488,6 +356,129 @@ plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, r
     
     return(ggplt)
 }
+
+
+
+#' #' Plot a count histogram
+#' #' 
+#' #' Plot a histogram of count values and fitted distributions.
+#' #' 
+#' plotHistogram2 <- function(model, binwidth=10) {
+#'     
+#'     ## Assign variables
+#'     counts <- model$data$observable
+#'     maxcounts <- max(counts)
+#'     
+#'     ## Plot histogram
+#'     ggplt <- ggplot(data.frame(counts)) + geom_histogram(aes_string(x='counts', y='..density..'), binwidth=binwidth, color='black', fill='white') + xlab("counts")
+#'     ggplt <- ggplt + coord_cartesian(xlim=c(0,quantile(counts, 0.995)))
+#'     ggplt <- ggplt + theme_bw()
+#'     
+#'     ## Add distributions
+#'     if (!is.null(model$params$emissionParams)) {
+#'         x <- seq(0, maxcounts, by = binwidth)
+#'         distr <- list(x=x)
+#'         for (irow in 1:nrow(model$params$emissionParams)) {
+#'             e <- model$params$emissionParams
+#'             if (e$type[irow] == 'delta') {
+#'                 distr[[rownames(model$params$emissionParams)[irow]]] <- rep(0, length(x))
+#'                 distr[[rownames(model$params$emissionParams)[irow]]][1] <- model$params$weights[irow]
+#'             } else if (e$type[irow] == 'dnbinom') {
+#'                 distr[[rownames(model$params$emissionParams)[irow]]] <- model$params$weights[irow] * dnbinom(x, size=e[irow,'size'], prob=e[irow,'prob'])
+#'             }
+#'         }
+#'         distr <- as.data.frame(distr)
+#'         distr$total <- rowSums(distr[,2:(1+nrow(model$params$emissionParams))])
+#'         distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
+#'         distr$components <- sub('^X', '', distr$components)
+#'         distr$components <- factor(distr$components, levels=c(levels(model$data$state), 'total'))
+#'         ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
+#'         
+#'         ## Make legend
+#'         lmeans <- round(model$params$emissionParams[,'mu'], 2)
+#'         lvars <- round(model$params$emissionParams[,'var'], 2)
+#'         lweights <- round(model$params$weights, 2)
+#'         legend <- paste0(rownames(model$params$emissionParams), ", mean=", lmeans, ", var=", lvars, ", weight=", lweights)
+#'         legend <- c(legend, paste0('total, mean=', round(mean(counts),2), ', var=', round(var(counts),2)))
+#'         ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(c(rownames(model$params$emissionParams),'total')), labels=legend) + theme(legend.position=c(1,1), legend.justification=c(1,1))
+#'     }
+#'     
+#'     return(ggplt)
+#' }
+#' 
+#' 
+#' plotBoxplot <- function(model, datapoints=1000) {
+#'   
+#'     df <- data.frame(state=model$data$state, observable=model$data$observable)
+#'     if (datapoints < nrow(df)) {
+#'         df <- df[sample(1:nrow(df), datapoints, replace = FALSE), ]
+#'     }
+#'     df <- suppressMessages( reshape2::melt(df) )
+#'     names(df) <- c('state', 'status', 'observable')
+#'     ggplt <- ggplot(df) + geom_boxplot(aes_string(x='state', y='observable', fill='status'))
+#'     return(ggplt)
+#'     
+#' }
+
+#' #' Histograms faceted by state
+#' #' 
+#' #' Make histograms of variables in \code{bins} faceted by state in \code{segmentation}.
+#' #' 
+#' #' @param segmentation A segmentation with metadata column 'state'.
+#' #' @param bins A \code{\link{binnedMethylome}}.
+#' #' @param plotcol A character vector specifying the meta-data columns for which to produce the faceted plot.
+#' #' @param binwidth Bin width for the histogram.
+#' #' @return A \code{\link[ggplot2]{ggplot}}.
+#' #' @importFrom reshape2 melt
+#' plotStateHistograms <- function(segmentation, bins, plotcol, binwidth) {
+#'   
+#'     states <- levels(segmentation$state)
+#'     segmentation.split <- split(segmentation, segmentation$state)
+#'     mind <- findOverlaps(bins, segmentation.split, select='first')
+#'     bins$state <- factor(names(segmentation.split)[mind], levels=states)
+#'     
+#'     df <- data.frame(state=bins$state, mcols(bins)[,plotcol])
+#'     names(df)[2:ncol(df)] <- plotcol
+#'     dfm <- reshape2::melt(df, id.vars = 'state', measure.vars = plotcol, variable.name = 'plotcol')
+#'     ggplt <- ggplot(dfm) + geom_freqpoly(aes_string(x='value', y='..density..', col='plotcol'), binwidth = binwidth)
+#'     ggplt <- ggplt + theme_bw()
+#'     ggplt <- ggplt + facet_wrap(~ state)
+#'     
+#'     return(ggplt)
+#' }
+
+
+#' #' Scatter plots faceted by state
+#' #' 
+#' #' Make scatter plots of two variables in \code{bins} faceted by state in \code{segmentation}.
+#' #' 
+#' #' @param segmentation A segmentation with metadata column 'state'.
+#' #' @param bins A \code{\link{binnedMethylome}}.
+#' #' @param x A character specifying the meta-data column that should go on the x-axis.
+#' #' @param y A character specifying the meta-data column that should go on the y-axis.
+#' #' @param col A character specifying the meta-data column that should be used for coloring.
+#' #' @return A \code{\link[ggplot2]{ggplot}}.
+#' plotStateScatter <- function(segmentation, bins, x, y, col=NULL, datapoints=1000) {
+#'   
+#'     states <- levels(segmentation$state)
+#'     segmentation.split <- split(segmentation, segmentation$state)
+#'     mind <- findOverlaps(bins, segmentation.split, select='first')
+#'     bins$seg.state <- factor(names(segmentation.split)[mind], levels=states)
+#'     
+#'     df <- data.frame(state = bins$seg.state, x = mcols(bins)[,x], y = mcols(bins)[,y], color=mcols(bins)[,col])
+#'     df <- df[sample(1:nrow(df), size=datapoints, replace=FALSE),]
+#'     if (!is.null(col)) {
+#'         ggplt <- ggplot(df) + geom_jitter(aes_string(x='x', y='y', col='color'), alpha=0.1)
+#'     } else {
+#'         ggplt <- ggplot(df) + geom_jitter(aes_string(x='x', y='y'), alpha=0.1)
+#'     }
+#'     ggplt <- ggplt + theme_bw()
+#'     ggplt <- ggplt + xlab(x) + ylab(y)
+#'     ggplt <- ggplt + facet_wrap(~ state)
+#'     ggplt <- ggplt + scale_color_manual(values=getDistinctColors(levels(df$color)))
+#'     
+#'     return(ggplt)
+#' }
 
 
 
