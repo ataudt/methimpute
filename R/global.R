@@ -1,4 +1,4 @@
-#' @useDynLib methimpute
+#' @useDynLib methimpute, .registration=TRUE
 #' @import Rcpp
 #' @import IRanges
 #' @import GenomeInfoDb

@@ -63,3 +63,10 @@ List fitBinomialTestHMMcontextTransition(const IntegerVector & counts_total, con
 
 }
 
+
+// [[Rcpp::export]]
+void cleanup()
+{
+	delete hmm;
+}
+

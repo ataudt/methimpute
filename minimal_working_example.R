@@ -1,38 +1,16 @@
-setwd('~/popmeth/')
+setwd('~/methimpute/')
 compileAttributes()
 load_all()
 
 ### Test convergence of different settings ###
 load('rene-data-chr1.RData')
+eps <- 0.01
+# data <- data[data@seqnames == 1]
+data <- data[1:1e5]
 
-## 2-state HMM, min coverage = 0
-model <- callMethylationBinomial(data, min.reads=0, include.heterozygosity = FALSE)
-# CONVERGENCE FINE AT ITERATION 21
+## Get to work
+distcor <- distanceCorrelation(data)
+load_all(); fit <- estimateTransDist(distcor)
+transDist <- fit$transDist
+load_all(); model <- callMethylation(data, eps=1, max.iter=2, num.threads = 1, verbosity=1, fit.on.chrom=1, transDist = Inf)
 
-## 3-state HMM, min coverage = 0
-model <- callMethylationBinomial(data, min.reads=0, include.heterozygosity = TRUE)
-# NEGATIVE CHANGE AT ITERATION 16
-
-## 2-state HMM, min coverage = 3
-model <- callMethylationBinomial(data, min.reads=3, include.heterozygosity = FALSE)
-# NEGATIVE CHANGE AT ITERATION 9
-
-## 3-state HMM, min coverage = 3
-model <- callMethylationBinomial(data, min.reads=3, include.heterozygosity = TRUE)
-# NEGATIVE CHANGE AT ITERATION 7
-
-## 2-state HMM, min coverage = 0, context-specific
-model <- callMethylationBinomialContext(data, min.reads=0, include.heterozygosity = FALSE)
-# NEGATIVE CHANGE AT ITERATION 18
-
-## 3-state HMM, min coverage = 0, context-specific
-model <- callMethylationBinomialContext(data, min.reads=0, include.heterozygosity = TRUE)
-# NEGATIVE CHANGE AT ITERATION 12
-
-## 2-state HMM, min coverage = 3, context-specific
-model <- callMethylationBinomialContext(data, min.reads=3, include.heterozygosity = FALSE)
-# CONVERGENCE FINE AT ITERATION 33
-
-## 3-state HMM, min coverage = 3, context-specific
-model <- callMethylationBinomialContext(data, min.reads=3, include.heterozygosity = TRUE)
-# NEGATIVE CHANGE AT ITERATION 16

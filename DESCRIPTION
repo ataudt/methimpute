@@ -23,9 +23,7 @@ Imports:
     minpack.lm,
 Suggests:
     knitr,
-    testthat,
-    biomaRt,
-    ggbio
+    BiocStyle
 LinkingTo: Rcpp
 License: Artistic-2.0
 LazyLoad: yes
