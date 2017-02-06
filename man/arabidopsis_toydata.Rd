@@ -3,10 +3,10 @@
 \docType{data}
 \name{arabidopsis_toydata}
 \alias{arabidopsis_toydata}
-\title{Toy data for arabidopsis (200.000bp of chr1)}
+\title{Toy data for Arabidopsis (200.000bp of chr1)}
 \format{A \code{\link{methimputeData}} object.}
 \description{
-A \code{\link{methimputeData}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains the first 200.000 cytosines of chr1 from arabidopsis.
+A \code{\link{methimputeData}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains the first 200.000 cytosines of chr1 from Arabidopsis.
 }
 \examples{
 data(arabidopsis_toydata)

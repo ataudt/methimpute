@@ -15,6 +15,18 @@ inflateMethylome(methylome, methylome.full)
 The \code{methylome.full} object with added metadata column 'counts'.
 }
 \description{
-Inflate an imported methylation extractor file to more cytosines. This is useful to obtain a full methylome, including non-covered cytosines.
+Inflate an imported methylation extractor file to contain all cytosine positions. This is useful to obtain a full methylome, including non-covered cytosines, because most methylation extractor programs only report covered cytosines.
+}
+\examples{
+## Get an example file in BSSeeker format
+file <- system.file("extdata","arabidopsis_bsseeker.txt.gz", package="methimpute")
+bsseeker.data <- importBSSeeker(file)
+bsseeker.data
+
+## Inflate to full methylome (including non-covered sites)
+data(arabidopsis_toydata)
+full.methylome <- inflateMethylome(bsseeker.data, arabidopsis_toydata)
+full.methylome
+
 }
 

@@ -1,12 +1,23 @@
 #' Inflate an imported methylation extractor file
 #' 
-#' Inflate an imported methylation extractor file to more cytosines. This is useful to obtain a full methylome, including non-covered cytosines.
+#' Inflate an imported methylation extractor file to contain all cytosine positions. This is useful to obtain a full methylome, including non-covered cytosines, because most methylation extractor programs only report covered cytosines.
 #' 
 #' @param methylome A \code{\link[GenomicRanges]{GRanges}} with methylation counts. 
 #' @param methylome.full A \code{\link[GenomicRanges]{GRanges}} with positions for all cytosines or a file with such an object.
 #' @return The \code{methylome.full} object with added metadata column 'counts'.
 #' 
 #' @export
+#' @examples
+#'## Get an example file in BSSeeker format
+#'file <- system.file("extdata","arabidopsis_bsseeker.txt.gz", package="methimpute")
+#'bsseeker.data <- importBSSeeker(file)
+#'bsseeker.data
+#'
+#'## Inflate to full methylome (including non-covered sites)
+#'data(arabidopsis_toydata)
+#'full.methylome <- inflateMethylome(bsseeker.data, arabidopsis_toydata)
+#'full.methylome
+#'
 inflateMethylome <- function(methylome, methylome.full) {
     
     if (is.character(methylome.full)) {
@@ -41,6 +52,13 @@ inflateMethylome <- function(methylome, methylome.full) {
 #' 
 #' @importFrom utils read.table
 #' @export
+#' 
+#' @examples 
+#'## Get an example file in BSSeeker format
+#'file <- system.file("extdata","arabidopsis_bsseeker.txt.gz", package="methimpute")
+#'data(arabidopsis_chromosomes)
+#'bsseeker.data <- importBSSeeker(file, chrom.lengths=arabidopsis_chromosomes)
+#'
 importBSSeeker <- function(file, chrom.lengths=NULL) {
     
     # classes <- c(seqnames='character', nucleotide='character', position='numeric', context='character', context.dinucleotide='character', methylation.level='numeric', counts.methylated='numeric', counts.total='numeric')

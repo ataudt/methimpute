@@ -43,8 +43,7 @@ The Hidden Markov model uses a binomial test for the emission densities. Transit
 }
 \examples{
 ## Get some toy data
-file <- system.file("data","arabidopsis_toydata.RData",
-                    package="methimpute")
+file <- system.file("data","arabidopsis_toydata.RData", package="methimpute")
 data <- get(load(file))
 print(data)
 model <- callMethylation(data)

@@ -3,10 +3,10 @@
 \docType{data}
 \name{arabidopsis_genes}
 \alias{arabidopsis_genes}
-\title{Gene coordinates for arabidopsis (chr1)}
+\title{Gene coordinates for Arabidopsis (chr1)}
 \format{A \code{\link[GenomicRanges]{GRanges}} object.}
 \description{
-A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains gene coordinates of chr1 from arabidopsis.
+A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains gene coordinates of chr1 from Arabidopsis.
 }
 \examples{
 data(arabidopsis_genes)

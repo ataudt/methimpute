@@ -1,6 +1,18 @@
-#' Toy data for arabidopsis (200.000bp of chr1)
+#' Chromosome lengths for Arabidopsis
 #'
-#' A \code{\link{methimputeData}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains the first 200.000 cytosines of chr1 from arabidopsis.
+#' A named vector with chromosome lengths for Arabidopsis.
+#'
+#' @docType data
+#' @name arabidopsis_chromosomes
+#' @format A named numeric vector.
+#' @examples
+#'data(arabidopsis_chromosomes)
+#'print(arabidopsis_chromosomes)
+NULL
+
+#' Toy data for Arabidopsis (200.000bp of chr1)
+#'
+#' A \code{\link{methimputeData}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains the first 200.000 cytosines of chr1 from Arabidopsis.
 #'
 #' @docType data
 #' @name arabidopsis_toydata
@@ -10,9 +22,9 @@
 #'print(arabidopsis_toydata)
 NULL
 
-#' Gene coordinates for arabidopsis (chr1)
+#' Gene coordinates for Arabidopsis (chr1)
 #'
-#' A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains gene coordinates of chr1 from arabidopsis.
+#' A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains gene coordinates of chr1 from Arabidopsis.
 #'
 #' @docType data
 #' @name arabidopsis_genes
@@ -22,9 +34,9 @@ NULL
 #'print(arabidopsis_genes)
 NULL
 
-#' Transposable element coordinates for arabidopsis (chr1)
+#' Transposable element coordinates for Arabidopsis (chr1)
 #'
-#' A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains transposable element coordinates of chr1 from arabidopsis.
+#' A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains transposable element coordinates of chr1 from Arabidopsis.
 #'
 #' @docType data
 #' @name arabidopsis_TEs

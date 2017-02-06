@@ -104,7 +104,7 @@ plotHistogram <- function(model, total.counts, binwidth=1) {
             distr <- as.data.frame(distr)
             distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
             distr$components <- sub('^X', '', distr$components)
-            distr$components <- factor(distr$components, levels=levels(model$data$state))
+            distr$components <- factor(distr$components, levels=levels(model$data$status))
             ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
             
             ## Make legend
@@ -137,12 +137,12 @@ plotScatter <- function(model, datapoints=1000) {
         xmax <- quantile(data$counts[,'total']-data$counts[,'methylated'], 0.99)
         ymax <- quantile(data$counts[,'methylated'], 0.99)
         limits[[context]] <- c(xmax, ymax)
-        df <- data.frame(state=data$state, unmethylated=data$counts[,'total']-data$counts[,'methylated'], methylated=data$counts[,'methylated'])
+        df <- data.frame(status=data$status, unmethylated=data$counts[,'total']-data$counts[,'methylated'], methylated=data$counts[,'methylated'])
         if (datapoints < nrow(df)) {
             df <- df[sample(1:nrow(df), datapoints, replace = FALSE), ]
         }
         
-        ggplt <- ggplot(df, aes_string(x='methylated', y='unmethylated', col='state'))
+        ggplt <- ggplot(df, aes_string(x='methylated', y='unmethylated', col='status'))
         ggplt <- ggplt + geom_point(alpha=0.3)
         ggplt <- ggplt + coord_cartesian(xlim=c(0,xmax), ylim=c(0,ymax))
         ggplt <- ggplt + theme_bw()
@@ -228,11 +228,11 @@ plotConvergence <- function(model) {
     
     ## Plot parameters
     df <- reshape2::melt(info$parameterInfo, value.name='prob')
-    ggplt <- ggplot(df) + geom_line(aes_string(x='iteration', y='prob', col='state')) + theme_bw()
+    ggplt <- ggplot(df) + geom_line(aes_string(x='iteration', y='prob', col='status')) + theme_bw()
     ggplt <- ggplt + theme(panel.grid.minor.x = element_blank())
     ggplt <- ggplt + facet_wrap(~ context)
     ggplt <- ggplt + scale_y_continuous(limits=c(0,1))
-    ggplt <- ggplt + scale_color_manual(values=getStateColors(unique(df$state)))
+    ggplt <- ggplt + scale_color_manual(values=getStateColors(unique(df$status)))
     return(ggplt)
 }
 

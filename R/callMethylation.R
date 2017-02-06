@@ -20,8 +20,7 @@
 #' @export
 #' @examples
 #'## Get some toy data
-#'file <- system.file("data","arabidopsis_toydata.RData",
-#'                     package="methimpute")
+#'file <- system.file("data","arabidopsis_toydata.RData", package="methimpute")
 #'data <- get(load(file))
 #'print(data)
 #'model <- callMethylation(data)
@@ -157,7 +156,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         message("Time spent in Baum-Welch:", appendLF=FALSE)
         stopTimedMessage(ptm)
         ## Cast convergence info
-        parray <- array(NA, dim=c(length(contexts), length(hmm$convergenceInfo$logliks), length(states)), dimnames=list(context=contexts, iteration=0:(length(hmm$convergenceInfo$logliks)-1), state=states))
+        parray <- array(NA, dim=c(length(contexts), length(hmm$convergenceInfo$logliks), length(states)), dimnames=list(context=contexts, iteration=0:(length(hmm$convergenceInfo$logliks)-1), status=states))
         parray[,,'Unmethylated'] <- hmm$convergenceInfo$parameterInfo$probsUN
         parray[,,'Methylated'] <- hmm$convergenceInfo$parameterInfo$probsM
         if ('Intermediate' %in% states) {
@@ -228,12 +227,12 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
             data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
         }
         data$posteriorMeth <- 0.5 * hmm$posteriors[2,] + hmm$posteriors[3,]
-        data$state <- factor(states, levels=states)[hmm$states+1]
+        data$status <- factor(states, levels=states)[hmm$states+1]
         ## Segmentation
         data.collapse <- data
         mcols(data.collapse) <- NULL
-        data.collapse$state <- data$state
-        df <- suppressMessages( collapseBins(as.data.frame(data.collapse), column2collapseBy = 'state') )
+        data.collapse$status <- data$status
+        df <- suppressMessages( collapseBins(as.data.frame(data.collapse), column2collapseBy = 'status') )
         segments <- methods::as(df, 'GRanges')
         seqlengths(segments) <- seqlengths(data)[seqlevels(segments)]
         ## Context-dependent weights

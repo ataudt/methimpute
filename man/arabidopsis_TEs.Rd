@@ -3,10 +3,10 @@
 \docType{data}
 \name{arabidopsis_TEs}
 \alias{arabidopsis_TEs}
-\title{Transposable element coordinates for arabidopsis (chr1)}
+\title{Transposable element coordinates for Arabidopsis (chr1)}
 \format{A \code{\link[GenomicRanges]{GRanges}} object.}
 \description{
-A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains transposable element coordinates of chr1 from arabidopsis.
+A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains transposable element coordinates of chr1 from Arabidopsis.
 }
 \examples{
 data(arabidopsis_TEs)

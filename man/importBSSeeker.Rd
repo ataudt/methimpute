@@ -17,4 +17,11 @@ A \code{\link{methimputeData}} object.
 \description{
 Import a BSSeeker methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 }
+\examples{
+## Get an example file in BSSeeker format
+file <- system.file("extdata","arabidopsis_bsseeker.txt.gz", package="methimpute")
+data(arabidopsis_chromosomes)
+bsseeker.data <- importBSSeeker(file, chrom.lengths=arabidopsis_chromosomes)
+
+}
 
