@@ -15,9 +15,9 @@
 #'data <- loadFromFiles(file)
 #'print(data)
 #'
-loadFromFiles <- function(files, check.class=c('GRanges','BinomialHMM','BinomialHMMcontext')) {
+loadFromFiles <- function(files, check.class=c('GRanges','methimputeData','methimputeBinomialHMM')) {
 
-    available.classes <- c('GRanges', 'BinomialHMM', 'BinomialHMMcontext')
+    available.classes <- c('GRanges', 'methimputeData', 'methimputeBinomialHMM')
     # ptm <- startTimedMessage("Loading data from files ...")
     if (is.null(files)) {
         # stopTimedMessage(ptm)
