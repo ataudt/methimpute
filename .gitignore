@@ -15,13 +15,5 @@
 .*
 # Do not ignore hidden .gitignore
 !.gitignore
-# Do not ignore gsl libraries
-!libgsl.a
-!libgslcblas.a
-!libgsl.dll
-!libgslcblas.dll
-# Ignore data and inst
-# data/*
-# inst/*
-# Ignore
-# *.pdf
+
+.Rproj.user

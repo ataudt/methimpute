@@ -175,7 +175,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         ## Cast convergence info
         convergenceInfo <- list(prefit=list(), fit=list())
         convergenceInfo$prefit$fit.on.chrom <- fit.on.chrom
-        parray <- array(NA, dim=c(length(contexts), length(hmm$convergenceInfo$logliks), length(states)), dimnames=list(context=contexts, iteration=0:(length(hmm$convergenceInfo$logliks)-1), state=states))
+        parray <- array(NA, dim=c(length(contexts), length(hmm$convergenceInfo$logliks), length(states)), dimnames=list(context=contexts, iteration=0:(length(hmm$convergenceInfo$logliks)-1), status=states))
         parray[,,'Unmethylated'] <- hmm$convergenceInfo$parameterInfo$probsUN
         parray[,,'Methylated'] <- hmm$convergenceInfo$parameterInfo$probsM
         if ('Intermediate' %in% states) {
