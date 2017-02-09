@@ -96,6 +96,9 @@ distanceCorrelation <- function(data, distances=0:50) {
         if (!is.null(ggplts[[i1]])) {
             ggplts[[i1]] <- ggplts[[i1]] + scale_alpha_continuous(name='log(weight+1)', limits=c(0,maxweight))
             ggplts[[i1]] <- ggplts[[i1]] + coord_cartesian(ylim=c(min(0, miny), 1))
+            if (miny < 0) {
+                ggplts[[i1]] <- ggplts[[i1]] + geom_hline(aes_string('yintercept'=0), linetype=2, alpha=0.5)
+            }
         }
     }
     cowplt <- suppressWarnings( cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv') )
@@ -206,6 +209,9 @@ estimateTransDist <- function(distcor, skip=2) {
         if (!is.null(ggplts[[i1]])) {
             ggplts[[i1]] <- ggplts[[i1]] + scale_alpha_continuous(name='log(weight+1)', limits=c(0,maxweight))
             ggplts[[i1]] <- ggplts[[i1]] + coord_cartesian(ylim=c(min(0, miny), 1))
+            if (miny < 0) {
+                ggplts[[i1]] <- ggplts[[i1]] + geom_hline(aes_string('yintercept'=0), linetype=2, alpha=0.5)
+            }
         }
     }
     cowplt <- suppressWarnings( cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv') )
