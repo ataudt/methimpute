@@ -4,15 +4,20 @@
 \alias{binMethylome}
 \title{Bin cytosine positions in windows}
 \usage{
-binMethylome(data, binsize)
+binMethylome(data, binsize, contexts = "total",
+  columns.average = c("posteriorMeth"))
 }
 \arguments{
 \item{data}{A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'methylated', 'context', 'counts.unmethylated' and 'counts.methylated'.}
 
 \item{binsize}{The window size used for binning.}
+
+\item{contexts}{A character vector with contexts for which the binning will be done.}
+
+\item{columns.average}{A character vector with names of columns in \code{data} that should be averaged in bins.}
 }
 \value{
-A list() with \code{\link[GenomicRanges]{GRanges}} objects.
+A list() with a \code{\link[GenomicRanges]{GRanges}} objects for each context.
 }
 \description{
 Bin cytosine positions, methylation counts and state in equidistant windows.

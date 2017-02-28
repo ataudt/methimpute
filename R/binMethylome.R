@@ -1,6 +1,6 @@
 #' Bin counts in windows
 #' 
-#' Bin counts from unmethylated and methylated cytosines in equidistant bins.
+#' Bin counts from cytosines in equidistant bins.
 #' 
 #' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'counts.unmethylated' and 'counts.methylated'.
 #' @param binsize The window size used for binning.
@@ -21,18 +21,11 @@ binCounts <- function(data, binsize) {
     
     ptm <- startTimedMessage("Aggregating counts ...")
     ind <- findOverlaps(data, bins, select='first')
-    df <- stats::aggregate(as.data.frame(mcols(data)[,c('counts.unmethylated', 'counts.methylated')]), by=list(ind), FUN=sum)
-    bins$counts.unmethylated <- 0
-    bins$counts.methylated <- 0
-    bins$counts.unmethylated[df$Group.1] <- df$counts.unmethylated
-    bins$counts.methylated[df$Group.1] <- df$counts.methylated
-    stopTimedMessage(ptm)
-    
-    ptm <- startTimedMessage("Adding ratio and distance ...")
-    bins$ratio <- bins$counts.methylated / (bins$counts.methylated + bins$counts.unmethylated)
-    bins <- bins[!is.na(bins$ratio)]
-    bins$distance <- c(-1, start(bins)[-1] - end(bins)[-length(bins)] - 1)
-    bins$distance[bins$distance < 0] <- Inf 
+    df <- stats::aggregate(as.data.frame(data$counts), by=list(ind), FUN=sum)
+    bins$counts <- matrix(0, ncol=2, nrow=length(bins))
+    colnames(bins$counts) <- colnames(data$counts)
+    bins$counts[df$Group.1,'methylated'] <- df$methylated
+    bins$counts[df$Group.1,'total'] <- df$total
     stopTimedMessage(ptm)
     
     return(bins)
@@ -87,10 +80,12 @@ binPositions <- function(data, binsize) {
 #' 
 #' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'methylated', 'context', 'counts.unmethylated' and 'counts.methylated'.
 #' @param binsize The window size used for binning.
-#' @return A list() with \code{\link[GenomicRanges]{GRanges}} objects.
+#' @param contexts A character vector with contexts for which the binning will be done.
+#' @param columns.average A character vector with names of columns in \code{data} that should be averaged in bins.
+#' @return A list() with a \code{\link[GenomicRanges]{GRanges}} objects for each context.
 #' 
 #' @importFrom stats aggregate
-binMethylome <- function(data, binsize) {
+binMethylome <- function(data, binsize, contexts='total', columns.average=c('posteriorMeth')) {
   
     ptm <- startTimedMessage("Making fixed-width bins with ", binsize, "bp ...")
     chrom.lengths.floor <- floor(seqlengths(data) / binsize) * binsize
@@ -102,7 +97,6 @@ binMethylome <- function(data, binsize) {
     }
     stopTimedMessage(ptm)
     
-    contexts <- c("total", levels(data$context))
     bins.list <- list()
     for (context in contexts) {
         messageU("Working on context '", context, "'", underline=NULL, overline='-')
@@ -118,24 +112,23 @@ binMethylome <- function(data, binsize) {
         bins$cytosines <- countOverlaps(bins, data.context)
         stopTimedMessage(ptm)
         
-        ptm <- startTimedMessage("Aggregating methylation status and counts ...")
-        data.context$status.methylated <- data.context$methylated == 1
-        data.context$status.unmethylated <- !data.context$status.methylated
-        ind <- findOverlaps(data.context, bins, select='first')
-        dfa <- stats::aggregate(as.data.frame(mcols(data.context)[,c('status.methylated', 'status.unmethylated', 'counts.unmethylated', 'counts.methylated')]), by=list(index=ind), FUN=sum, na.rm=TRUE)
-        
-        bins$status.methylated <- 0
-        bins$status.methylated[dfa$index] <- dfa$status.methylated
-        bins$status.unmethylated <- 0
-        bins$status.unmethylated[dfa$index] <- dfa$status.unmethylated
-        bins$status.ratio <- bins$status.methylated / (bins$status.methylated + bins$status.unmethylated)
-        
-        bins$counts.methylated <- 0
-        bins$counts.methylated[dfa$index] <- dfa$counts.methylated
-        bins$counts.unmethylated <- 0
-        bins$counts.unmethylated[dfa$index] <- dfa$counts.unmethylated
-        bins$counts.ratio <- bins$counts.methylated / (bins$counts.methylated + bins$counts.unmethylated)
+        ptm <- startTimedMessage("Aggregating counts ...")
+        ind <- findOverlaps(data, bins, select='first')
+        df <- stats::aggregate(as.data.frame(data$counts), by=list(ind), FUN=sum)
+        bins$counts <- matrix(0, ncol=2, nrow=length(bins))
+        colnames(bins$counts) <- colnames(data$counts)
+        bins$counts[df$Group.1,'methylated'] <- df$methylated
+        bins$counts[df$Group.1,'total'] <- df$total
         stopTimedMessage(ptm)
+        for (col in columns.average) {
+            ptm <- startTimedMessage("Averaging column ", col, " ...")
+            if (!is.null(mcols(data)[col])) {
+                df <- stats::aggregate(mcols(data)[[col]], by=list(ind), FUN=mean)
+                mcols(bins)[col] <- NA
+                mcols(bins)[df$Group.1, col] <- df[,2]
+            }
+            stopTimedMessage(ptm)
+        }
         
         bins.list[[context]] <- bins
     }

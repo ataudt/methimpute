@@ -15,6 +15,6 @@ binCounts(data, binsize)
 A \code{\link[GenomicRanges]{GRanges}} object.
 }
 \description{
-Bin counts from unmethylated and methylated cytosines in equidistant bins.
+Bin counts from cytosines in equidistant bins.
 }
 

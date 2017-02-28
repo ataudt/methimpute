@@ -4,8 +4,8 @@
 \alias{loadFromFiles}
 \title{Load \pkg{methimpute} objects from file}
 \usage{
-loadFromFiles(files, check.class = c("GRanges", "BinomialHMM",
-  "BinomialHMMcontext"))
+loadFromFiles(files, check.class = c("GRanges", "methimputeData",
+  "methimputeBinomialHMM"))
 }
 \arguments{
 \item{files}{A list of \code{\link{GRanges}}, \code{\link{methimputeData}} or \code{\link{methimputeBinomialHMM}} objects or a character vector with files that contain such objects.}
