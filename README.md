@@ -1,7 +1,7 @@
 METHimpute
 ==========
 
-Methimpute implements a powerful HMM-based binomial test for methylation status calling. Besides improved accuracy over the classical binomial test, the HMM allows imputation of the methylation status of **all cytosines** in the genome. It achieves this by borrowing information from neighboring covered cytosines. Of course, if there are long stretches of uncovered sequence, the imputation might not be very reliable. For this reason, methimpute also reports a confidence score for every position which allows judgement of the reliability of the imputation and methylation status calling procedure.
+Methimpute implements a powerful HMM-based binomial test for methylation status calling. Besides improved accuracy over the classical binomial test, the HMM allows imputation of the methylation status of **all cytosines** in the genome. It achieves this by borrowing information from neighboring covered cytosines. The confidence in the methylation status call is reported as well. Methimpute also outputs context-specific conversion rates, which might be used to optimize the experimental procedure.
 
 For the exact workings of methimpute we refer the interested reader to our publication TODO. A tutorial is available [here](https://github.com/ataudt/methimpute/blob/master/vignettes/methimpute.pdf).
 
