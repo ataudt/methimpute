@@ -1,4 +1,4 @@
-%\VignetteIndexEntry{Methylation status calling with methIMPUTE}
+%\VignetteIndexEntry{Methylation status calling with METHimpute}
 %\VignetteEngine{knitr::knitr}
 \documentclass{article}
 
@@ -7,7 +7,7 @@ BiocStyle::latex()
 @
 
 \author{Aaron Taudt\thanks{\email{aaron.taudt@gmail.com}}}
-\title{Methylation status calling with methIMPUTE}
+\title{Methylation status calling with METHimpute}
 
 \begin{document}
 \maketitle
@@ -20,7 +20,7 @@ options(width=110)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
-\Rpackage{Methimpute} implements a powerful HMM-based binomial test for methylation status calling. Besides improved accuracy over the classical binomial test, the HMM allows imputation of the methylation status of \textbf{all cytosines} in the genome. It achieves this by borrowing information from neighboring covered cytosines. Of course, if there are long stretches of uncovered sequence, the imputation might not be very reliable. For this reason, \Rpackage{methimpute} also reports a confidence score for every position which allows judgement of the reliability of the imputation and methylation status calling procedure.
+\Rpackage{Methimpute} implements a powerful HMM-based binomial test for methylation status calling. Besides improved accuracy over the classical binomial test, the HMM allows imputation of the methylation status of \textbf{all cytosines} in the genome. It achieves this by borrowing information from neighboring covered cytosines. The confidence in the methylation status call is reported as well. Methimpute also outputs context-specific conversion rates, which might be used to optimize the experimental procedure.
 
 For the exact workings of \Rpackage{methimpute} we refer the interested reader to our publication TODO.
 
