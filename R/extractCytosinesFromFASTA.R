@@ -7,6 +7,10 @@
 #' 
 #' @importFrom Biostrings readDNAStringSet vmatchPattern reverseComplement
 #' @export
+#' @examples
+#' ## Read a non-compressed FASTA files:
+#' filepath <- system.file("extdata", "someORF.fa", package="Biostrings")
+#' cytosines <- extractCytosinesFromFASTA(filepath)
 extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH')) {
   
     ### Read file
@@ -41,7 +45,9 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH')) {
     seqlengths(cytosines.forward) <- chromlengths
     # Remove ambiguous positions
     ind <- findOverlaps(cytosines.forward, notuse)
-    cytosines.forward <- cytosines.forward[-ind@from]
+    if (length(ind) > 0) {
+        cytosines.forward <- cytosines.forward[-ind@from]
+    }
     # Set width to 1
     end(cytosines.forward) <- start(cytosines.forward)
     stopTimedMessage(ptm)
@@ -65,7 +71,9 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH')) {
     cytosines.reverse <- GRanges(seqnames = seqnames(cytosines.reverse), ranges = IRanges(start = ends, end = starts), strand = '-', context = cytosines.reverse$context)
     # Remove ambiguous positions
     ind <- findOverlaps(cytosines.reverse, notuse)
-    cytosines.reverse <- cytosines.reverse[-ind@from]
+    if (length(ind) > 0) {
+        cytosines.reverse <- cytosines.reverse[-ind@from]
+    }
     # Set width to 1
     start(cytosines.reverse) <- end(cytosines.reverse)
     stopTimedMessage(ptm)
