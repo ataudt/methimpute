@@ -28,12 +28,13 @@ importMethylpy <- function(file, chrom.lengths=NULL) {
     stopTimedMessage(ptm)
     
     ## Rework contexts
+    ptm <- startTimedMessage("Reworking contexts ...")
     for (i1 in 1:length(contexts)) {
-        # ind <- Biostrings::vmatchPattern(contexts[i1], context.set)
         ind <- grep(pattern = contexts[i1], x = data$context.full)
         data$context[ind] <- names(contexts)[i1]
     }
     data$context.full <- NULL
+    stopTimedMessage(ptm)
     
     ## Assign seqlengths
     if (!is.null(chrom.lengths)) {
