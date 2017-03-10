@@ -425,6 +425,7 @@ plotTransitionDistances <- function(model) {
 #' @param xmax Limit for the x-axis.
 #' @export
 plotPosteriorDistance <- function(data, datapoints=1e6, max.coverage.y=0, min.coverage.x=3, xmax=200) {
+    ptm <- startTimedMessage("Plotting maximum posterior vs. distance to nearest covered ...")
     if (length(data) > datapoints) {
         data.small <- data[sort(sample(length(data), datapoints))]
     } else {
@@ -434,13 +435,15 @@ plotPosteriorDistance <- function(data, datapoints=1e6, max.coverage.y=0, min.co
     # Distance of nearest covered cytosine
     cov <- data[data$counts[,'total'] >= min.coverage.x]
     near <- distanceToNearest(datac, cov)
-    datac$distance.nearest <- mcols(near)$distance
+    datac$distance.nearest <- NA
+    datac$distance.nearest[near@from] <- mcols(near)$distance
     # Plot
     df <- data.frame(posteriorMax=datac$posteriorMax, distance.nearest=datac$distance.nearest, context=datac$context)
     ggplt <- ggplot(df[df$distance.nearest <= xmax,]) + geom_boxplot(aes(x=factor(distance.nearest), y=posteriorMax, fill=context), outlier.shape = NA) + theme_bw()
     ggplt <- ggplt + facet_grid(.~context)
     ggplt <- ggplt + xlab(paste0('Distance to nearest covered C (>= ', min.coverage.x, ') in [bp]')) + ylab(paste0('Maximum posterior\n(cytosines with coverage <= ', max.coverage.y, ')'))
-    ggplt <- ggplt + scale_x_discrete(breaks=seq(0,max(df$distance.nearest), by=xmax/10))
+    ggplt <- ggplt + scale_x_discrete(breaks=seq(0,max(df$distance.nearest, na.rm=TRUE), by=xmax/10))
+    stopTimedMessage(ptm)
     return(ggplt)
 }
 
