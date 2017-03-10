@@ -1,46 +1,55 @@
-#' Inflate an imported methylation extractor file
+#' Import a Methylpy methylation extractor file
 #' 
-#' Inflate an imported methylation extractor file to contain all cytosine positions. This is useful to obtain a full methylome, including non-covered cytosines, because most methylation extractor programs only report covered cytosines.
+#' Import a Methylpy methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 #' 
-#' @param methylome A \code{\link[GenomicRanges]{GRanges}} with methylation counts. 
-#' @param methylome.full A \code{\link[GenomicRanges]{GRanges}} with positions for all cytosines or a file with such an object.
-#' @return The \code{methylome.full} object with added metadata column 'counts'.
+#' @param file The file to import.
+#' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
+#' @return A \code{\link{methimputeData}} object.
 #' 
+#' @importFrom utils read.table
 #' @export
-#' @examples
-#'## Get an example file in BSSeeker format
-#'file <- system.file("extdata","arabidopsis_bsseeker.txt.gz", package="methimpute")
-#'bsseeker.data <- importBSSeeker(file)
-#'bsseeker.data
-#'
-#'## Inflate to full methylome (including non-covered sites)
-#'data(arabidopsis_toydata)
-#'full.methylome <- inflateMethylome(bsseeker.data, arabidopsis_toydata)
-#'full.methylome
-#'
-inflateMethylome <- function(methylome, methylome.full) {
+#' 
+importMethylpy <- function(file, chrom.lengths=NULL) {
     
-    if (is.character(methylome.full)) {
-        ptm <- startTimedMessage("Loading full methylome from file ", methylome.full, " ...")
-        temp.env <- new.env()
-        methylome.full <- get(load(methylome.full, envir=temp.env), envir=temp.env) 
-        stopTimedMessage(ptm)
-    }
-    if (is.character(methylome)) {
-        ptm <- startTimedMessage("Loading methylome from file ", methylome, " ...")
-        temp.env <- new.env()
-        methylome <- get(load(methylome, envir=temp.env), envir=temp.env) 
-        stopTimedMessage(ptm)
-    }
-    ptm <- startTimedMessage("Inflating methylome ...")
-    counts <- array(0, dim=c(length(methylome.full), 2), dimnames=list(NULL, c("methylated", "total")))
-    ind <- findOverlaps(methylome.full, methylome)
-    counts[ind@from,] <- methylome$counts[ind@to,]
-    methylome.full$counts <- counts
+    ## Contexts
+    contexts <- c(CG='CG.', CHG='C[ATC]G', CHH='C[ATC][ATC]')
+    
+    ## Import data
+    classes <- c('character', 'numeric', 'character', 'character', 'numeric', 'numeric', 'numeric')
+    ptm <- startTimedMessage("Reading file ", file, " ...")
+    data.raw <- utils::read.table(file, skip=0, sep='\t', comment.char='', colClasses=classes)
+    data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=data.raw$V3, context=factor(NA, levels=names(contexts)), context.full=data.raw$V4)
+    counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
+    counts[,"methylated"] <- data.raw$V5
+    counts[,"total"] <- data.raw$V6
+    data$counts <- counts
+    data$binomial.test <- data.raw$V7
+    rm(data.raw)
     stopTimedMessage(ptm)
-    return(methylome.full)
     
+    ## Rework contexts
+    for (i1 in 1:length(contexts)) {
+        # ind <- Biostrings::vmatchPattern(contexts[i1], context.set)
+        ind <- grep(pattern = contexts[i1], x = data$context.full)
+        data$context[ind] <- names(contexts)[i1]
+    }
+    data$context.full <- NULL
+    
+    ## Assign seqlengths
+    if (!is.null(chrom.lengths)) {
+        if (is.character(chrom.lengths)) {
+            df <- utils::read.table(chrom.lengths, header=TRUE)
+            chrom.lengths <- df[,2]
+            names(chrom.lengths) <- df[,1]
+        }
+        # Filter by chromosomes supplied in chrom.lengths
+        data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
+        seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
+    }
+    
+    return(data)
 }
+
 
 #' Import a BSSeeker methylation extractor file
 #' 
