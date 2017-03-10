@@ -4,6 +4,7 @@
 \alias{plotConvergence}
 \alias{plotEnrichment}
 \alias{plotHistogram}
+\alias{plotPosteriorDistance}
 \alias{plotScatter}
 \alias{plotTransitionProbs}
 \alias{plotting}
@@ -19,6 +20,9 @@ plotConvergence(model)
 
 plotEnrichment(data, annotation, windowsize = 100, insidewindows = 20,
   range = 1000, category.column = NULL)
+
+plotPosteriorDistance(data, datapoints = 1e+06, max.coverage.y = 0,
+  min.coverage.x = 3, xmax = 200)
 }
 \arguments{
 \item{model}{A \code{\link{methimputeBinomialHMM}} object.}
@@ -40,6 +44,16 @@ plotEnrichment(data, annotation, windowsize = 100, insidewindows = 20,
 \item{range}{Distance upstream and downstream for which the enrichment profile is calculated.}
 
 \item{category.column}{The name of a column in \code{data} that will be used for facetting of the plot.}
+
+\item{max.coverage.y}{Maximum coverage for cytosines on the y-axis.}
+
+\item{min.coverage.x}{Minimum coverage for cytosines on the x-axis.}
+
+\item{xmax}{Limit for the x-axis.}
+
+\item{data}{The \code{$data} entry of a \code{\link{methimputeBinomialHMM}} object.}
+
+\item{datapoints}{The number of datapoints to consider for the plot.}
 }
 \value{
 A \code{\link[ggplot2]{ggplot}} object.
@@ -58,6 +72,8 @@ This page provides an overview of all \pkg{\link{methimpute}} plotting functions
 \item \code{plotConvergence}: Plot the convergence of the probability parameters.
 
 \item \code{plotEnrichment}: Plot an enrichment profile around an annotation.
+
+\item \code{plotPosteriorDistance}: Maximum posterior vs. distance to nearest covered cytosine.
 }}
 \examples{
 ## Get some toy data

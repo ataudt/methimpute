@@ -417,6 +417,34 @@ plotTransitionDistances <- function(model) {
 }
 
 
+#' @describeIn plotting Maximum posterior vs. distance to nearest covered cytosine.
+#' @param data The \code{$data} entry of a \code{\link{methimputeBinomialHMM}} object.
+#' @param datapoints The number of datapoints to consider for the plot.
+#' @param max.coverage.y Maximum coverage for cytosines on the y-axis.
+#' @param min.coverage.x Minimum coverage for cytosines on the x-axis.
+#' @param xmax Limit for the x-axis.
+#' @export
+plotPosteriorDistance <- function(data, datapoints=1e6, max.coverage.y=0, min.coverage.x=3, xmax=200) {
+    if (length(data) > datapoints) {
+        data.small <- data[sort(sample(length(data), datapoints))]
+    } else {
+        data.small <- data
+    }
+    datac <- data.small[data.small$counts[,'total'] <= max.coverage.y]
+    # Distance of nearest covered cytosine
+    cov <- data[data$counts[,'total'] >= min.coverage.x]
+    near <- distanceToNearest(datac, cov)
+    datac$distance.nearest <- mcols(near)$distance
+    # Plot
+    df <- data.frame(posteriorMax=datac$posteriorMax, distance.nearest=datac$distance.nearest, context=datac$context)
+    ggplt <- ggplot(df[df$distance.nearest <= xmax,]) + geom_boxplot(aes(x=factor(distance.nearest), y=posteriorMax, fill=context), outlier.shape = NA) + theme_bw()
+    ggplt <- ggplt + facet_grid(.~context)
+    ggplt <- ggplt + xlab(paste0('Distance to nearest covered C (>= ', min.coverage.x, ') in [bp]')) + ylab(paste0('Maximum posterior\n(cytosines with coverage <= ', max.coverage.y, ')'))
+    ggplt <- ggplt + scale_x_discrete(breaks=seq(0,max(df$distance.nearest), by=xmax/10))
+    return(ggplt)
+}
+
+
 #' #' Plot a count histogram
 #' #' 
 #' #' Plot a histogram of count values and fitted distributions.
