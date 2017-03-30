@@ -20,7 +20,7 @@ class HMM_context  {
 		// Constructor and Destructor
 		HMM_context();
 		// Binomial test context transition
-		HMM_context(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_meth, const Rcpp::IntegerVector & context, const Rcpp::IntegerVector & transitionContext, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::List transProbs_initial, Rcpp::NumericVector transDist, Rcpp::List emissionParams_initial, int min_obs, int verbosity);
+		HMM_context(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_meth, const Rcpp::IntegerVector & context, const Rcpp::IntegerVector & transitionContext, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::List transProbs_initial, Rcpp::NumericVector transDist, Rcpp::List emissionParams_initial, int min_obs, int verbosity, int update_procedure);
 		~HMM_context();
 
 		// Member variables
@@ -46,6 +46,7 @@ class HMM_context  {
 		int NDATA; ///< length of observed sequence
 		int NSTATES; ///< number of states
 		int NMOD; ///< number of modifications / marks
+		int UPDATE_PROCEDURE; ///< 0 for free updates and 1 for constrained
 		Rcpp::NumericVector logObs; ///< vector [NDATA] of log(observations)
 		Rcpp::NumericVector log1mObs; ///< vector [NDATA] of log(1-observations)
 		Rcpp::IntegerVector obs_unique; ///< vector [?] of unique observations

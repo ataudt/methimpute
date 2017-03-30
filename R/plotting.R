@@ -40,7 +40,7 @@ NULL
 #'cols <- getStateColors()
 #'pie(1:length(cols), col=cols, labels=names(cols))
 getStateColors <- function(states=NULL) {
-    state.colors <- c("Background" = "gray", "Unmethylated" = "red","Methylated" = "blue","Intermediate" = "green", "total" = "black", "background" = "gray", "signal" = "red")
+    state.colors <- c("Background" = "gray", "Unmethylated" = "red","Methylated" = "blue","Intermediate" = "green", "Total" = "black", "Signal" = "red")
     if (is.null(states)) {
         return(state.colors)
     } else {
@@ -102,16 +102,18 @@ plotHistogram <- function(model, total.counts, binwidth=1) {
                 distr[[names(model$params$emissionParams)[i1]]] <- model$params$weights[[context]][i1] * stats::dbinom(x, size=total.counts, prob=e[context,'prob'])
             }
             distr <- as.data.frame(distr)
+            distr$Total <- rowSums(distr[,-1])
             distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
             distr$components <- sub('^X', '', distr$components)
-            distr$components <- factor(distr$components, levels=levels(model$data$status))
+            distr$components <- factor(distr$components, levels=c('Total', levels(model$data$status)))
             ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
             
             ## Make legend
             lprobs <- round(sapply(model$params$emissionParams, function(x) { x[context,'prob'] }), 4)
             lweights <- round(model$params$weights[[context]], 2)
             legend <- paste0(names(model$params$emissionParams), ", prob=", lprobs, ", weight=", lweights)
-            ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(rownames(model$params$emissionParams)), labels=legend) + theme(legend.position=c(0.5,0.99), legend.justification=c(0.5,1))
+            legend <- c(paste0("Total, weight=", round(sum(lweights))), legend)
+            ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(levels(distr$components)), labels=legend) + theme(legend.position=c(0.5,0.99), legend.justification=c(0.5,1))
         }
         ggplt <- ggplt + ggtitle(paste0("Context ", context))
         ggplts[[context]] <- ggplt

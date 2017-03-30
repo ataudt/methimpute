@@ -9,7 +9,7 @@ using namespace Rcpp;
 static HMM_context * hmm; // declare as static outside the function because we only need one and this enables memory-cleanup on R_CheckUserInterrupt()
 
 // [[Rcpp::export]]
-List fitBinomialTestHMMcontextTransition(const IntegerVector & counts_total, const IntegerVector & counts_meth, const IntegerVector & context, const IntegerVector & transitionContext, const NumericVector & distances, const List & params, const int & algorithm) {
+List fitBinomialTestHMMcontextTransition(const IntegerVector & counts_total, const IntegerVector & counts_meth, const IntegerVector & context, const IntegerVector & transitionContext, const NumericVector & distances, const List & params, const int & algorithm, const int & update_procedure) {
 
     // access variables by name
     const NumericVector startProbs_initial = as<NumericVector>(params["startProbs_initial"]);
@@ -29,7 +29,7 @@ List fitBinomialTestHMMcontextTransition(const IntegerVector & counts_total, con
 		#endif
 
 		// Initialize the HMM
-		hmm = new HMM_context(counts_total, counts_meth, context, transitionContext, distances, startProbs_initial, transProbs_initial, transDist, emissionParams_initial, min_obs, verbosity);
+		hmm = new HMM_context(counts_total, counts_meth, context, transitionContext, distances, startProbs_initial, transProbs_initial, transDist, emissionParams_initial, min_obs, verbosity, update_procedure);
 
 		// Estimate parameters
 		List results;

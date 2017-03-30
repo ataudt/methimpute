@@ -6,8 +6,8 @@
 using namespace Rcpp;
 
 // fitBinomialTestHMMcontextTransition
-List fitBinomialTestHMMcontextTransition(const IntegerVector& counts_total, const IntegerVector& counts_meth, const IntegerVector& context, const IntegerVector& transitionContext, const NumericVector& distances, const List& params, const int& algorithm);
-RcppExport SEXP methimpute_fitBinomialTestHMMcontextTransition(SEXP counts_totalSEXP, SEXP counts_methSEXP, SEXP contextSEXP, SEXP transitionContextSEXP, SEXP distancesSEXP, SEXP paramsSEXP, SEXP algorithmSEXP) {
+List fitBinomialTestHMMcontextTransition(const IntegerVector& counts_total, const IntegerVector& counts_meth, const IntegerVector& context, const IntegerVector& transitionContext, const NumericVector& distances, const List& params, const int& algorithm, const int& update_procedure);
+RcppExport SEXP methimpute_fitBinomialTestHMMcontextTransition(SEXP counts_totalSEXP, SEXP counts_methSEXP, SEXP contextSEXP, SEXP transitionContextSEXP, SEXP distancesSEXP, SEXP paramsSEXP, SEXP algorithmSEXP, SEXP update_procedureSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -18,7 +18,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const NumericVector& >::type distances(distancesSEXP);
     Rcpp::traits::input_parameter< const List& >::type params(paramsSEXP);
     Rcpp::traits::input_parameter< const int& >::type algorithm(algorithmSEXP);
-    rcpp_result_gen = Rcpp::wrap(fitBinomialTestHMMcontextTransition(counts_total, counts_meth, context, transitionContext, distances, params, algorithm));
+    Rcpp::traits::input_parameter< const int& >::type update_procedure(update_procedureSEXP);
+    rcpp_result_gen = Rcpp::wrap(fitBinomialTestHMMcontextTransition(counts_total, counts_meth, context, transitionContext, distances, params, algorithm, update_procedure));
     return rcpp_result_gen;
 END_RCPP
 }

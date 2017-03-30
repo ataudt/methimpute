@@ -15,6 +15,8 @@
 #' @param num.threads Number of CPU to use for the computation. Parallelization is implemented on the number of states, which is 2 or 3, so setting \code{num.threads > 3} will not give additional performance increase.
 #' @param initial.params A \code{\link{methimputeBinomialHMM}} object. This parameter is useful to continue the fitting procedure for a \code{\link{methimputeBinomialHMM}} object.
 #' @param include.intermediate A logical specifying wheter or not the intermediate component should be included in the HMM.
+#' @param update One of \code{c("independent", "constrained")}. If \code{update="independent"} probability parameters for the binomial test will be updated independently. If \code{update="constrained"} the probability parameter of the intermediate component will be constrained to the mean of the unmethylated and the methylated component.
+#' @param min.reads The minimum number of reads that a position must have to contribute in the Baum-Welch fitting procedure.
 #' @return A \code{\link{methimputeBinomialHMM}} object.
 #' 
 #' @export
@@ -25,7 +27,7 @@
 #'print(data)
 #'model <- callMethylation(data)
 #'print(model)
-callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=2+include.intermediate, initial.params=NULL, include.intermediate=TRUE) {
+callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=2+include.intermediate, initial.params=NULL, include.intermediate=TRUE, update='independent', min.reads=0) {
   
     ### Input checks ###
     if (!is.null(fit.on.chrom)) {
@@ -41,7 +43,8 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
     stopTimedMessage(ptm)
     
     ### Assign variables ###
-    min.reads <- 0
+    update <- factor(update, levels=c('independent', 'constrained'))
+    if (is.na(update)) { stop("Argument 'update' must be one of c('independent', 'constrained').") }
     contexts <- intersect(levels(data$context), unique(data$context))
     ncontexts <- length(contexts)
     transitionContexts <- character()
@@ -152,7 +155,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
     on.exit(cleanup())
     if (is.null(fit.on.chrom)) {
         ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
-        hmm <- fitBinomialTestHMMcontextTransition(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], context=as.integer(context)-1, transitionContext=as.integer(transitionContext)-1, distances=distances, params=params, algorithm=1)
+        hmm <- fitBinomialTestHMMcontextTransition(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], context=as.integer(context)-1, transitionContext=as.integer(transitionContext)-1, distances=distances, params=params, algorithm=1, update_procedure=update)
         message("Time spent in Baum-Welch:", appendLF=FALSE)
         stopTimedMessage(ptm)
         ## Cast convergence info
@@ -169,7 +172,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
     } else {
         ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
         message(" ... on chromosomes ", paste0(fit.on.chrom, collapse=', '))
-        hmm <- fitBinomialTestHMMcontextTransition(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], context=as.integer(context)-1, transitionContext=as.integer(transitionContext)-1, distances=distances, params=params, algorithm=1)
+        hmm <- fitBinomialTestHMMcontextTransition(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], context=as.integer(context)-1, transitionContext=as.integer(transitionContext)-1, distances=distances, params=params, algorithm=1, update_procedure=update)
         message("Time spent in Baum-Welch:", appendLF=FALSE)
         stopTimedMessage(ptm)
         ## Cast convergence info
@@ -203,7 +206,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         params2$numThreads <- num.threads
         ptm <- startTimedMessage("Forward-Backward: Obtaining state sequence - no updates\n")
         message(" ... on all chromosomes")
-        hmm <- fitBinomialTestHMMcontextTransition(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], context=as.integer(context)-1, transitionContext=as.integer(transitionContext)-1, distances=distances, params=params2, algorithm=2)
+        hmm <- fitBinomialTestHMMcontextTransition(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], context=as.integer(context)-1, transitionContext=as.integer(transitionContext)-1, distances=distances, params=params2, algorithm=2, update_procedure=update)
         message("Time spent in Forward-Backward:", appendLF=FALSE)
         stopTimedMessage(ptm)
         ## Cast convergence info

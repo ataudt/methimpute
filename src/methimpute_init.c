@@ -5,11 +5,11 @@
 
 #include <R_ext/Rdynload.h>
 
-SEXP methimpute_fitBinomialTestHMMcontextTransition(SEXP counts_totalSEXP, SEXP counts_methSEXP, SEXP contextSEXP, SEXP transitionContextSEXP, SEXP distancesSEXP, SEXP paramsSEXP, SEXP algorithmSEXP);
+SEXP methimpute_fitBinomialTestHMMcontextTransition(SEXP counts_totalSEXP, SEXP counts_methSEXP, SEXP contextSEXP, SEXP transitionContextSEXP, SEXP distancesSEXP, SEXP paramsSEXP, SEXP algorithmSEXP, SEXP update_procedureSEXP);
 SEXP methimpute_cleanup();
 
 R_CallMethodDef callMethods[]  = {
-  {"methimpute_fitBinomialTestHMMcontextTransition", (DL_FUNC) &methimpute_fitBinomialTestHMMcontextTransition, 7},
+  {"methimpute_fitBinomialTestHMMcontextTransition", (DL_FUNC) &methimpute_fitBinomialTestHMMcontextTransition, 8},
   {"methimpute_cleanup", (DL_FUNC) &methimpute_cleanup, 0},
   {NULL, NULL, 0}
 };

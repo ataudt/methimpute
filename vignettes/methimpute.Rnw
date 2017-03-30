@@ -29,8 +29,6 @@ For the exact workings of \Rpackage{methimpute} we refer the interested reader t
 The following example explains the necessary steps for methylation status calling (and imputation). To keep the calculation time short, it uses only the first 200.000 bp of the Arabidopsis genome. The example consists of three steps: 1) Data import, 2) estimating the distance correlation and 3) methylation status calling.
 At the end of this example you will see that positions without counts are assigned a methylation status, but the confidence (column "posteriorMax") is generally quite low for those cytosines. Column "posteriorMeth" gives the HMM posterior probability for a cytosine being methylated, which can be interpreted as a methylation level for each site. Column "status" contains the imputed and non-imputed methylation status calls.
 
-
-
 \begin{small}
 <<methylation_status_calling, results='show', message=FALSE, eval=TRUE, fig.width=15, fig.height=10, out.width='\\textwidth'>>=
 library(methimpute)
@@ -43,8 +41,10 @@ print(bsseeker.data)
 
 # Because most methylation extractor programs report only covered cytosines,
 # we need to inflate the data to inlcude all cytosines (including non-covered sites)
-data(arabidopsis_toydata)
-methylome <- inflateMethylome(bsseeker.data, arabidopsis_toydata)
+fasta.file <- system.file("extdata","arabidopsis_sequence.fa.gz", package="methimpute")
+cytosine.positions <- extractCytosinesFromFASTA(fasta.file, contexts = c('CG','CHG','CHH'))
+seqlengths(cytosine.positions) <- seqlengths(bsseeker.data) # only necessary for our toy example
+methylome <- inflateMethylome(bsseeker.data, cytosine.positions)
 print(methylome)
 
 # === Step 2: Obtain correlation parameters === #

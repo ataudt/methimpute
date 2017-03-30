@@ -7,13 +7,14 @@
 // Public =====================================================
 
 // Constructor and Destructor ---------------------------------
-HMM_context::HMM_context(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_meth, const Rcpp::IntegerVector & context, const Rcpp::IntegerVector & transitionContext, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::List transProbs_initial, Rcpp::NumericVector transDist, Rcpp::List emissionParams_initial, int min_obs, int verbosity)
+HMM_context::HMM_context(const Rcpp::IntegerVector & obs_total, const Rcpp::IntegerVector & obs_meth, const Rcpp::IntegerVector & context, const Rcpp::IntegerVector & transitionContext, const Rcpp::NumericVector & distances, Rcpp::NumericVector startProbs_initial, Rcpp::List transProbs_initial, Rcpp::NumericVector transDist, Rcpp::List emissionParams_initial, int min_obs, int verbosity, int update_procedure)
 {
 	if (verbosity>=2) Rprintf("%s\n", __PRETTY_FUNCTION__);
 	this->xvariate = UNIVARIATE;
 	this->verbosity = verbosity;
 	this->NDATA = obs_total.size();
 	this->NSTATES = startProbs_initial.size();
+	this->UPDATE_PROCEDURE = update_procedure;
 	this->distances = distances;
 	this->scalefactoralpha = Rcpp::NumericVector(this->NDATA);
 	this->scalealpha = Rcpp::NumericMatrix(this->NDATA, this->NSTATES);
@@ -374,7 +375,7 @@ Rcpp::List HMM_context::baumWelch(double eps, double maxiter, double maxtime)
 		}
 		else if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST_CONTEXT)
 		{ 
-			if (this->NSTATES == 2)
+			if (this->NSTATES == 2 | this->UPDATE_PROCEDURE == 1)
 			{
 				for (int i=0; i<this->NSTATES; i++)
 				{
