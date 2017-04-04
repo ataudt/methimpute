@@ -7,7 +7,7 @@
 callMethylation(data, fit.on.chrom = NULL, transDist = Inf, eps = 1,
   max.time = Inf, max.iter = Inf, count.cutoff = 500, verbosity = 1,
   num.threads = 2 + include.intermediate, initial.params = NULL,
-  include.intermediate = TRUE, update = "independent")
+  include.intermediate = TRUE, update = "independent", min.reads = 0)
 }
 \arguments{
 \item{data}{A \code{\link{methimputeData}} object.}
@@ -33,6 +33,8 @@ callMethylation(data, fit.on.chrom = NULL, transDist = Inf, eps = 1,
 \item{include.intermediate}{A logical specifying wheter or not the intermediate component should be included in the HMM.}
 
 \item{update}{One of \code{c("independent", "constrained")}. If \code{update="independent"} probability parameters for the binomial test will be updated independently. If \code{update="constrained"} the probability parameter of the intermediate component will be constrained to the mean of the unmethylated and the methylated component.}
+
+\item{min.reads}{The minimum number of reads that a position must have to contribute in the Baum-Welch fitting procedure.}
 }
 \value{
 A \code{\link{methimputeBinomialHMM}} object.
