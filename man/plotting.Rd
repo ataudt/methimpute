@@ -21,15 +21,15 @@ plotConvergence(model)
 plotEnrichment(data, annotation, windowsize = 100, insidewindows = 20,
   range = 1000, category.column = NULL)
 
-plotPosteriorDistance(data, datapoints = 1e+06, max.coverage.y = 0,
-  min.coverage.x = 3, xmax = 200)
+plotPosteriorDistance(data, datapoints = 1e+06, binwidth = 5,
+  max.coverage.y = 0, min.coverage.x = 3, xmax = 200)
 }
 \arguments{
 \item{model}{A \code{\link{methimputeBinomialHMM}} object.}
 
 \item{total.counts}{The number of total counts for which the histogram is to be plotted.}
 
-\item{binwidth}{The bin width for the histogram.}
+\item{binwidth}{The bin width for the histogram/boxplot.}
 
 \item{datapoints}{The number of randomly selected datapoints for the plot.}
 
@@ -54,6 +54,8 @@ plotPosteriorDistance(data, datapoints = 1e+06, max.coverage.y = 0,
 \item{data}{The \code{$data} entry of a \code{\link{methimputeBinomialHMM}} object.}
 
 \item{datapoints}{The number of datapoints to consider for the plot.}
+
+\item{binwidth}{The bin width for the histogram/boxplot.}
 }
 \value{
 A \code{\link[ggplot2]{ggplot}} object.
@@ -87,6 +89,7 @@ plotHistogram(model, total.counts=5)
 plotScatter(model)
 plotTransitionProbs(model)
 plotConvergence(model)
+plotPosteriorDistance(model)
 
 ## Get annotation data and make an enrichment profile
 # Note that this looks a bit ugly because our toy data
