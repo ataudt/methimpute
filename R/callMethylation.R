@@ -84,7 +84,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
     
     ## Filter counts by cutoff
     mask <- counts[,'total'] > count.cutoff
-    counts[mask,] <- round(sweep(x = counts[mask,], MARGIN = 1, STATS = counts[mask,'total']/count.cutoff, FUN = '/'))
+    counts[mask,] <- round(sweep(x = counts[mask,, drop=FALSE], MARGIN = 1, STATS = counts[mask,'total', drop=FALSE]/count.cutoff, FUN = '/'))
     data$counts <- counts # assign it now to have filtered values in there
     
     ## Subset by chromosomes
