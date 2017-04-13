@@ -262,14 +262,20 @@ plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, r
     if (!is.null(category.column)) {
         categories <- levels(mcols(data)[,category.column])
     }
-    data$ratio <- data$counts[,'methylated'] / data$counts[,'total']
+    if (is.null(data$meth.lvl)) {
+        data$meth.lvl <- data$counts[,'methylated'] / data$counts[,'total']
+    }
+    if (is.null(data$rc.meth.lvl)) {
+        data$rc.meth.lvl <- data$posteriorMeth / (data$posteriorUnmeth + data$posteriorMeth)
+    }
     
     ## Subset annotation to data range
     annotation <- subsetByOverlaps(annotation, data)
   
-    overlaps.methlevel <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
-    overlaps.ratio <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
-    overlaps.status <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
+    overlaps.rc.meth.lvl <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
+    overlaps.meth.lvl <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
+    overlaps.status.Methylated <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
+    overlaps.status.Intermediate <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
     ## Upstream and downstream annotation
     annotation.up <- resize(x = annotation, width = 1, fix = 'start')
     annotation.down <- resize(x = annotation, width = 1, fix = 'end')
@@ -287,31 +293,36 @@ plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, r
                 anno.up <- suppressWarnings( promoters(x = annotation.up, upstream = i1*windowsize, downstream = 0) )
                 anno.up <- suppressWarnings( resize(x = anno.up, width = windowsize, fix = 'start') )
                 ind <- findOverlaps(anno.up, data.category)
-                overlaps.methlevel[context, category, as.character(i1), 'mean', 'upstream'] <- mean(sapply(split(data.category$posteriorMeth[ind@to], ind@from), mean, na.rm=TRUE), na.rm=TRUE)
-                overlaps.methlevel[context, category, as.character(i1), 'weight', 'upstream'] <- length(ind@to) / sum(as.numeric(width(anno.up)))
-                overlaps.ratio[context, category, as.character(i1), 'mean', 'upstream'] <- mean(sapply(split(data.category$ratio[ind@to], ind@from), mean, na.rm=TRUE), na.rm=TRUE)
-                overlaps.ratio[context, category, as.character(i1), 'weight', 'upstream'] <- length(ind@to) / sum(as.numeric(width(anno.up)))
-                overlaps.status[context, category, as.character(i1), 'mean', 'upstream'] <- mean(sapply(split((data.category$status[ind@to] == "Methylated") + 0.5 * (data.category$status[ind@to] == "Intermediate"), ind@from), mean, na.rm=TRUE), na.rm=TRUE)
-                overlaps.status[context, category, as.character(i1), 'weight', 'upstream'] <- length(ind@to) / sum(as.numeric(width(anno.up)))
+                overlaps.rc.meth.lvl[context, category, as.character(i1), 'mean', 'upstream'] <- mean(sapply(split(data.category$rc.meth.lvl[ind@to], ind@from), mean, na.rm=TRUE), na.rm=TRUE)
+                overlaps.rc.meth.lvl[context, category, as.character(i1), 'weight', 'upstream'] <- length(ind@to) / sum(as.numeric(width(anno.up)))
+                overlaps.meth.lvl[context, category, as.character(i1), 'mean', 'upstream'] <- mean(sapply(split(data.category$meth.lvl[ind@to], ind@from), mean, na.rm=TRUE), na.rm=TRUE)
+                overlaps.meth.lvl[context, category, as.character(i1), 'weight', 'upstream'] <- length(ind@to) / sum(as.numeric(width(anno.up)))
+                overlaps.status.Methylated[context, category, as.character(i1), 'mean', 'upstream'] <- mean(sapply(split(data.category$status[ind@to] == "Methylated", ind@from), mean, na.rm=TRUE), na.rm=TRUE)
+                overlaps.status.Methylated[context, category, as.character(i1), 'weight', 'upstream'] <- length(ind@to) / sum(as.numeric(width(anno.up)))
+                overlaps.status.Intermediate[context, category, as.character(i1), 'mean', 'upstream'] <- mean(sapply(split(data.category$status[ind@to] == "Intermediate", ind@from), mean, na.rm=TRUE), na.rm=TRUE)
+                overlaps.status.Intermediate[context, category, as.character(i1), 'weight', 'upstream'] <- length(ind@to) / sum(as.numeric(width(anno.up)))
             }
             for (i1 in 1:(range %/% windowsize)) {
                 anno.down <- suppressWarnings( promoters(x = annotation.down, upstream = 0, downstream = i1*windowsize) )
                 anno.down <- suppressWarnings( resize(x = anno.down, width = windowsize, fix = 'end') )
                 ind <- findOverlaps(anno.down, data.category)
-                overlaps.methlevel[context, category, as.character(i1), 'mean', 'downstream'] <- mean(sapply(split(data.category$posteriorMeth[ind@to], ind@from), mean, na.rm=TRUE), na.rm=TRUE)
-                overlaps.methlevel[context, category, as.character(i1), 'weight', 'downstream'] <- length(ind@to) / sum(as.numeric(width(anno.down)))
-                overlaps.ratio[context, category, as.character(i1), 'mean', 'downstream'] <- mean(sapply(split(data.category$ratio[ind@to], ind@from), mean, na.rm=TRUE), na.rm=TRUE)
-                overlaps.ratio[context, category, as.character(i1), 'weight', 'downstream'] <- length(ind@to) / sum(as.numeric(width(anno.down)))
-                overlaps.status[context, category, as.character(i1), 'mean', 'downstream'] <- mean(sapply(split((data.category$status[ind@to] == "Methylated") + 0.5 * (data.category$status[ind@to] == "Intermediate"), ind@from), mean, na.rm=TRUE), na.rm=TRUE)
-                overlaps.status[context, category, as.character(i1), 'weight', 'downstream'] <- length(ind@to) / sum(as.numeric(width(anno.down)))
+                overlaps.rc.meth.lvl[context, category, as.character(i1), 'mean', 'downstream'] <- mean(sapply(split(data.category$rc.meth.lvl[ind@to], ind@from), mean, na.rm=TRUE), na.rm=TRUE)
+                overlaps.rc.meth.lvl[context, category, as.character(i1), 'weight', 'downstream'] <- length(ind@to) / sum(as.numeric(width(anno.down)))
+                overlaps.meth.lvl[context, category, as.character(i1), 'mean', 'downstream'] <- mean(sapply(split(data.category$meth.lvl[ind@to], ind@from), mean, na.rm=TRUE), na.rm=TRUE)
+                overlaps.meth.lvl[context, category, as.character(i1), 'weight', 'downstream'] <- length(ind@to) / sum(as.numeric(width(anno.down)))
+                overlaps.status.Methylated[context, category, as.character(i1), 'mean', 'downstream'] <- mean(sapply(split(data.category$status[ind@to] == "Methylated", ind@from), mean, na.rm=TRUE), na.rm=TRUE)
+                overlaps.status.Methylated[context, category, as.character(i1), 'weight', 'downstream'] <- length(ind@to) / sum(as.numeric(width(anno.down)))
+                overlaps.status.Intermediate[context, category, as.character(i1), 'mean', 'downstream'] <- mean(sapply(split(data.category$status[ind@to] == "Intermediate", ind@from), mean, na.rm=TRUE), na.rm=TRUE)
+                overlaps.status.Intermediate[context, category, as.character(i1), 'weight', 'downstream'] <- length(ind@to) / sum(as.numeric(width(anno.down)))
             }
         }
     }
 
     ## Inside annotation
-    ioverlaps.methlevel <- array(NA, dim=c(length(levels(data$context)), length(categories), insidewindows, 2, 1), dimnames=list(context=levels(data$context), category=categories, distance=1:insidewindows, what=c('mean', 'weight'), where=c('inside')))
-    ioverlaps.ratio <- array(NA, dim=c(length(levels(data$context)), length(categories), insidewindows, 2, 1), dimnames=list(context=levels(data$context), category=categories, distance=1:insidewindows, what=c('mean', 'weight'), where=c('inside')))
-    ioverlaps.status <- array(NA, dim=c(length(levels(data$context)), length(categories), insidewindows, 2, 1), dimnames=list(context=levels(data$context), category=categories, distance=1:insidewindows, what=c('mean', 'weight'), where=c('inside')))
+    ioverlaps.rc.meth.lvl <- array(NA, dim=c(length(levels(data$context)), length(categories), insidewindows, 2, 1), dimnames=list(context=levels(data$context), category=categories, distance=1:insidewindows, what=c('mean', 'weight'), where=c('inside')))
+    ioverlaps.meth.lvl <- array(NA, dim=c(length(levels(data$context)), length(categories), insidewindows, 2, 1), dimnames=list(context=levels(data$context), category=categories, distance=1:insidewindows, what=c('mean', 'weight'), where=c('inside')))
+    ioverlaps.status.Methylated <- array(NA, dim=c(length(levels(data$context)), length(categories), insidewindows, 2, 1), dimnames=list(context=levels(data$context), category=categories, distance=1:insidewindows, what=c('mean', 'weight'), where=c('inside')))
+    ioverlaps.status.Intermediate <- array(NA, dim=c(length(levels(data$context)), length(categories), insidewindows, 2, 1), dimnames=list(context=levels(data$context), category=categories, distance=1:insidewindows, what=c('mean', 'weight'), where=c('inside')))
     mask.plus <- as.logical(strand(annotation) == '+' | strand(annotation) == '*')
     mask.minus <- !mask.plus
     widths <- width(annotation)
@@ -332,19 +343,21 @@ plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, r
                 start(anno.in[mask.minus]) <- end(annotation[mask.minus]) - round(widths[mask.minus] * i1 / insidewindows)
                 end(anno.in[mask.minus]) <- end(annotation[mask.minus]) - round(widths[mask.minus] * (i1-1) / insidewindows)
                 ind <- findOverlaps(anno.in, data.category)
-                ioverlaps.methlevel[context, category, as.character(i1), 'mean', 'inside'] <- mean(sapply(split(data.category$posteriorMeth[ind@to], ind@from), mean, na.rm=TRUE), na.rm=TRUE)
-                ioverlaps.methlevel[context, category, as.character(i1), 'weight', 'inside'] <- length(ind@to) / sum(as.numeric(width(anno.in)))
-                ioverlaps.ratio[context, category, as.character(i1), 'mean', 'inside'] <- mean(sapply(split(data.category$ratio[ind@to], ind@from), mean, na.rm=TRUE), na.rm=TRUE)
-                ioverlaps.ratio[context, category, as.character(i1), 'weight', 'inside'] <- length(ind@to) / sum(as.numeric(width(anno.in)))
-                ioverlaps.status[context, category, as.character(i1), 'mean', 'inside'] <- mean(sapply(split((data.category$status[ind@to] == "Methylated") + 0.5 * (data.category$status[ind@to] == "Intermediate"), ind@from), mean, na.rm=TRUE), na.rm=TRUE)
-                ioverlaps.status[context, category, as.character(i1), 'weight', 'inside'] <- length(ind@to) / sum(as.numeric(width(anno.in)))
+                ioverlaps.rc.meth.lvl[context, category, as.character(i1), 'mean', 'inside'] <- mean(sapply(split(data.category$rc.meth.lvl[ind@to], ind@from), mean, na.rm=TRUE), na.rm=TRUE)
+                ioverlaps.rc.meth.lvl[context, category, as.character(i1), 'weight', 'inside'] <- length(ind@to) / sum(as.numeric(width(anno.in)))
+                ioverlaps.meth.lvl[context, category, as.character(i1), 'mean', 'inside'] <- mean(sapply(split(data.category$meth.lvl[ind@to], ind@from), mean, na.rm=TRUE), na.rm=TRUE)
+                ioverlaps.meth.lvl[context, category, as.character(i1), 'weight', 'inside'] <- length(ind@to) / sum(as.numeric(width(anno.in)))
+                ioverlaps.status.Methylated[context, category, as.character(i1), 'mean', 'inside'] <- mean(sapply(split(data.category$status[ind@to] == "Methylated", ind@from), mean, na.rm=TRUE), na.rm=TRUE)
+                ioverlaps.status.Methylated[context, category, as.character(i1), 'weight', 'inside'] <- length(ind@to) / sum(as.numeric(width(anno.in)))
+                ioverlaps.status.Intermediate[context, category, as.character(i1), 'mean', 'inside'] <- mean(sapply(split(data.category$status[ind@to] == "Intermediate", ind@from), mean, na.rm=TRUE), na.rm=TRUE)
+                ioverlaps.status.Intermediate[context, category, as.character(i1), 'weight', 'inside'] <- length(ind@to) / sum(as.numeric(width(anno.in)))
             }
         }
     }
     
-    overlaps.list <- list(ratio = overlaps.ratio, posteriorMeth = overlaps.methlevel, status = overlaps.status)
-    ioverlaps.list <- list(ratio = ioverlaps.ratio, posteriorMeth = ioverlaps.methlevel, status = ioverlaps.status)
-    ylabs <- c('Mean methylation\nratio', 'Mean posterior\nmethylation level', 'Mean methylation\nstatus')
+    overlaps.list <- list(meth.lvl = overlaps.meth.lvl, rc.meth.lvl = overlaps.rc.meth.lvl, status.Methylated = overlaps.status.Methylated, status.Intermediate = overlaps.status.Intermediate)
+    ioverlaps.list <- list(meth.lvl = ioverlaps.meth.lvl, rc.meth.lvl = ioverlaps.rc.meth.lvl, status.Methylated = ioverlaps.status.Methylated, status.Intermediate = ioverlaps.status.Intermediate)
+    ylabs <- c('Mean methylation\nmeth.lvl', 'Mean recalibrated\nmethylation level', 'Mean methylation\nstatus', 'Mean intermediate\nstatus')
     
     plotlist <- list()
     for (i1 in 1:length(overlaps.list)) {

@@ -22,7 +22,8 @@ plotEnrichment(data, annotation, windowsize = 100, insidewindows = 20,
   range = 1000, category.column = NULL)
 
 plotPosteriorDistance(data, datapoints = 1e+06, binwidth = 5,
-  max.coverage.y = 0, min.coverage.x = 3, xmax = 200)
+  max.coverage.y = 0, min.coverage.x = 3, xmax = 200,
+  xbreaks.interval = xmax/10)
 }
 \arguments{
 \item{model}{A \code{\link{methimputeBinomialHMM}} object.}
@@ -49,7 +50,9 @@ plotPosteriorDistance(data, datapoints = 1e+06, binwidth = 5,
 
 \item{min.coverage.x}{Minimum coverage for cytosines on the x-axis.}
 
-\item{xmax}{Limit for the x-axis.}
+\item{xmax}{Upper limit for the x-axis.}
+
+\item{xbreaks.interval}{Interval for breaks on the x-axis.}
 
 \item{data}{The \code{$data} entry of a \code{\link{methimputeBinomialHMM}} object.}
 
@@ -89,7 +92,7 @@ plotHistogram(model, total.counts=5)
 plotScatter(model)
 plotTransitionProbs(model)
 plotConvergence(model)
-plotPosteriorDistance(model)
+plotPosteriorDistance(model$data)
 
 ## Get annotation data and make an enrichment profile
 # Note that this looks a bit ugly because our toy data
