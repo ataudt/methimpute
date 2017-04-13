@@ -357,7 +357,7 @@ plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, r
     
     overlaps.list <- list(meth.lvl = overlaps.meth.lvl, rc.meth.lvl = overlaps.rc.meth.lvl, status.Methylated = overlaps.status.Methylated, status.Intermediate = overlaps.status.Intermediate)
     ioverlaps.list <- list(meth.lvl = ioverlaps.meth.lvl, rc.meth.lvl = ioverlaps.rc.meth.lvl, status.Methylated = ioverlaps.status.Methylated, status.Intermediate = ioverlaps.status.Intermediate)
-    ylabs <- c('Mean methylation\nmeth.lvl', 'Mean recalibrated\nmethylation level', 'Mean status\n"Methylated"', 'Mean status\n"Intermediate"')
+    ylabs <- c('Mean methylation\nlevel', 'Mean recalibrated\nmethylation level', 'Mean status\n"Methylated"', 'Mean status\n"Intermediate"')
     
     plotlist <- list()
     for (i1 in 1:length(overlaps.list)) {
