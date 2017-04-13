@@ -19,7 +19,7 @@
 #'plotScatter(model)
 #'plotTransitionProbs(model)
 #'plotConvergence(model)
-#'plotPosteriorDistance(model)
+#'plotPosteriorDistance(model$data)
 #'
 #'## Get annotation data and make an enrichment profile
 #'# Note that this looks a bit ugly because our toy data
@@ -426,9 +426,10 @@ plotTransitionDistances <- function(model) {
 #' @param binwidth The bin width for the histogram/boxplot.
 #' @param max.coverage.y Maximum coverage for cytosines on the y-axis.
 #' @param min.coverage.x Minimum coverage for cytosines on the x-axis.
-#' @param xmax Limit for the x-axis.
+#' @param xmax Upper limit for the x-axis.
+#' @param xbreaks.interval Interval for breaks on the x-axis.
 #' @export
-plotPosteriorDistance <- function(data, datapoints=1e6, binwidth=5, max.coverage.y=0, min.coverage.x=3, xmax=200) {
+plotPosteriorDistance <- function(data, datapoints=1e6, binwidth=5, max.coverage.y=0, min.coverage.x=3, xmax=200, xbreaks.interval=xmax/10) {
     ptm <- startTimedMessage("Plotting maximum posterior vs. distance to nearest covered ...")
     if (length(data) > datapoints) {
         data.small <- data[sort(sample(length(data), datapoints))]
@@ -447,7 +448,7 @@ plotPosteriorDistance <- function(data, datapoints=1e6, binwidth=5, max.coverage
     ggplt <- ggplot(df[df$distance.nearest <= xmax,]) + geom_boxplot(aes(x=factor(distance.nearest), y=posteriorMax, fill=context), outlier.shape = NA) + theme_bw()
     ggplt <- ggplt + facet_grid(.~context)
     ggplt <- ggplt + xlab(paste0('Distance to nearest covered C (>= ', min.coverage.x, ') in [bp]')) + ylab(paste0('Maximum posterior\n(cytosines with coverage <= ', max.coverage.y, ')'))
-    ggplt <- ggplt + scale_x_discrete(breaks=seq(0,max(df$distance.nearest, na.rm=TRUE), by=xmax/10))
+    ggplt <- ggplt + scale_x_discrete(breaks=seq(0,max(df$distance.nearest, na.rm=TRUE), by=xbreaks.interval))
     stopTimedMessage(ptm)
     return(ggplt)
 }
