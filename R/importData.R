@@ -125,6 +125,7 @@ importRene <- function(file, chrom.lengths=NULL) {
     rm(data.raw)
     stopTimedMessage(ptm)
     
+    seqlevels(data) <- paste0('chr', seqlevels(data))
     ## Assign seqlengths
     if (!is.null(chrom.lengths)) {
         if (is.character(chrom.lengths)) {
