@@ -441,8 +441,14 @@ plotTransitionDistances <- function(model) {
 #' @param min.coverage.x Minimum coverage for cytosines on the x-axis.
 #' @param xmax Upper limit for the x-axis.
 #' @param xbreaks.interval Interval for breaks on the x-axis.
+#' @param cutoffs A vector with values that are plotted as horizontal lines. The names of the vector must match the context levels in \code{data$context}.
 #' @export
-plotPosteriorDistance <- function(data, datapoints=1e6, binwidth=5, max.coverage.y=0, min.coverage.x=3, xmax=200, xbreaks.interval=xmax/10) {
+plotPosteriorDistance <- function(data, datapoints=1e6, binwidth=5, max.coverage.y=0, min.coverage.x=3, xmax=200, xbreaks.interval=xmax/10, cutoffs=NULL) {
+    if (!is.null(cutoffs)) {
+        if (length(setdiff(levels(data$context), names(cutoffs))) > 0 ) {
+            stop("names(cutoffs) must be equal to levels(data$context)")
+        }
+    }
     ptm <- startTimedMessage("Plotting maximum posterior vs. distance to nearest covered ...")
     if (length(data) > datapoints) {
         data.small <- data[sort(sample(length(data), datapoints))]
@@ -462,6 +468,10 @@ plotPosteriorDistance <- function(data, datapoints=1e6, binwidth=5, max.coverage
     ggplt <- ggplt + facet_grid(.~context)
     ggplt <- ggplt + xlab(paste0('Distance to nearest covered C (>= ', min.coverage.x, ') in [bp]')) + ylab(paste0('Maximum posterior\n(cytosines with coverage <= ', max.coverage.y, ')'))
     ggplt <- ggplt + scale_x_discrete(breaks=seq(0,max(df$distance.nearest, na.rm=TRUE), by=xbreaks.interval))
+    if (!is.null(cutoffs)) {
+        df <- data.frame(context=names(cutoffs), cutoff=cutoffs)
+        ggplt <- ggplt + geom_hline(data=df, mapping=aes(yintercept=cutoff), linetype=1)
+    }
     stopTimedMessage(ptm)
     return(ggplt)
 }

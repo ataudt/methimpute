@@ -23,7 +23,7 @@ plotEnrichment(data, annotation, windowsize = 100, insidewindows = 20,
 
 plotPosteriorDistance(data, datapoints = 1e+06, binwidth = 5,
   max.coverage.y = 0, min.coverage.x = 3, xmax = 200,
-  xbreaks.interval = xmax/10)
+  xbreaks.interval = xmax/10, cutoffs = NULL)
 }
 \arguments{
 \item{model}{A \code{\link{methimputeBinomialHMM}} object.}
@@ -53,6 +53,8 @@ plotPosteriorDistance(data, datapoints = 1e+06, binwidth = 5,
 \item{xmax}{Upper limit for the x-axis.}
 
 \item{xbreaks.interval}{Interval for breaks on the x-axis.}
+
+\item{cutoffs}{A vector with values that are plotted as horizontal lines. The names of the vector should correspond with the context levels in \code{data$context}.}
 
 \item{data}{The \code{$data} entry of a \code{\link{methimputeBinomialHMM}} object.}
 
