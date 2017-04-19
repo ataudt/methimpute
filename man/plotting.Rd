@@ -54,7 +54,7 @@ plotPosteriorDistance(data, datapoints = 1e+06, binwidth = 5,
 
 \item{xbreaks.interval}{Interval for breaks on the x-axis.}
 
-\item{cutoffs}{A vector with values that are plotted as horizontal lines. The names of the vector should correspond with the context levels in \code{data$context}.}
+\item{cutoffs}{A vector with values that are plotted as horizontal lines. The names of the vector must match the context levels in \code{data$context}.}
 
 \item{data}{The \code{$data} entry of a \code{\link{methimputeBinomialHMM}} object.}
 

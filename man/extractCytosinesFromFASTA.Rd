@@ -12,7 +12,7 @@ extractCytosinesFromFASTA(file, contexts = c("CG", "CHG", "CHH"))
 \item{contexts}{The contexts that should be extracted.}
 }
 \description{
-Extract cytosine coordinates and context information from a FASTA file. Cytosines in ambiguous contexts are not reported.
+Extract cytosine coordinates and context information from a FASTA file. Cytosines in ambiguous reference contexts are not reported.
 }
 \examples{
 ## Read a non-compressed FASTA files:
