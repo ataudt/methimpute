@@ -902,8 +902,8 @@ void HMM_context::update_transProbs()
 		{
 			double dist_f; // Correction factor due to distance dependency
 			double xir; // By transProbs reduced xi
-			double denominator = 0.0;
-			std::vector<double> numerators(this->NSTATES);
+			double denominator = 0.0; // equivalent to sum(gamma) in standard HMM
+			std::vector<double> numerators(this->NSTATES); // equivalent to sum(xi) in standard HMM
 			for (int j=0; j<this->NSTATES; j++)
 			{
 				numerators[j] = 0.0;
@@ -931,10 +931,15 @@ void HMM_context::update_transProbs()
 			// Update
 			for (int j=0; j<this->NSTATES; j++)
 			{
-				transProbs(i,j) = numerators[j] / denominator;
+			  if (denominator > 0)
+			  {
+  				transProbs(i,j) = numerators[j] / denominator;
+			  }
 				// Check for nan
 				if (std::isnan(transProbs(i,j)))
 				{
+    			if (this->verbosity>=4) Rprintf("numerators[j=%d] = %g, denominator = %g\n", j, numerators[j], denominator);
+    			if (this->verbosity>=4) Rprintf("transProbs(i=%d, j=%d) = %g\n", i, j, transProbs(i,j));
 					throw nan_detected;
 				}
 			}

@@ -1301,10 +1301,15 @@ void ScaleHMM::update_transProbs()
 		// Update
 		for (int j=0; j<this->NSTATES; j++)
 		{
-			this->transProbs(i,j) = numerators[j] / denominator;
+			if (denominator > 0)
+			{
+				this->transProbs(i,j) = numerators[j] / denominator;
+			}
 			// Check for nan
 			if (std::isnan(this->transProbs(i,j)))
 			{
+				if (this->verbosity>=4) Rprintf("numerators[j=%d] = %g, denominator = %g\n", j, numerators[j], denominator);
+				if (this->verbosity>=4) Rprintf("transProbs(i=%d, j=%d) = %g\n", i, j, transProbs(i,j));
 				throw nan_detected;
 			}
 		}

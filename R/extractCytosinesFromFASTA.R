@@ -9,7 +9,7 @@
 #' @export
 #' @examples
 #' ## Read a non-compressed FASTA files:
-#' filepath <- system.file("extdata", "someORF.fa", package="Biostrings")
+#' filepath <- system.file("extdata", "arabidopsis_sequence.fa.gz", package="methimpute")
 #' cytosines <- extractCytosinesFromFASTA(filepath)
 extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH')) {
   
