@@ -22,11 +22,9 @@ distanceCorrelation <- function(data, distances=0:50) {
     
     ## Add ratio column
     data$ratio <- data$counts[,'methylated'] / data$counts[,'total']
-    ### Add distance to bins ###
-    ptm <- startTimedMessage("Adding distance ...")
-    data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
-    data$distance[data$distance < 0] <- Inf 
-    stopTimedMessage(ptm)
+    ### Add distance and transition context to bins ###
+    data$distance <- addDistance(data)
+    data$transitionContext <- addTransitionContext(data)
   
     ## Loop through distances
     ptm <- startTimedMessage("Calculating correlations\n")
@@ -39,15 +37,13 @@ distanceCorrelation <- function(data, distances=0:50) {
             message(", ", i1, appendLF=FALSE)
         }
         ind <- which(data$distance == i1)
-        ratio <- data[ind]$ratio
-        ratio.shift <- data[ind-1]$ratio
+        ratio <- data$ratio[ind]
+        ratio.shift <- data$ratio[ind-1]
         # ## All contexts
         # cor <- tryCatch(cor(ratio, ratio.shift, use='complete.obs'), error = function(e) NA, warning = function(w) NA)
         # cors[[as.character(i1)]] <- data.frame(correlation = cor, weight = length(ind))
         ## Context specific
-        context <- data$context[ind]
-        context.shift <- data$context[ind-1]
-        context.transition <- paste0(context, '-', context.shift)
+        context.transition <- data$transitionContext[ind]
         cor.matrix <- matrix(NA, ncol=length(contexts), nrow=length(contexts), dimnames=list(context=contexts, context=contexts))
         weight.matrix <- matrix(NA, ncol=length(contexts), nrow=length(contexts), dimnames=list(context=contexts, context=contexts))
         for (c1 in 1:length(contexts)) {
@@ -57,12 +53,10 @@ distanceCorrelation <- function(data, distances=0:50) {
                 mask <- context.transition == context | context.transition == context.rev
                 ratio1 <- ratio[mask]
                 ratio2 <- ratio.shift[mask]
-                if (!is.null(df)) {
-                    cor.matrix[contexts[c1], contexts[c2]] <- tryCatch(cor(ratio1, ratio2, use='complete.obs'), error = function(e) NA, warning = function(w) NA)
-                    cor.matrix[contexts[c2], contexts[c1]] <- cor.matrix[contexts[c1], contexts[c2]]
-                    weight.matrix[contexts[c1], contexts[c2]] <- length(ratio1)
-                    weight.matrix[contexts[c2], contexts[c1]] <- weight.matrix[contexts[c1], contexts[c2]]
-                }
+                cor.matrix[contexts[c1], contexts[c2]] <- tryCatch(cor(ratio1, ratio2, use='complete.obs'), error = function(e) NA, warning = function(w) NA)
+                cor.matrix[contexts[c2], contexts[c1]] <- cor.matrix[contexts[c1], contexts[c2]]
+                weight.matrix[contexts[c1], contexts[c2]] <- length(ratio1)
+                weight.matrix[contexts[c2], contexts[c1]] <- weight.matrix[contexts[c1], contexts[c2]]
             }
         }
         cor.array[,,as.character(i1),'correlation'] <- cor.matrix

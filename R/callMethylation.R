@@ -36,24 +36,16 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         }
     }
   
-    ### Add distance to bins ###
-    ptm <- startTimedMessage("Adding distance ...")
-    data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
-    data$distance[data$distance < 0] <- Inf 
-    stopTimedMessage(ptm)
+    ### Add distance and transition context to bins ###
+    data$distance <- addDistance(data)
+    data$transitionContext <- addTransitionContext(data)
     
     ### Assign variables ###
     update <- factor(update, levels=c('independent', 'constrained'))
     if (is.na(update)) { stop("Argument 'update' must be one of c('independent', 'constrained').") }
     contexts <- intersect(levels(data$context), unique(data$context))
     ncontexts <- length(contexts)
-    transitionContexts <- character()
-    for (c1 in 1:length(contexts)) {
-        # for (c2 in c1:length(contexts)) {
-        for (c2 in 1:length(contexts)) {
-            transitionContexts[length(transitionContexts)+1] <- paste0(contexts[c1], '-', contexts[c2])
-        }
-    }
+    transitionContexts <- levels(data$transitionContext)
     transDistvec <- rep(Inf, length(transitionContexts))
     names(transDistvec) <- transitionContexts
     if (is.null(names(transDist))) {
@@ -75,12 +67,8 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
     counts <- data$counts
     distances <- data$distance
     context <- factor(data$context, levels=contexts)
-    
-    ### Add transition context to bins ###
-    ptm <- startTimedMessage("Adding transition context ...")
-    data$transitionContext <- factor(c(NA, paste0(data$context[-length(data)], '-', data$context[-1])), levels=transitionContexts)
     transitionContext <- factor(data$transitionContext, levels=transitionContexts)
-    stopTimedMessage(ptm)
+    
     
     ## Filter counts by cutoff
     mask <- counts[,'total'] > count.cutoff
@@ -378,10 +366,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
 #'     }
 #'   
 #'     ### Add distance to bins ###
-#'     ptm <- startTimedMessage("Adding distance ...")
-#'     data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
-#'     data$distance[data$distance < 0] <- Inf 
-#'     stopTimedMessage(ptm)
+#'     data$distance <- addDistance(data)
 #'     
 #'     ### Assign variables ###
 #'     states <- c("background", "signal")
@@ -521,10 +506,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
 #'     }
 #'   
 #'     ### Add distance to bins ###
-#'     ptm <- startTimedMessage("Adding distance ...")
-#'     data$distance <- c(-1, start(data)[-1] - end(data)[-length(data)] - 1)
-#'     data$distance[data$distance < 0] <- Inf 
-#'     stopTimedMessage(ptm)
+#'     data$distance <- addDistance(data)
 #'     
 #'     ### Assign variables ###
 #'     numstates <- length(states)
