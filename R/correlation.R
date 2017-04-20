@@ -95,7 +95,7 @@ distanceCorrelation <- function(data, distances=0:50) {
             }
         }
     }
-    cowplt <- suppressWarnings( cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv') )
+    cowplt <- suppressMessages( suppressWarnings( cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv') ) )
             
     # ## Plot correlation
     # df <- do.call(rbind, cors)
@@ -208,7 +208,7 @@ estimateTransDist <- function(distcor, skip=2) {
             }
         }
     }
-    cowplt <- suppressWarnings( cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv') )
+    cowplt <- suppressMessages( suppressWarnings( cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv') ) )
             
     transDist <- sapply(params.list, '[[', 'D')
     return(list(transDist=transDist, plot=cowplt))
