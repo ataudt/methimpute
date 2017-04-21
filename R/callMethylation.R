@@ -146,59 +146,63 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         hmm <- fitBinomialTestHMMcontextTransition(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], context=as.integer(context)-1, transitionContext=as.integer(transitionContext)-1, distances=distances, params=params, algorithm=1, update_procedure=update)
         message("Time spent in Baum-Welch:", appendLF=FALSE)
         stopTimedMessage(ptm)
-        ## Cast convergence info
-        parray <- array(NA, dim=c(length(contexts), length(hmm$convergenceInfo$logliks), length(states)), dimnames=list(context=contexts, iteration=0:(length(hmm$convergenceInfo$logliks)-1), status=states))
-        parray[,,'Unmethylated'] <- hmm$convergenceInfo$parameterInfo$probsUN
-        parray[,,'Methylated'] <- hmm$convergenceInfo$parameterInfo$probsM
-        if ('Intermediate' %in% states) {
-            parray[,,'Intermediate'] <- (parray[,,'Unmethylated'] + parray[,,'Methylated']) / 2
+        if (hmm$error == "") {
+            ## Cast convergence info
+            parray <- array(NA, dim=c(length(contexts), length(hmm$convergenceInfo$logliks), length(states)), dimnames=list(context=contexts, iteration=0:(length(hmm$convergenceInfo$logliks)-1), status=states))
+            parray[,,'Unmethylated'] <- hmm$convergenceInfo$parameterInfo$probsUN
+            parray[,,'Methylated'] <- hmm$convergenceInfo$parameterInfo$probsM
+            if ('Intermediate' %in% states) {
+                parray[,,'Intermediate'] <- (parray[,,'Unmethylated'] + parray[,,'Methylated']) / 2
+            }
+            convergenceInfo <- hmm$convergenceInfo
+            convergenceInfo$parameterInfo <- parray[,-1,]
+            convergenceInfo$logliks <- convergenceInfo$logliks[-1]
+            convergenceInfo$dlogliks <- convergenceInfo$dlogliks[-1]
         }
-        convergenceInfo <- hmm$convergenceInfo
-        convergenceInfo$parameterInfo <- parray[,-1,]
-        convergenceInfo$logliks <- convergenceInfo$logliks[-1]
-        convergenceInfo$dlogliks <- convergenceInfo$dlogliks[-1]
     } else {
         ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
         message(" ... on chromosomes ", paste0(fit.on.chrom, collapse=', '))
         hmm <- fitBinomialTestHMMcontextTransition(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], context=as.integer(context)-1, transitionContext=as.integer(transitionContext)-1, distances=distances, params=params, algorithm=1, update_procedure=update)
         message("Time spent in Baum-Welch:", appendLF=FALSE)
         stopTimedMessage(ptm)
-        ## Cast convergence info
-        convergenceInfo <- list(prefit=list(), fit=list())
-        convergenceInfo$prefit$fit.on.chrom <- fit.on.chrom
-        parray <- array(NA, dim=c(length(contexts), length(hmm$convergenceInfo$logliks), length(states)), dimnames=list(context=contexts, iteration=0:(length(hmm$convergenceInfo$logliks)-1), status=states))
-        parray[,,'Unmethylated'] <- hmm$convergenceInfo$parameterInfo$probsUN
-        parray[,,'Methylated'] <- hmm$convergenceInfo$parameterInfo$probsM
-        if ('Intermediate' %in% states) {
-            parray[,,'Intermediate'] <- (parray[,,'Unmethylated'] + parray[,,'Methylated']) / 2
+        if (hmm$error == "") {
+            ## Cast convergence info
+            convergenceInfo <- list(prefit=list(), fit=list())
+            convergenceInfo$prefit$fit.on.chrom <- fit.on.chrom
+            parray <- array(NA, dim=c(length(contexts), length(hmm$convergenceInfo$logliks), length(states)), dimnames=list(context=contexts, iteration=0:(length(hmm$convergenceInfo$logliks)-1), status=states))
+            parray[,,'Unmethylated'] <- hmm$convergenceInfo$parameterInfo$probsUN
+            parray[,,'Methylated'] <- hmm$convergenceInfo$parameterInfo$probsM
+            if ('Intermediate' %in% states) {
+                parray[,,'Intermediate'] <- (parray[,,'Unmethylated'] + parray[,,'Methylated']) / 2
+            }
+            convergenceInfo$prefit <- hmm$convergenceInfo
+            convergenceInfo$prefit$parameterInfo <- parray[,-1,]
+            convergenceInfo$prefit$logliks <- convergenceInfo$prefit$logliks[-1]
+            convergenceInfo$prefit$dlogliks <- convergenceInfo$prefit$dlogliks[-1]
+            ## Redo for all chromosomes
+            counts <- data$counts
+            context <- data$context
+            transitionContext <- data$transitionContext
+            distances <- data$distance
+            params2 <- list()
+            params2$startProbs_initial <- hmm$startProbs
+            params2$transProbs_initial <- hmm$transProbs
+            params2$emissionParams_initial <- hmm$emissionParams
+            params2$transDist <- transDistvec
+            params2$eps <- eps
+            params2$maxtime <- max.time
+            params2$maxiter <- max.iter
+            params2$minreads <- min.reads
+            params2$verbosity <- verbosity
+            params2$numThreads <- num.threads
+            ptm <- startTimedMessage("Forward-Backward: Obtaining state sequence - no updates\n")
+            message(" ... on all chromosomes")
+            hmm <- fitBinomialTestHMMcontextTransition(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], context=as.integer(context)-1, transitionContext=as.integer(transitionContext)-1, distances=distances, params=params2, algorithm=2, update_procedure=update)
+            message("Time spent in Forward-Backward:", appendLF=FALSE)
+            stopTimedMessage(ptm)
+            ## Cast convergence info
+            convergenceInfo$fit <- hmm$convergenceInfo
         }
-        convergenceInfo$prefit <- hmm$convergenceInfo
-        convergenceInfo$prefit$parameterInfo <- parray[,-1,]
-        convergenceInfo$prefit$logliks <- convergenceInfo$prefit$logliks[-1]
-        convergenceInfo$prefit$dlogliks <- convergenceInfo$prefit$dlogliks[-1]
-        ## Redo for all chromosomes
-        counts <- data$counts
-        context <- data$context
-        transitionContext <- data$transitionContext
-        distances <- data$distance
-        params2 <- list()
-        params2$startProbs_initial <- hmm$startProbs
-        params2$transProbs_initial <- hmm$transProbs
-        params2$emissionParams_initial <- hmm$emissionParams
-        params2$transDist <- transDistvec
-        params2$eps <- eps
-        params2$maxtime <- max.time
-        params2$maxiter <- max.iter
-        params2$minreads <- min.reads
-        params2$verbosity <- verbosity
-        params2$numThreads <- num.threads
-        ptm <- startTimedMessage("Forward-Backward: Obtaining state sequence - no updates\n")
-        message(" ... on all chromosomes")
-        hmm <- fitBinomialTestHMMcontextTransition(counts_total=counts[,'total'], counts_meth=counts[,'methylated'], context=as.integer(context)-1, transitionContext=as.integer(transitionContext)-1, distances=distances, params=params2, algorithm=2, update_procedure=update)
-        message("Time spent in Forward-Backward:", appendLF=FALSE)
-        stopTimedMessage(ptm)
-        ## Cast convergence info
-        convergenceInfo$fit <- hmm$convergenceInfo
     }
     
     ### Construct result object ###
@@ -232,6 +236,8 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         for (context in contexts) {
             r$params$weights[[context]] <- rowMeans(hmm$posteriors[,data$context==context])
         }
+    } else {
+        warning("Baum-Welch aborted: ", hmm$error)
     }
     r$data <- data
     r$segments <- segments
