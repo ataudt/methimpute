@@ -4,6 +4,7 @@
 #' 
 #' @param file A character with the file name.
 #' @param contexts The contexts that should be extracted.
+#' @param anchor.C A named vector with positions of the anchoring C in the \code{contexts}. This is necessary to distinguish contexts such as C*C*CG (anchor.C = 2) and *C*CCG (anchor.C = 1). Names must match the contexts. If unspecified, the first C within each context will be taken as anchor.
 #' 
 #' @importFrom Biostrings readDNAStringSet vmatchPattern reverseComplement
 #' @export
@@ -11,8 +12,22 @@
 #' ## Read a non-compressed FASTA files:
 #' filepath <- system.file("extdata", "arabidopsis_sequence.fa.gz", package="methimpute")
 #' cytosines <- extractCytosinesFromFASTA(filepath)
-extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH')) {
+#' 
+#' ## Split CG context into subcontexts
+#' cytosines <- extractCytosinesFromFASTA(filepath, contexts = 'CG')
+#' cytosines <- extractCytosinesFromFASTA(filepath,
+#'                contexts = c('DCG', 'CCG'),
+#'                anchor.C = c(DCG=2, CCG=2))
+extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anchor.C = NULL) {
   
+    ### C anchors ###
+    if (is.null(anchor.C)) {
+        anchor.C <- regexpr('C', contexts)[1:length(contexts)]
+        names(anchor.C) <- contexts
+    }
+    if (!all(names(anchor.C)==contexts)) {
+        stop("names(anchor.C) must be equal to contexts")
+    }
     ### Read file
     fasta <- Biostrings::readDNAStringSet(file)
     
@@ -39,8 +54,8 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH')) {
         positions <- as(positions, 'GRanges')
         strand(positions) <- '+'
         positions$context <- factor(context, levels=contexts)
-        # Shift positions by position of first C in context
-        cind <- regexpr('C', context)[1]
+        # Shift positions by position of anchor C in context
+        cind <- anchor.C[context]
         start(positions) <- start(positions) + cind - 1
         cytosines.forward[[context]] <- positions
     }
@@ -64,8 +79,8 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH')) {
         positions <- as(positions, 'GRanges')
         strand(positions) <- '-'
         positions$context <- factor(context, levels=contexts)
-        # Shift positions by position of first C in context
-        cind <- regexpr('C', context)[1]
+        # Shift positions by position of anchor C in context
+        cind <- anchor.C[context]
         start(positions) <- start(positions) + cind - 1
         cytosines.reverse[[context]] <- positions
     }

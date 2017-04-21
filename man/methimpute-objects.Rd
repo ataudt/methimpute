@@ -6,7 +6,7 @@
 \description{
 \pkg{\link{methimpute}} defines several objects.
 \itemize{
-\item \code{\link{methimputeData}}: Returned by \code{\link{importBSSeeker}}, \code{\link{importBismarck}} and \code{\link{inflateMethylome}}.
+\item \code{\link{methimputeData}}: Returned by \code{\link{importBSSeeker}}, \code{\link{importBismark}} and \code{\link{inflateMethylome}}.
 \item \code{\link{methimputeBinomialHMM}}: Returned by \code{\link{callMethylation}}.
 }
 }

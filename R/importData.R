@@ -144,9 +144,9 @@ importRene <- function(file, chrom.lengths=NULL) {
     return(data)
 }
   
-#' Import a Bismarck methylation extractor file
+#' Import a Bismark methylation extractor file
 #' 
-#' Import a Bismarck methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
+#' Import a Bismark methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 #' 
 #' @param files The files to import.
 #' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
@@ -155,7 +155,7 @@ importRene <- function(file, chrom.lengths=NULL) {
 #' 
 #' @importFrom utils read.table
 #' @export
-importBismarck <- function(files, chrom.lengths=NULL, temp.store=tempfile("importBismarck")) {
+importBismark <- function(files, chrom.lengths=NULL, temp.store=tempfile("importBismark")) {
   
     classes <- c('NULL', 'character', 'character', 'numeric', 'character')
     datas <- GRangesList()
