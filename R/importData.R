@@ -103,6 +103,58 @@ importBSSeeker <- function(file, chrom.lengths=NULL) {
 }
 
 
+#' Import a Bismark methylation extractor file
+#' 
+#' Import a Bismark methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
+#' 
+#' @param file The file to import.
+#' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
+#' @return A \code{\link{methimputeData}} object.
+#' 
+#' @importFrom utils read.table
+#' @export
+#' 
+#' @examples 
+#'## Get an example file in BSSeeker format
+#'file <- system.file("extdata","arabidopsis_bismark.txt", package="methimpute")
+#'data(arabidopsis_chromosomes)
+#'names(arabidopsis_chromosomes) <- sub('chr', '', names(arabidopsis_chromosomes))
+#'bismark.data <- importBismark(file, chrom.lengths=arabidopsis_chromosomes)
+#'
+importBismark <- function(file, chrom.lengths=NULL) {
+    
+    # classes <- c(seqnames='character', position='numeric', strand='character', counts.methylated='numeric', counts.total='numeric', context='character', context.trinucleotide='character')
+    classes <- c('character', 'numeric', 'character', 'numeric', 'numeric', 'character', 'character')
+    ptm <- startTimedMessage("Reading file ", file, " ...")
+    data.raw <- utils::read.table(file, skip=0, sep='\t', comment.char='', colClasses=classes)
+    data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=data.raw$V3, context=data.raw$V6)
+    counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
+    counts[,"methylated"] <- data.raw$V4
+    counts[,"total"] <- data.raw$V5
+    data$counts <- counts
+    rm(data.raw)
+    stopTimedMessage(ptm)
+    
+    
+    ## Assign seqlengths
+    if (!is.null(chrom.lengths)) {
+        if (is.character(chrom.lengths)) {
+            df <- utils::read.table(chrom.lengths, header=TRUE)
+            chrom.lengths <- df[,2]
+            names(chrom.lengths) <- df[,1]
+        }
+        # Filter by chromosomes supplied in chrom.lengths
+        data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
+        seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
+    }
+    
+    ## Make factors
+    data$context <- factor(data$context)
+    
+    return(data)
+}
+
+
 #' Import a Rene methylation extractor file
 #' 
 #' Import a Rene methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
@@ -144,113 +196,113 @@ importRene <- function(file, chrom.lengths=NULL) {
     return(data)
 }
   
-#' Import a Bismark methylation extractor file
+#' #' Import a Bismark methylation extractor file
+#' #' 
+#' #' Import a Bismark methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
+#' #' 
+#' #' @param files The files to import.
+#' #' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
+#' #' @param temp.store A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.
+#' #' @return A \code{\link{methimputeData}} object.
+#' #' 
+#' #' @importFrom utils read.table
+#' #' @export
+#' importBismark <- function(files, chrom.lengths=NULL, temp.store=tempfile("importBismark")) {
+#'   
+#'     classes <- c('NULL', 'character', 'character', 'numeric', 'character')
+#'     datas <- GRangesList()
+#'     
+#'     if (!is.null(temp.store)) {
+#'         ## Create folder for temporary files
+#'         if (!file.exists(temp.store)) {
+#'             dir.create(temp.store)
+#'         }
+#'     }
+#'     
+#'     ### Do each file at a time to avoid memory overflow ###
+#'     data.dedups <- GRangesList()
+#'     for (i1 in 1:length(files)) {
+#'         file <- files[i1]
+#'         savename <- file.path(temp.store, paste0(basename(file), '.RData'))
+#'         if (!file.exists(savename)) {
+#'             ptm <- startTimedMessage("Reading file ", file, " ...")
+#'             data.raw <- utils::read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
+#'             data <- GRanges(seqnames=data.raw$V3, ranges=IRanges(start=data.raw$V4, end=data.raw$V4), strand="*", methylated=factor(data.raw$V2, levels=c("-", "+")), context=data.raw$V5)
+#'             rm(data.raw)
+#'             stopTimedMessage(ptm)
+#'             if (!is.null(temp.store)) {
+#'                 ptm <- startTimedMessage("Saving to file ", savename, " ...")
+#'                 save(data, file=savename)
+#'                 stopTimedMessage(ptm)
+#'             }
+#'         } else {
+#'             ptm <- startTimedMessage("Loading file ", savename, " ...")
+#'             temp.env <- new.env()
+#'             data <- get(load(savename, envir=temp.env), envir=temp.env)
+#'             stopTimedMessage(ptm)
+#'         }
+#'         
+#'         ## Sorting
+#'         ptm <- startTimedMessage("Sorting ...")
+#'         data <- sort(data)
+#'         stopTimedMessage(ptm)
+#'         
+#'         ## Get counts at each position
+#'         ptm <- startTimedMessage("Getting counts ...")
+#'         data$methylated <- as.logical(as.integer(data$methylated)-1)
+#'         data$mask.dup <- c(FALSE, as.logical(data@seqnames[-1] == data@seqnames[-length(data)])) & c(FALSE, as.logical(data@ranges@start[-1] == data@ranges@start[-length(data)]))
+#'         data$unmeth.sum <- rev(cumsum(rev(!data$methylated)))
+#'         data$meth.sum <- rev(cumsum(rev(data$methylated)))
+#'         data.dedup <- data[!data$mask.dup]
+#'         rm(data)
+#'         data.dedup$counts.unmethylated <- -diff(c(data.dedup$unmeth.sum, 0))
+#'         data.dedup$counts.methylated <- -diff(c(data.dedup$meth.sum, 0))
+#'         data.dedup$methylated <- NULL
+#'         data.dedup$mask.dup <- NULL
+#'         data.dedup$unmeth.sum <- NULL
+#'         data.dedup$meth.sum <- NULL
+#'         data.dedups[[length(data.dedups)+1]] <- data.dedup
+#'         stopTimedMessage(ptm)
+#'         
+#'         ## Merging counts from data objects
+#'         if (length(data.dedups) == 2) {
+#'             ptm <- startTimedMessage("Merging counts ...")
+#'             data <- unlist(data.dedups, use.names=FALSE)
+#'             data <- sort(data)
+#'             rm(data.dedups)
+#'             data$mask.dup <- c(FALSE, as.logical(data@seqnames[-1] == data@seqnames[-length(data)])) & c(FALSE, as.logical(data@ranges@start[-1] == data@ranges@start[-length(data)]))
+#'             data$unmeth.sum <- rev(cumsum(rev(data$counts.unmethylated)))
+#'             data$meth.sum <- rev(cumsum(rev(data$counts.methylated)))
+#'             data.dedup <- data[!data$mask.dup]
+#'             rm(data)
+#'             data.dedup$counts.unmethylated <- -diff(c(data.dedup$unmeth.sum, 0))
+#'             data.dedup$counts.methylated <- -diff(c(data.dedup$meth.sum, 0))
+#'             data.dedup$mask.dup <- NULL
+#'             data.dedup$unmeth.sum <- NULL
+#'             data.dedup$meth.sum <- NULL
+#'             data.dedups <- GRangesList(data.dedup)
+#'             stopTimedMessage(ptm)
+#'         }
+#'         
+#'     }
+#'     data <- data.dedups[[1]]
+#'     rm(data.dedups, data.dedup)
+#'   
+#'     ## Assign seqlengths
+#'     if (!is.null(chrom.lengths)) {
+#'         if (is.character(chrom.lengths)) {
+#'             df <- utils::read.table(chrom.lengths, header=TRUE)
+#'             chrom.lengths <- df[,2]
+#'             names(chrom.lengths) <- df[,1]
+#'         }
+#'         # Filter by chromosomes supplied in chrom.lengths
+#'         data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
+#'         seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
+#'     }
+#'     
+#'     ## Make factors
+#'     data$context <- factor(data$context)
+#'     
+#'     return(data)
+#' }
 #' 
-#' Import a Bismark methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
-#' 
-#' @param files The files to import.
-#' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
-#' @param temp.store A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.
-#' @return A \code{\link{methimputeData}} object.
-#' 
-#' @importFrom utils read.table
-#' @export
-importBismark <- function(files, chrom.lengths=NULL, temp.store=tempfile("importBismark")) {
-  
-    classes <- c('NULL', 'character', 'character', 'numeric', 'character')
-    datas <- GRangesList()
-    
-    if (!is.null(temp.store)) {
-        ## Create folder for temporary files
-        if (!file.exists(temp.store)) {
-            dir.create(temp.store)
-        }
-    }
-    
-    ### Do each file at a time to avoid memory overflow ###
-    data.dedups <- GRangesList()
-    for (i1 in 1:length(files)) {
-        file <- files[i1]
-        savename <- file.path(temp.store, paste0(basename(file), '.RData'))
-        if (!file.exists(savename)) {
-            ptm <- startTimedMessage("Reading file ", file, " ...")
-            data.raw <- utils::read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
-            data <- GRanges(seqnames=data.raw$V3, ranges=IRanges(start=data.raw$V4, end=data.raw$V4), strand="*", methylated=factor(data.raw$V2, levels=c("-", "+")), context=data.raw$V5)
-            rm(data.raw)
-            stopTimedMessage(ptm)
-            if (!is.null(temp.store)) {
-                ptm <- startTimedMessage("Saving to file ", savename, " ...")
-                save(data, file=savename)
-                stopTimedMessage(ptm)
-            }
-        } else {
-            ptm <- startTimedMessage("Loading file ", savename, " ...")
-            temp.env <- new.env()
-            data <- get(load(savename, envir=temp.env), envir=temp.env)
-            stopTimedMessage(ptm)
-        }
-        
-        ## Sorting
-        ptm <- startTimedMessage("Sorting ...")
-        data <- sort(data)
-        stopTimedMessage(ptm)
-        
-        ## Get counts at each position
-        ptm <- startTimedMessage("Getting counts ...")
-        data$methylated <- as.logical(as.integer(data$methylated)-1)
-        data$mask.dup <- c(FALSE, as.logical(data@seqnames[-1] == data@seqnames[-length(data)])) & c(FALSE, as.logical(data@ranges@start[-1] == data@ranges@start[-length(data)]))
-        data$unmeth.sum <- rev(cumsum(rev(!data$methylated)))
-        data$meth.sum <- rev(cumsum(rev(data$methylated)))
-        data.dedup <- data[!data$mask.dup]
-        rm(data)
-        data.dedup$counts.unmethylated <- -diff(c(data.dedup$unmeth.sum, 0))
-        data.dedup$counts.methylated <- -diff(c(data.dedup$meth.sum, 0))
-        data.dedup$methylated <- NULL
-        data.dedup$mask.dup <- NULL
-        data.dedup$unmeth.sum <- NULL
-        data.dedup$meth.sum <- NULL
-        data.dedups[[length(data.dedups)+1]] <- data.dedup
-        stopTimedMessage(ptm)
-        
-        ## Merging counts from data objects
-        if (length(data.dedups) == 2) {
-            ptm <- startTimedMessage("Merging counts ...")
-            data <- unlist(data.dedups, use.names=FALSE)
-            data <- sort(data)
-            rm(data.dedups)
-            data$mask.dup <- c(FALSE, as.logical(data@seqnames[-1] == data@seqnames[-length(data)])) & c(FALSE, as.logical(data@ranges@start[-1] == data@ranges@start[-length(data)]))
-            data$unmeth.sum <- rev(cumsum(rev(data$counts.unmethylated)))
-            data$meth.sum <- rev(cumsum(rev(data$counts.methylated)))
-            data.dedup <- data[!data$mask.dup]
-            rm(data)
-            data.dedup$counts.unmethylated <- -diff(c(data.dedup$unmeth.sum, 0))
-            data.dedup$counts.methylated <- -diff(c(data.dedup$meth.sum, 0))
-            data.dedup$mask.dup <- NULL
-            data.dedup$unmeth.sum <- NULL
-            data.dedup$meth.sum <- NULL
-            data.dedups <- GRangesList(data.dedup)
-            stopTimedMessage(ptm)
-        }
-        
-    }
-    data <- data.dedups[[1]]
-    rm(data.dedups, data.dedup)
-  
-    ## Assign seqlengths
-    if (!is.null(chrom.lengths)) {
-        if (is.character(chrom.lengths)) {
-            df <- utils::read.table(chrom.lengths, header=TRUE)
-            chrom.lengths <- df[,2]
-            names(chrom.lengths) <- df[,1]
-        }
-        # Filter by chromosomes supplied in chrom.lengths
-        data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
-        seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
-    }
-    
-    ## Make factors
-    data$context <- factor(data$context)
-    
-    return(data)
-}
-

@@ -4,20 +4,25 @@
 \alias{importBismark}
 \title{Import a Bismark methylation extractor file}
 \usage{
-importBismark(files, chrom.lengths = NULL,
-  temp.store = tempfile("importBismark"))
+importBismark(file, chrom.lengths = NULL)
 }
 \arguments{
-\item{files}{The files to import.}
+\item{file}{The file to import.}
 
 \item{chrom.lengths}{A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.}
-
-\item{temp.store}{A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.}
 }
 \value{
 A \code{\link{methimputeData}} object.
 }
 \description{
 Import a Bismark methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
+}
+\examples{
+## Get an example file in BSSeeker format
+file <- system.file("extdata","arabidopsis_bismark.txt", package="methimpute")
+data(arabidopsis_chromosomes)
+names(arabidopsis_chromosomes) <- sub('chr', '', names(arabidopsis_chromosomes))
+bismark.data <- importBismark(file, chrom.lengths=arabidopsis_chromosomes)
+
 }
 

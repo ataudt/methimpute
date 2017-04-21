@@ -1,0 +1,4 @@
+1	109	+	0	0	CG	CGA
+1	110	-	0	0	CG	CGG
+1	115	+	0	0	CG	CGG
+1	116	-	0	0	CG	CGG
