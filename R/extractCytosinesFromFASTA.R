@@ -54,9 +54,6 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anch
         positions <- as(positions, 'GRanges')
         strand(positions) <- '+'
         positions$context <- factor(context, levels=contexts)
-        # Shift positions by position of anchor C in context
-        cind <- anchor.C[context]
-        start(positions) <- start(positions) + cind - 1
         cytosines.forward[[context]] <- positions
     }
     cytosines.forward <- unlist(cytosines.forward, use.names = FALSE)
@@ -79,9 +76,6 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anch
         positions <- as(positions, 'GRanges')
         strand(positions) <- '-'
         positions$context <- factor(context, levels=contexts)
-        # Shift positions by position of anchor C in context
-        cind <- anchor.C[context]
-        start(positions) <- start(positions) + cind - 1
         cytosines.reverse[[context]] <- positions
     }
     cytosines.reverse <- unlist(cytosines.reverse, use.names = FALSE)
@@ -104,6 +98,11 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anch
     cytosines <- c(cytosines.forward, cytosines.reverse)
     cytosines <- sort(cytosines, ignore.strand=TRUE)
     stopTimedMessage(ptm)
+    
+    # Shift positions by position of anchor C
+    cind <- anchor.C[cytosines$context]
+    strandint <- c(-1,1)[as.integer(strand(cytosines))]
+    start(cytosines) <- start(cytosines) + strandint * cind - strandint * 1
     
     return(cytosines)
 }
