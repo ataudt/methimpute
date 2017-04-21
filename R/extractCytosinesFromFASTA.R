@@ -101,7 +101,7 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anch
     
     # Shift positions by position of anchor C
     cind <- anchor.C[cytosines$context]
-    strandint <- c(-1,1)[as.integer(strand(cytosines))]
+    strandint <- c('-'=-1,'+'=1,'*'=1)[as.character(strand(cytosines))]
     start(cytosines) <- start(cytosines) + strandint * cind - strandint * 1
     
     return(cytosines)
