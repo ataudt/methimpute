@@ -99,11 +99,13 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anch
     stopTimedMessage(ptm)
     
     # Shift positions by position of anchor C
+    ptm <- startTimedMessage("Shifting by anchor ...")
     cind <- anchor.C[cytosines$context]
     strandint <- c('-'=-1,'+'=1,'*'=1)[as.character(strand(cytosines))]
     starts <- start(cytosines) + strandint * cind - strandint * 1
     ends <- end(cytosines) + strandint * cind - strandint * 1
     cytosines <- GRanges(seqnames=seqnames(cytosines), ranges=IRanges(start=starts, end=ends), strand=strand(cytosines), context=cytosines$context)
+    stopTimedMessage(ptm)
     
     ## Sort
     ptm <- startTimedMessage("Sorting ...")
