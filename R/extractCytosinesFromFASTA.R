@@ -93,10 +93,9 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anch
     start(cytosines.reverse) <- end(cytosines.reverse)
     stopTimedMessage(ptm)
     
-    ### Merge and sort
+    ## Merge
     ptm <- startTimedMessage("Merging ...")
     cytosines <- c(cytosines.forward, cytosines.reverse)
-    cytosines <- sort(cytosines, ignore.strand=TRUE)
     stopTimedMessage(ptm)
     
     # Shift positions by position of anchor C
@@ -105,6 +104,11 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anch
     starts <- start(cytosines) + strandint * cind - strandint * 1
     ends <- end(cytosines) + strandint * cind - strandint * 1
     cytosines <- GRanges(seqnames=seqnames(cytosines), ranges=IRanges(start=starts, end=ends), strand=strand(cytosines), context=cytosines$context)
+    
+    ## Sort
+    ptm <- startTimedMessage("Sorting ...")
+    cytosines <- sort(cytosines, ignore.strand=TRUE)
+    stopTimedMessage(ptm)
     
     return(cytosines)
 }
