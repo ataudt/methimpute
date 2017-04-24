@@ -402,6 +402,7 @@ plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, r
         if (!is.null(category.column)) {
             ggplt <- ggplt + facet_grid(.~category)
         }
+        ggplt <- ggplt + theme_bw()
         ggplts[['profile']] <- ggplt
         plotlist[[name]] <- ggplt
         
