@@ -105,6 +105,7 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anch
     starts <- start(cytosines) + strandint * cind - strandint * 1
     ends <- end(cytosines) + strandint * cind - strandint * 1
     cytosines <- GRanges(seqnames=seqnames(cytosines), ranges=IRanges(start=starts, end=ends), strand=strand(cytosines), context=cytosines$context)
+    seqlengths(cytosines) <- chromlengths
     stopTimedMessage(ptm)
     
     ## Sort
