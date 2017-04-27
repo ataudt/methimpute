@@ -130,7 +130,7 @@ importBismark <- function(file, chrom.lengths=NULL) {
     data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=data.raw$V3, context=data.raw$V6)
     counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
     counts[,"methylated"] <- data.raw$V4
-    counts[,"total"] <- data.raw$V5
+    counts[,"total"] <- data.raw$V4 + data.raw$V5
     data$counts <- counts
     rm(data.raw)
     stopTimedMessage(ptm)

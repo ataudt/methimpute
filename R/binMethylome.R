@@ -2,7 +2,7 @@
 #' 
 #' Bin counts from cytosines in equidistant bins.
 #' 
-#' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'counts.unmethylated' and 'counts.methylated'.
+#' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata column 'counts' which is a matrix with columns 'methylated' and 'total'.
 #' @param binsize The window size used for binning.
 #' @return A \code{\link[GenomicRanges]{GRanges}} object.
 #' 

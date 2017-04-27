@@ -33,7 +33,8 @@ At the end of this example you will see that positions without counts are assign
 <<methylation_status_calling, results='show', message=FALSE, eval=TRUE, fig.width=15, fig.height=10, out.width='\\textwidth'>>=
 library(methimpute)
 
-# === Step 1: Importing the data === #
+# ===== Step 1: Importing the data ===== #
+
 # We load an example file in BSSeeker format that comes with the package
 file <- system.file("extdata","arabidopsis_bsseeker.txt.gz", package="methimpute")
 bsseeker.data <- importBSSeeker(file)
@@ -47,7 +48,9 @@ seqlengths(cytosine.positions) <- seqlengths(bsseeker.data) # only necessary for
 methylome <- inflateMethylome(bsseeker.data, cytosine.positions)
 print(methylome)
 
-# === Step 2: Obtain correlation parameters === #
+
+# ===== Step 2: Obtain correlation parameters ===== #
+
 # The correlation of methylation levels between neighboring cytosines is an important
 # parameter for the methylation status calling, so we need to get it first. Keep in mind
 # that we only use the first 200.000 bp here, that's why the plot looks a bit meagre.
@@ -55,7 +58,9 @@ distcor <- distanceCorrelation(methylome)
 fit <- estimateTransDist(distcor)
 print(fit)
 
-# === Step 3: Methylation status calling (and imputation) === #
+
+# ===== Step 3: Methylation status calling (and imputation) ===== #
+
 model <- callMethylation(data = methylome, transDist = fit$transDist)
 # The confidence in the methylation status call is given in the column "posteriorMax".
 # For further analysis one could split the results into high-confidence (posteriorMax >= 0.98)
