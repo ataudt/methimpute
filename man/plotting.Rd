@@ -19,7 +19,7 @@ plotTransitionProbs(model)
 plotConvergence(model)
 
 plotEnrichment(data, annotation, windowsize = 100, insidewindows = 20,
-  range = 1000, category.column = NULL)
+  range = 1000, category.column = NULL, plot = TRUE, df.list = NULL)
 
 plotPosteriorDistance(data, datapoints = 1e+06, binwidth = 5,
   max.coverage.y = 0, min.coverage.x = 3, xmax = 200,
@@ -45,6 +45,10 @@ plotPosteriorDistance(data, datapoints = 1e+06, binwidth = 5,
 \item{range}{Distance upstream and downstream for which the enrichment profile is calculated.}
 
 \item{category.column}{The name of a column in \code{data} that will be used for facetting of the plot.}
+
+\item{plot}{Logical indicating whether a plot or the underlying data.frame is to be returned.}
+
+\item{df.list}{A list() of data.frames, output from \code{plotEnrichment(..., plot=FALSE)}. If specified, option \code{data} will be ignored.}
 
 \item{max.coverage.y}{Maximum coverage for cytosines on the y-axis.}
 
