@@ -10,7 +10,7 @@ extractCytosinesFromFASTA(file, contexts = c("CG", "CHG", "CHH"),
 \arguments{
 \item{file}{A character with the file name.}
 
-\item{contexts}{The contexts that should be extracted.}
+\item{contexts}{The contexts that should be extracted. If the contexts are named, the returned object will use those names for the contexts.}
 
 \item{anchor.C}{A named vector with positions of the anchoring C in the \code{contexts}. This is necessary to distinguish contexts such as C*C*CG (anchor.C = 2) and *C*CCG (anchor.C = 1). Names must match the contexts. If unspecified, the first C within each context will be taken as anchor.}
 }
@@ -20,12 +20,29 @@ Extract cytosine coordinates and context information from a FASTA file. Cytosine
 \examples{
 ## Read a non-compressed FASTA files:
 filepath <- system.file("extdata", "arabidopsis_sequence.fa.gz", package="methimpute")
-cytosines <- extractCytosinesFromFASTA(filepath)
+
+## Only CG context
+cytosines <- extractCytosinesFromFASTA(filepath, contexts = 'CG')
+table(cytosines$context)
 
 ## Split CG context into subcontexts
-cytosines <- extractCytosinesFromFASTA(filepath, contexts = 'CG')
 cytosines <- extractCytosinesFromFASTA(filepath,
                contexts = c('DCG', 'CCG'),
                anchor.C = c(DCG=2, CCG=2))
+table(cytosines$context)
+               
+## With contexts that differ only by anchor
+cytosines <- extractCytosinesFromFASTA(filepath,
+               contexts = c('DCG', 'CCG', 'CCG', 'CWG', 'CHH'),
+               anchor.C = c(DCG=2, CCG=2, CCG=1, CWG=1, CHH=1))
+table(cytosines$context)
+               
+## With named contexts
+contexts <- c(CG='DCG', CG='CCG', CHG='CCG', CHG='CWG', CHH='CHH')
+cytosines <- extractCytosinesFromFASTA(filepath,
+               contexts = contexts,
+               anchor.C = c(DCG=2, CCG=2, CCG=1, CWG=1, CHH=1))
+table(cytosines$context)
+
 }
 

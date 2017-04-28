@@ -3,7 +3,7 @@
 #' Extract cytosine coordinates and context information from a FASTA file. Cytosines in ambiguous reference contexts are not reported.
 #' 
 #' @param file A character with the file name.
-#' @param contexts The contexts that should be extracted.
+#' @param contexts The contexts that should be extracted. If the contexts are named, the returned object will use those names for the contexts.
 #' @param anchor.C A named vector with positions of the anchoring C in the \code{contexts}. This is necessary to distinguish contexts such as C*C*CG (anchor.C = 2) and *C*CCG (anchor.C = 1). Names must match the contexts. If unspecified, the first C within each context will be taken as anchor.
 #' 
 #' @importFrom Biostrings readDNAStringSet vmatchPattern reverseComplement
@@ -11,13 +11,30 @@
 #' @examples
 #' ## Read a non-compressed FASTA files:
 #' filepath <- system.file("extdata", "arabidopsis_sequence.fa.gz", package="methimpute")
-#' cytosines <- extractCytosinesFromFASTA(filepath)
+#' 
+#' ## Only CG context
+#' cytosines <- extractCytosinesFromFASTA(filepath, contexts = 'CG')
+#' table(cytosines$context)
 #' 
 #' ## Split CG context into subcontexts
-#' cytosines <- extractCytosinesFromFASTA(filepath, contexts = 'CG')
 #' cytosines <- extractCytosinesFromFASTA(filepath,
 #'                contexts = c('DCG', 'CCG'),
 #'                anchor.C = c(DCG=2, CCG=2))
+#' table(cytosines$context)
+#'                
+#' ## With contexts that differ only by anchor
+#' cytosines <- extractCytosinesFromFASTA(filepath,
+#'                contexts = c('DCG', 'CCG', 'CCG', 'CWG', 'CHH'),
+#'                anchor.C = c(DCG=2, CCG=2, CCG=1, CWG=1, CHH=1))
+#' table(cytosines$context)
+#'                
+#' ## With named contexts
+#' contexts <- c(CG='DCG', CG='CCG', CHG='CCG', CHG='CWG', CHH='CHH')
+#' cytosines <- extractCytosinesFromFASTA(filepath,
+#'                contexts = contexts,
+#'                anchor.C = c(DCG=2, CCG=2, CCG=1, CWG=1, CHH=1))
+#' table(cytosines$context)
+#' 
 extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anchor.C = NULL) {
   
     ### C anchors ###
@@ -28,6 +45,15 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anch
     if (!all(names(anchor.C)==contexts)) {
         stop("names(anchor.C) must be equal to contexts")
     }
+    ### Contexts ###
+    if (is.null(names(contexts))) {
+        context.names <- contexts
+        dup.contexts <- duplicated(contexts) | duplicated(contexts, fromLast=TRUE)
+        context.names[dup.contexts] <- paste0(contexts, '_', anchor.C)[dup.contexts]
+    } else {
+        context.names <- names(contexts)
+    }
+  
     ### Read file
     fasta <- Biostrings::readDNAStringSet(file)
     
@@ -49,12 +75,14 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anch
     ### Extract cytosine positions with context
     ptm <- startTimedMessage("Extracting cytosines from forward strand ...")
     cytosines.forward <- GRangesList()
-    for (context in contexts) {
+    for (icontext in 1:length(contexts)) {
+        context <- contexts[icontext]
+        context.name <- context.names[icontext]
         positions <- Biostrings::vmatchPattern(context, subject = fasta, fixed = FALSE)
         positions <- as(positions, 'GRanges')
         strand(positions) <- '+'
-        positions$context <- factor(context, levels=contexts)
-        cytosines.forward[[context]] <- positions
+        positions$context <- factor(context.name, levels=unique(context.names))
+        cytosines.forward[[icontext]] <- positions
     }
     cytosines.forward <- unlist(cytosines.forward, use.names = FALSE)
     seqlengths(cytosines.forward) <- chromlengths
@@ -71,12 +99,14 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anch
     ptm <- startTimedMessage("Extracting cytosines from reverse strand ...")
     fasta <- Biostrings::reverseComplement(fasta)
     cytosines.reverse <- GRangesList()
-    for (context in contexts) {
+    for (icontext in 1:length(contexts)) {
+        context <- contexts[icontext]
+        context.name <- context.names[icontext]
         positions <- Biostrings::vmatchPattern(context, subject = fasta, fixed = FALSE)
         positions <- as(positions, 'GRanges')
         strand(positions) <- '-'
-        positions$context <- factor(context, levels=contexts)
-        cytosines.reverse[[context]] <- positions
+        positions$context <- factor(context.name, levels=unique(context.names))
+        cytosines.reverse[[icontext]] <- positions
     }
     cytosines.reverse <- unlist(cytosines.reverse, use.names = FALSE)
     seqlengths(cytosines.reverse) <- chromlengths
