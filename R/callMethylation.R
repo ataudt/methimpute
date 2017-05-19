@@ -247,6 +247,35 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
 }
 
 
+#' Call methylation status
+#' 
+#' Call methylation status of cytosines (or bins) with a binomial test.
+#' 
+#' The function uses a binomial test with the specified \code{conversion.rate}. P-values are then multiple testing corrected with the Benjamini & Yekutieli procedure. Methylated positions are selected with the \code{p.threshold}.
+#' 
+#' @param data A \code{\link{methimputeData}} object.
+#' @param conversion.rate A conversion rate between 0 and 1.
+#' @param min.coverage Minimum coverage to consider for the binomial test.
+#' @param p.threshold Significance threshold between 0 and 1.
+#' @return A vector with methylation statuses.
+#' 
+#' @examples
+#'## Get some toy data
+#'file <- system.file("data","arabidopsis_toydata.RData", package="methimpute")
+#'data <- get(load(file))
+#'data$binomial <- binomialTestMethylation(data, conversion.rate=0.998)
+#'
+binomialTestMethylation <- function(data, conversion.rate, min.coverage=3, p.threshold=0.05) {
+  
+    p <- dbinom(data$counts[,'methylated'], data$counts[,'total'], prob = conversion.rate)
+    p[data$counts[,'total'] < min.coverage] <- NA
+    p <- p.adjust(p, method = 'BY')
+    levels <- c("Unmethylated", "Methylated")
+    methylated <- factor(levels[c(1,2)][(p <= p.threshold)+1], levels=levels)
+    return(methylated)
+  
+}
+
 #' #' Make a multivariate segmentation
 #' #' 
 #' #' Make a multivariate segmentation by fitting the transition probabilities of a multivariate Hidden Markov Model.
@@ -819,3 +848,5 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
 #'     )
 #'     return(out)
 #' }
+
+
