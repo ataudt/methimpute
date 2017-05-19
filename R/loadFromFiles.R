@@ -2,9 +2,9 @@
 #'
 #' Wrapper to load \pkg{\link{methimpute}} objects from file and check the class of the loaded objects.
 #'
-#' @param files A list of \code{\link{GRanges}}, \code{\link{methimputeData}} or \code{\link{methimputeBinomialHMM}} objects or a character vector with files that contain such objects.
-#' @param check.class Any combination of \code{c('GRanges', 'methimputeData', 'methimputeBinomialHMM')}. If any of the loaded objects does not belong to the specified class, an error is thrown.
-#' @return A list of \code{\link{GRanges}}, \code{\link{methimputeData}} or \code{\link{methimputeBinomialHMM}} objects.
+#' @param files A list of \code{\link{GRanges}} or \code{\link{methimputeBinomialHMM}} objects or a character vector with files that contain such objects.
+#' @param check.class Any combination of \code{c('GRanges', 'methimputeBinomialHMM')}. If any of the loaded objects does not belong to the specified class, an error is thrown.
+#' @return A list of \code{\link{GRanges}} or \code{\link{methimputeBinomialHMM}} objects.
 #' 
 #' @export
 #' @examples
@@ -15,9 +15,9 @@
 #'data <- loadFromFiles(file)
 #'print(data)
 #'
-loadFromFiles <- function(files, check.class=c('GRanges','methimputeData','methimputeBinomialHMM')) {
+loadFromFiles <- function(files, check.class=c('GRanges','methimputeBinomialHMM')) {
 
-    available.classes <- c('GRanges', 'methimputeData', 'methimputeBinomialHMM')
+    available.classes <- c('GRanges', 'methimputeBinomialHMM')
     # ptm <- startTimedMessage("Loading data from files ...")
     if (is.null(files)) {
         # stopTimedMessage(ptm)

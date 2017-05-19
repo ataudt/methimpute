@@ -18,10 +18,10 @@ plotTransitionProbs(model)
 
 plotConvergence(model)
 
-plotEnrichment(data, annotation, windowsize = 100, insidewindows = 20,
+plotEnrichment(model, annotation, windowsize = 100, insidewindows = 20,
   range = 1000, category.column = NULL, plot = TRUE, df.list = NULL)
 
-plotPosteriorDistance(data, datapoints = 1e+06, binwidth = 5,
+plotPosteriorDistance(model, datapoints = 1e+06, binwidth = 5,
   max.coverage.y = 0, min.coverage.x = 3, xmax = 200,
   xbreaks.interval = xmax/10, cutoffs = NULL)
 }
@@ -33,8 +33,6 @@ plotPosteriorDistance(data, datapoints = 1e+06, binwidth = 5,
 \item{binwidth}{The bin width for the histogram/boxplot.}
 
 \item{datapoints}{The number of randomly selected datapoints for the plot.}
-
-\item{data}{A \code{\link{methimputeData}} object or the \code{$data} entry of a \code{\link{methimputeBinomialHMM}} object.}
 
 \item{annotation}{A \code{\link[GenomicRanges]{GRanges}} object with coordinates for the annotation.}
 
@@ -59,12 +57,6 @@ plotPosteriorDistance(data, datapoints = 1e+06, binwidth = 5,
 \item{xbreaks.interval}{Interval for breaks on the x-axis.}
 
 \item{cutoffs}{A vector with values that are plotted as horizontal lines. The names of the vector must match the context levels in \code{data$context}.}
-
-\item{data}{The \code{$data} entry of a \code{\link{methimputeBinomialHMM}} object.}
-
-\item{datapoints}{The number of datapoints to consider for the plot.}
-
-\item{binwidth}{The bin width for the histogram/boxplot.}
 }
 \value{
 A \code{\link[ggplot2]{ggplot}} object.
@@ -104,7 +96,7 @@ plotPosteriorDistance(model$data)
 # Note that this looks a bit ugly because our toy data
 # has only 200000 datapoints.
 data(arabidopsis_genes)
-plotEnrichment(model$data, annotation=arabidopsis_genes)
+plotEnrichment(model, annotation=arabidopsis_genes)
 
 }
 

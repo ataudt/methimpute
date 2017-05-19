@@ -3,6 +3,8 @@
 #' This page provides an overview of all \pkg{\link{methimpute}} plotting functions.
 #'
 #' @param model A \code{\link{methimputeBinomialHMM}} object.
+#' @param datapoints The number of randomly selected datapoints for the plot.
+#' @param binwidth The bin width for the histogram/boxplot.
 #' @return A \code{\link[ggplot2]{ggplot}} object.
 #' @name plotting
 #' @import ggplot2
@@ -25,7 +27,7 @@
 #'# Note that this looks a bit ugly because our toy data
 #'# has only 200000 datapoints.
 #'data(arabidopsis_genes)
-#'plotEnrichment(model$data, annotation=arabidopsis_genes)
+#'plotEnrichment(model, annotation=arabidopsis_genes)
 #'
 NULL
 
@@ -74,7 +76,6 @@ transCoord <- function(gr) {
 
 #' @describeIn plotting Plot a histogram of count values and fitted distributions.
 #' @param total.counts The number of total counts for which the histogram is to be plotted.
-#' @param binwidth The bin width for the histogram/boxplot.
 #' @importFrom stats dbinom
 #' @export
 plotHistogram <- function(model, total.counts, binwidth=1) {
@@ -127,7 +128,6 @@ plotHistogram <- function(model, total.counts, binwidth=1) {
 
 
 #' @describeIn plotting Plot a scatter plot of read counts colored by methylation status.
-#' @param datapoints The number of randomly selected datapoints for the plot.
 #' @export
 plotScatter <- function(model, datapoints=1000) {
   
@@ -241,7 +241,6 @@ plotConvergence <- function(model) {
 
 
 #' @describeIn plotting Plot an enrichment profile around an annotation.
-#' @param data A \code{\link{methimputeData}} object or the \code{$data} entry of a \code{\link{methimputeBinomialHMM}} object.
 #' @param annotation A \code{\link[GenomicRanges]{GRanges}} object with coordinates for the annotation.
 #' @param windowsize Resolution in base-pairs for the curve upstream and downstream of the annotation.
 #' @param insidewindows Number of data points for the curve inside the annotation.
@@ -250,7 +249,8 @@ plotConvergence <- function(model) {
 #' @param plot Logical indicating whether a plot or the underlying data.frame is to be returned.
 #' @param df.list A list() of data.frames, output from \code{plotEnrichment(..., plot=FALSE)}. If specified, option \code{data} will be ignored.
 #' @export
-plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, range=1000, category.column=NULL, plot=TRUE, df.list=NULL) {
+plotEnrichment <- function(model, annotation, windowsize=100, insidewindows=20, range=1000, category.column=NULL, plot=TRUE, df.list=NULL) {
+  ## For debugging
   # windowsize=100; insidewindows=20; range=1000; category.column=NULL
   # annotation <- arabidopsis_genes
   # model$data$imputed <- FALSE
@@ -259,6 +259,15 @@ plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, r
   # category.column <- 'imputed'
   # data <- model$data
   
+    if (class(model) == 'methimputeBinomialHMM') {
+        data <- model$data
+        distr <- model$params$emissionParams
+    } else if (class(model) == 'GRanges') {
+        data <- model
+        distr <- NULL
+    } else {
+        stop("Argument 'model' needs to be of class 'GRanges' or 'methimputeBinomialHMM'.")
+    }
     if (is.null(df.list)) {
         ## Variables
         categories <- 'none'
@@ -268,8 +277,8 @@ plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, r
         if (is.null(data$meth.lvl)) {
             data$meth.lvl <- data$counts[,'methylated'] / data$counts[,'total']
         }
-        if (is.null(data$rc.meth.lvl)) {
-            data$rc.meth.lvl <- data$posteriorMeth / (data$posteriorUnmeth + data$posteriorMeth)
+        if (is.null(data$rc.meth.lvl) & !is.null(distr)) {
+            data$rc.meth.lvl <- distr$Unmethylated[data$context,] * data$posteriorUnmeth + distr$Intermediate[data$context,] * (1 - data$posteriorUnmeth - data$posteriorMeth) + distr$Methylated[data$context,] * data$posteriorMeth
         }
         
         ## Subset annotation to data range
@@ -277,8 +286,6 @@ plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, r
       
         overlaps.rc.meth.lvl <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
         overlaps.meth.lvl <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
-        overlaps.status.Methylated <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
-        overlaps.status.Intermediate <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
         ## Upstream and downstream annotation
         annotation.up <- resize(x = annotation, width = 1, fix = 'start')
         annotation.down <- resize(x = annotation, width = 1, fix = 'end')
@@ -300,10 +307,6 @@ plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, r
                     overlaps.rc.meth.lvl[context, category, as.character(i1), 'weight', 'upstream'] <- length(ind@to) / sum(as.numeric(width(anno.up)))
                     overlaps.meth.lvl[context, category, as.character(i1), 'mean', 'upstream'] <- mean(data.category$meth.lvl[ind@to], na.rm=TRUE)
                     overlaps.meth.lvl[context, category, as.character(i1), 'weight', 'upstream'] <- length(ind@to) / sum(as.numeric(width(anno.up)))
-                    overlaps.status.Methylated[context, category, as.character(i1), 'mean', 'upstream'] <- mean(data.category$status[ind@to] == "Methylated", na.rm=TRUE)
-                    overlaps.status.Methylated[context, category, as.character(i1), 'weight', 'upstream'] <- length(ind@to) / sum(as.numeric(width(anno.up)))
-                    overlaps.status.Intermediate[context, category, as.character(i1), 'mean', 'upstream'] <- mean(data.category$status[ind@to] == "Intermediate", na.rm=TRUE)
-                    overlaps.status.Intermediate[context, category, as.character(i1), 'weight', 'upstream'] <- length(ind@to) / sum(as.numeric(width(anno.up)))
                 }
                 for (i1 in 1:(range %/% windowsize)) {
                     anno.down <- suppressWarnings( promoters(x = annotation.down, upstream = 0, downstream = i1*windowsize) )
@@ -313,10 +316,6 @@ plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, r
                     overlaps.rc.meth.lvl[context, category, as.character(i1), 'weight', 'downstream'] <- length(ind@to) / sum(as.numeric(width(anno.down)))
                     overlaps.meth.lvl[context, category, as.character(i1), 'mean', 'downstream'] <- mean(data.category$meth.lvl[ind@to], na.rm=TRUE)
                     overlaps.meth.lvl[context, category, as.character(i1), 'weight', 'downstream'] <- length(ind@to) / sum(as.numeric(width(anno.down)))
-                    overlaps.status.Methylated[context, category, as.character(i1), 'mean', 'downstream'] <- mean(data.category$status[ind@to] == "Methylated", na.rm=TRUE)
-                    overlaps.status.Methylated[context, category, as.character(i1), 'weight', 'downstream'] <- length(ind@to) / sum(as.numeric(width(anno.down)))
-                    overlaps.status.Intermediate[context, category, as.character(i1), 'mean', 'downstream'] <- mean(data.category$status[ind@to] == "Intermediate", na.rm=TRUE)
-                    overlaps.status.Intermediate[context, category, as.character(i1), 'weight', 'downstream'] <- length(ind@to) / sum(as.numeric(width(anno.down)))
                 }
             }
         }
@@ -358,8 +357,8 @@ plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, r
             }
         }
         
-        overlaps.list <- list(meth.lvl = overlaps.meth.lvl, rc.meth.lvl = overlaps.rc.meth.lvl, status.Methylated = overlaps.status.Methylated, status.Intermediate = overlaps.status.Intermediate)
-        ioverlaps.list <- list(meth.lvl = ioverlaps.meth.lvl, rc.meth.lvl = ioverlaps.rc.meth.lvl, status.Methylated = ioverlaps.status.Methylated, status.Intermediate = ioverlaps.status.Intermediate)
+        overlaps.list <- list(meth.lvl = overlaps.meth.lvl, rc.meth.lvl = overlaps.rc.meth.lvl)
+        ioverlaps.list <- list(meth.lvl = ioverlaps.meth.lvl, rc.meth.lvl = ioverlaps.rc.meth.lvl)
         
         df.list <- list()
         for (i1 in 1:length(overlaps.list)) {
@@ -404,7 +403,7 @@ plotEnrichment <- function(data, annotation, windowsize=100, insidewindows=20, r
         
         breaks <- c(c(-1, -0.5, 0, 0.5, 1, 1.5, 2) * range)
         labels <- c(-range, -range/2, '0%', '50%', '100%', range/2, range)
-        ylabs <- c('Mean methylation\nlevel', 'Mean recalibrated\nmethylation level', 'Mean status\n"Methylated"', 'Mean status\n"Intermediate"')
+        ylabs <- c('Mean methylation\nlevel', 'Mean recalibrated\nmethylation level')
             
         ggplts <- list()
         # Enrichment profile
@@ -451,16 +450,21 @@ plotTransitionDistances <- function(model) {
 
 
 #' @describeIn plotting Maximum posterior vs. distance to nearest covered cytosine.
-#' @param data The \code{$data} entry of a \code{\link{methimputeBinomialHMM}} object.
-#' @param datapoints The number of datapoints to consider for the plot.
-#' @param binwidth The bin width for the histogram/boxplot.
 #' @param max.coverage.y Maximum coverage for cytosines on the y-axis.
 #' @param min.coverage.x Minimum coverage for cytosines on the x-axis.
 #' @param xmax Upper limit for the x-axis.
 #' @param xbreaks.interval Interval for breaks on the x-axis.
 #' @param cutoffs A vector with values that are plotted as horizontal lines. The names of the vector must match the context levels in \code{data$context}.
 #' @export
-plotPosteriorDistance <- function(data, datapoints=1e6, binwidth=5, max.coverage.y=0, min.coverage.x=3, xmax=200, xbreaks.interval=xmax/10, cutoffs=NULL) {
+plotPosteriorDistance <- function(model, datapoints=1e6, binwidth=5, max.coverage.y=0, min.coverage.x=3, xmax=200, xbreaks.interval=xmax/10, cutoffs=NULL) {
+  
+    if (class(model) == 'methimputeBinomialHMM') {
+        data <- model$data
+    } else if (class(model) == 'GRanges') {
+        data <- model
+    } else {
+        stop("Argument 'model' needs to be of class 'GRanges' or 'methimputeBinomialHMM'.")
+    }
     if (!is.null(cutoffs)) {
         if (length(setdiff(levels(data$context), names(cutoffs))) > 0 ) {
             stop("names(cutoffs) must be equal to levels(data$context)")
@@ -481,13 +485,14 @@ plotPosteriorDistance <- function(data, datapoints=1e6, binwidth=5, max.coverage
     # Plot
     df <- data.frame(posteriorMax=datac$posteriorMax, distance.nearest=datac$distance.nearest, context=datac$context)
     df$distance.nearest <- df$distance.nearest %/% binwidth * binwidth
-    ggplt <- ggplot(df[df$distance.nearest <= xmax,]) + geom_boxplot(aes(x=factor(distance.nearest), y=posteriorMax, fill=context), outlier.shape = NA) + theme_bw()
+    df$distance.nearest.factor <- factor(df$distance.nearest)
+    ggplt <- ggplot(df[df$distance.nearest <= xmax,]) + geom_boxplot(aes_string(x='distance.nearest.factor', y='posteriorMax', fill='context'), outlier.shape = NA) + theme_bw()
     ggplt <- ggplt + facet_grid(.~context)
     ggplt <- ggplt + xlab(paste0('Distance to nearest covered C (>= ', min.coverage.x, ') in [bp]')) + ylab(paste0('Maximum posterior\n(cytosines with coverage <= ', max.coverage.y, ')'))
     ggplt <- ggplt + scale_x_discrete(breaks=seq(0,max(df$distance.nearest, na.rm=TRUE), by=xbreaks.interval))
     if (!is.null(cutoffs)) {
         df <- data.frame(context=names(cutoffs), cutoff=cutoffs)
-        ggplt <- ggplt + geom_hline(data=df, mapping=aes(yintercept=cutoff), linetype=1)
+        ggplt <- ggplt + geom_hline(data=df, mapping=aes_string(yintercept='cutoff'), linetype=1)
     }
     stopTimedMessage(ptm)
     return(ggplt)

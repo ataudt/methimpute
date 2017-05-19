@@ -4,16 +4,15 @@
 \alias{loadFromFiles}
 \title{Load \pkg{methimpute} objects from file}
 \usage{
-loadFromFiles(files, check.class = c("GRanges", "methimputeData",
-  "methimputeBinomialHMM"))
+loadFromFiles(files, check.class = c("GRanges", "methimputeBinomialHMM"))
 }
 \arguments{
-\item{files}{A list of \code{\link{GRanges}}, \code{\link{methimputeData}} or \code{\link{methimputeBinomialHMM}} objects or a character vector with files that contain such objects.}
+\item{files}{A list of \code{\link{GRanges}} or \code{\link{methimputeBinomialHMM}} objects or a character vector with files that contain such objects.}
 
-\item{check.class}{Any combination of \code{c('GRanges', 'methimputeData', 'methimputeBinomialHMM')}. If any of the loaded objects does not belong to the specified class, an error is thrown.}
+\item{check.class}{Any combination of \code{c('GRanges', 'methimputeBinomialHMM')}. If any of the loaded objects does not belong to the specified class, an error is thrown.}
 }
 \value{
-A list of \code{\link{GRanges}}, \code{\link{methimputeData}} or \code{\link{methimputeBinomialHMM}} objects.
+A list of \code{\link{GRanges}} or \code{\link{methimputeBinomialHMM}} objects.
 }
 \description{
 Wrapper to load \pkg{\link{methimpute}} objects from file and check the class of the loaded objects.
