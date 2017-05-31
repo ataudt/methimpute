@@ -224,6 +224,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         data$posteriorMeth <- hmm$posteriors["Methylated",]
         data$posteriorUnmeth <- hmm$posteriors["Unmethylated",]
         data$status <- factor(states, levels=states)[hmm$states+1]
+        data$rc.meth.lvl <- r$params$emissionParams$Unmethylated[data$context,] * data$posteriorUnmeth + r$params$emissionParams$Intermediate[data$context,] * (1 - data$posteriorMeth - data$posteriorUnmeth) + r$params$emissionParams$Methylated[data$context,] * data$posteriorMeth
         ## Segmentation
         data.collapse <- data
         mcols(data.collapse) <- NULL
