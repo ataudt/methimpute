@@ -278,7 +278,11 @@ plotEnrichment <- function(model, annotation, windowsize=100, insidewindows=20, 
             data$meth.lvl <- data$counts[,'methylated'] / data$counts[,'total']
         }
         if (is.null(data$rc.meth.lvl) & !is.null(distr)) {
-            data$rc.meth.lvl <- distr$Unmethylated[data$context,] * data$posteriorUnmeth + distr$Intermediate[data$context,] * (1 - data$posteriorUnmeth - data$posteriorMeth) + distr$Methylated[data$context,] * data$posteriorMeth
+            if (!is.null(distr$Intermediate)) {
+                data$rc.meth.lvl <- distr$Unmethylated[data$context,] * data$posteriorUnmeth + distr$Intermediate[data$context,] * (1 - data$posteriorUnmeth - data$posteriorMeth) + distr$Methylated[data$context,] * data$posteriorMeth
+            } else {
+                data$rc.meth.lvl <- distr$Unmethylated[data$context,] * data$posteriorUnmeth + distr$Methylated[data$context,] * data$posteriorMeth
+            }
         }
         
         ## Subset annotation to data range
