@@ -272,7 +272,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
 #'
 binomialTestMethylation <- function(data, conversion.rate, min.coverage=3, p.threshold=0.05) {
   
-    p <- dbinom(data$counts[,'methylated'], data$counts[,'total'], prob = conversion.rate)
+    p <- pbinom(q = data$counts[,'methylated']-1, size = data$counts[,'total'], prob = conversion.rate, lower.tail = FALSE)
     p[data$counts[,'total'] < min.coverage] <- NA
     p <- p.adjust(p, method = 'BY')
     levels <- c("Unmethylated", "Methylated")
