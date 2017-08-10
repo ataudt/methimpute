@@ -27,7 +27,7 @@
 #'print(data)
 #'model <- callMethylation(data)
 #'print(model)
-callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=2+include.intermediate, initial.params=NULL, include.intermediate=TRUE, update='independent', min.reads=0) {
+callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=2+include.intermediate, initial.params=NULL, include.intermediate=FALSE, update='independent', min.reads=0) {
   
     ### Input checks ###
     if (!is.null(fit.on.chrom)) {
