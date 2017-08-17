@@ -230,18 +230,22 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         } else {
             data$rc.meth.lvl <- r$params$emissionParams$Unmethylated[data$context,] * data$posteriorUnmeth + r$params$emissionParams$Methylated[data$context,] * data$posteriorMeth
         }
+        # ## Recalibrated counts
+        # data$rc.counts <- data$counts
+        # # Transform posteriorMax to uniform
+        # ecdf.postmax <- ecdf(data$posteriorMax)
+        # upostmax <- ecdf.postmax(data$posteriorMax)
+        # # Transform to count distribution
+        # x <- seq(0, 1, by=1e-5)
+        # q <- quantile(data$counts[,2], probs = x)
+        # inverse.ecdf <- stepfun(x = x, y = c(q, max(q)))
+        # cpostmax <- inverse.ecdf(upostmax)
+        # # Assign to counts
+        # data$rc.counts[,2] <- round(cpostmax)
+        # data$rc.counts[,1] <- round(data$rc.counts[,2] * data$rc.meth.lvl)
         ## Recalibrated counts
         data$rc.counts <- data$counts
-        # Transform posteriorMax to uniform
-        ecdf.postmax <- ecdf(data$posteriorMax)
-        upostmax <- ecdf.postmax(data$posteriorMax)
-        # Transform to count distribution
-        x <- seq(0, 1, by=1e-5)
-        q <- quantile(data$counts[,2], probs = x)
-        inverse.ecdf <- stepfun(x = x, y = c(q, max(q)))
-        cpostmax <- inverse.ecdf(upostmax)
-        # Assign to counts
-        data$rc.counts[,2] <- round(cpostmax)
+        data$rc.counts[,2] <- sort(data$counts[,2])[rank(data$posteriorMax, ties.method = 'first')]
         data$rc.counts[,1] <- round(data$rc.counts[,2] * data$rc.meth.lvl)
         ## Segmentation
         data.collapse <- data
