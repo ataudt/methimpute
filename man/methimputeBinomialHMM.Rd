@@ -12,7 +12,22 @@ A list() with the following entries:
 \item{segments}{The \code{data} entry where coordinates of consecutive cytosines with the same methylation status have been merged.}
 }
 \description{
-The \code{methimputeBinomialHMM} is a list() which contains various entries (see Value section)
+The \code{methimputeBinomialHMM} is a list() which contains various entries (see Value section). The main entry of this object is \code{$data}, which contains the methylation status calls and posterior values. See Details for a description of all columns.
+}
+\details{
+The \code{$data} entry in this object contains the following columns:
+\itemize{
+\item{context }{The sequence context of the cytosine.}
+\item{counts }{Counts for methylated and total number of reads at each position.}
+\item{distance }{The distance in base-pairs from the previous to the current cytosine.}
+\item{transitionContext }{Transition context in the form "previous-current".}
+\item{posteriorMax }{Maximum posterior value of the methylation status call, can be interpreted as the confidence in the call.}
+\item{posteriorMeth }{Posterior value of the "methylated" component.}
+\item{posteriorUnmeth }{Posterior value of the "unmethylated" component.}
+\item{status }{Methylation status.}
+\item{rc.meth.lvl }{Recalibrated methylation level, calculated as \code{r$data$rc.meth.lvl = r$data$params$emissionParams$Unmethylated[data$context,] * r$data$posteriorUnmeth + r$params$emissionParams$Methylated[data$context,] * r$data$posteriorMeth}, where \code{r} is the \code{methimputeBinomialHMM} object.}
+\item{rc.counts }{Recalibrated counts for methylated and total number of reads at each position, calculated as \code{r$data$rc.counts[,2] <- sort(r$data$counts[,2])[rank(r$data$posteriorMax, ties.method = 'first')]; r$data$rc.counts[,1] <- round(r$data$rc.counts[,2] * r$data$rc.meth.lvl)}, where \code{r} is the \code{methimputeBinomialHMM} object.}
+}
 }
 \seealso{
 \code{\link{methimpute-objects}}

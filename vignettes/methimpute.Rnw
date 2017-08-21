@@ -69,6 +69,20 @@ print(model)
 @
 \end{small}
 
+\subsection{Description of columns}
+\begin{itemize}
+\item \textbf{context} The sequence context of the cytosine.
+\item \textbf{counts} Counts for methylated and total number of reads at each position.
+\item \textbf{distance} The distance in base-pairs from the previous to the current cytosine.
+\item \textbf{transitionContext} Transition context in the form "previous-current".
+\item \textbf{posteriorMax} Maximum posterior value of the methylation status call, can be interpreted as the confidence in the call.
+\item \textbf{posteriorMeth} Posterior value of the "methylated" component.
+\item \textbf{posteriorUnmeth} Posterior value of the "unmethylated" component.
+\item \textbf{status} Methylation status.
+\item \textbf{rc.meth.lvl} Recalibrated methylation level, calculated from the posteriors and the fitted parameters (see ?methimputeBinomialHMM for details).
+\item \textbf{rc.counts} Recalibrated counts for methylated and total number of reads at each position (see ?methimputeBinomialHMM for details).
+\end{itemize}
+
 \section{Plots and enrichment analysis}
 
 This package also offers plotting functions for a simple enrichment analysis. Let's say we are interested in the methylation level around genes and transposable elements.

@@ -281,6 +281,8 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
 #' @param min.coverage Minimum coverage to consider for the binomial test.
 #' @param p.threshold Significance threshold between 0 and 1.
 #' @return A vector with methylation statuses.
+#' @importFrom stats p.adjust pbinom
+#' @export
 #' 
 #' @examples
 #'## Get some toy data
@@ -290,9 +292,9 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
 #'
 binomialTestMethylation <- function(data, conversion.rate, min.coverage=3, p.threshold=0.05) {
   
-    p <- pbinom(q = data$counts[,'methylated']-1, size = data$counts[,'total'], prob = conversion.rate, lower.tail = FALSE)
+    p <- stats::pbinom(q = data$counts[,'methylated']-1, size = data$counts[,'total'], prob = conversion.rate, lower.tail = FALSE)
     p[data$counts[,'total'] < min.coverage] <- NA
-    p <- p.adjust(p, method = 'BY')
+    p <- stats::p.adjust(p, method = 'BY')
     levels <- c("Unmethylated", "Methylated")
     methylated <- factor(levels[c(1,2)][(p <= p.threshold)+1], levels=levels)
     return(methylated)
