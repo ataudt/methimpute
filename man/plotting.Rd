@@ -48,9 +48,9 @@ plotPosteriorDistance(model, datapoints = 1e+06, binwidth = 5,
 
 \item{df.list}{A list() of data.frames, output from \code{plotEnrichment(..., plot=FALSE)}. If specified, option \code{data} will be ignored.}
 
-\item{max.coverage.y}{Maximum coverage for cytosines on the y-axis.}
+\item{max.coverage.y}{Maximum coverage for positions on the y-axis.}
 
-\item{min.coverage.x}{Minimum coverage for cytosines on the x-axis.}
+\item{min.coverage.x}{Minimum coverage for positions on the x-axis.}
 
 \item{xmax}{Upper limit for the x-axis.}
 

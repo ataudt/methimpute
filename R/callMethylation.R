@@ -155,7 +155,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
                 parray[,,'Intermediate'] <- (parray[,,'Unmethylated'] + parray[,,'Methylated']) / 2
             }
             convergenceInfo <- hmm$convergenceInfo
-            convergenceInfo$parameterInfo <- parray[,-1,]
+            convergenceInfo$parameterInfo <- parray[,-1,, drop=FALSE]
             convergenceInfo$logliks <- convergenceInfo$logliks[-1]
             convergenceInfo$dlogliks <- convergenceInfo$dlogliks[-1]
         }
@@ -176,7 +176,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
                 parray[,,'Intermediate'] <- (parray[,,'Unmethylated'] + parray[,,'Methylated']) / 2
             }
             convergenceInfo$prefit <- hmm$convergenceInfo
-            convergenceInfo$prefit$parameterInfo <- parray[,-1,]
+            convergenceInfo$prefit$parameterInfo <- parray[,-1,, drop=FALSE]
             convergenceInfo$prefit$logliks <- convergenceInfo$prefit$logliks[-1]
             convergenceInfo$prefit$dlogliks <- convergenceInfo$prefit$dlogliks[-1]
             ## Redo for all chromosomes

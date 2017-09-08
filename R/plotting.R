@@ -86,18 +86,19 @@ plotHistogram <- function(model, total.counts, binwidth=1) {
     counts.methylated <- counts[mask.crosssec,'methylated']
     
     contexts <- intersect(levels(model$data$context), unique(model$data$context))
-    ggplts <- list()
-    for (context in contexts) {
-        mask.context <- model$data$context[mask.crosssec] == context
-        ## Histogram ##
-        ggplt <- ggplot(data.frame(counts=counts.methylated[mask.context])) + geom_histogram(aes_string(x='counts', y='..density..'), binwidth=binwidth, color='black', fill='white')
-        ggplt <- ggplt + theme_bw()
-        ggplt <- ggplt + xlab(paste0("methylated counts\nat positions with total counts = ", total.counts))
-        ggplt <- ggplt + coord_cartesian(xlim=c(0,total.counts))
-        
-        ## Fits ##
-        if (!is.null(model$params$emissionParams)) {
-            x <- seq(0, total.counts, by = binwidth)
+    ## Histogram ##
+    df <- data.frame(counts=counts.methylated, context=model$data$context[mask.crosssec])
+    ggplt <- ggplot(df) + geom_histogram(aes_string(x='counts', y='..density..'), binwidth=binwidth, color='black', fill='white')
+    ggplt <- ggplt + theme_bw()
+    ggplt <- ggplt + xlab(paste0("methylated counts\nat positions with total counts = ", total.counts))
+    ggplt <- ggplt + coord_cartesian(xlim=c(0,total.counts))
+    ggplt <- ggplt + facet_wrap(~ context)
+    
+    ## Fits ##
+    if (!is.null(model$params$emissionParams)) {
+        x <- seq(0, total.counts, by = binwidth)
+        distr.list <- list()
+        for (context in contexts) {
             distr <- list(x=x)
             for (i1 in 1:length(model$params$emissionParams)) {
                 e <- model$params$emissionParams[[i1]]
@@ -105,24 +106,33 @@ plotHistogram <- function(model, total.counts, binwidth=1) {
             }
             distr <- as.data.frame(distr)
             distr$Total <- rowSums(distr[,-1])
-            distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
-            distr$components <- sub('^X', '', distr$components)
-            distr$components <- factor(distr$components, levels=c('Total', levels(model$data$status)))
-            ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
-            
-            ## Make legend
-            lprobs <- round(sapply(model$params$emissionParams, function(x) { x[context,'prob'] }), 4)
-            lweights <- round(model$params$weights[[context]], 2)
-            legend <- paste0(names(model$params$emissionParams), ", prob=", lprobs, ", weight=", lweights)
-            legend <- c(paste0("Total, weight=", round(sum(lweights))), legend)
-            ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(levels(distr$components)), labels=legend) + theme(legend.position=c(0.5,0.99), legend.justification=c(0.5,1))
+            distr$context <- context
+            distr.list[[context]] <- distr
         }
-        ggplt <- ggplt + ggtitle(paste0("Context ", context))
-        ggplts[[context]] <- ggplt
-    }
-    cowplt <- cowplot::plot_grid(plotlist = ggplts, align='v', ncol=1)
+        distr <- do.call(rbind, distr.list)
+        distr <- reshape2::melt(distr, id.vars=c('x', 'context'), variable.name='components')
+        distr$components <- sub('^X', '', distr$components)
+        distr$components <- factor(distr$components, levels=c('Total', levels(model$data$status)))
+        ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
         
-    return(cowplt)
+        # ## Make legend
+        # lprobs <- round(sapply(model$params$emissionParams, function(x) { x[,'prob'] }), 4)
+        # lweights <- round(model$params$weights[[context]], 2)
+        # legend <- paste0(names(model$params$emissionParams), ", prob=", lprobs, ", weight=", lweights)
+        # legend <- c(paste0("Total, weight=", round(sum(lweights))), legend)
+        # ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(levels(distr$components)), labels=legend) + theme(legend.position=c(0.5,0.99), legend.justification=c(0.5,1))
+        
+        ## Make legend
+        # lprobs <- round(sapply(model$params$emissionParams, function(x) { x[,'prob'] }), 4)
+        # rownames(lprobs) <- rownames(model$params$emissionParams[[1]])
+        # lprobs <- lprobs[contexts,]
+        # lweights <- round(t(as.data.frame(model$params$weights)), 2)
+        # lweights <- lweights[contexts,]
+        ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(levels(distr$components))) + theme(legend.position=c(0.5,0.99), legend.justification=c(0.5,1))
+    }
+    ggplt <- ggplt + ggtitle('Fitted distributions')
+        
+    return(ggplt)
       
 }
 
@@ -134,36 +144,32 @@ plotScatter <- function(model, datapoints=1000) {
     contexts <- intersect(levels(model$data$context), unique(model$data$context))
     ggplts <- list()
     limits <- list()
-    for (context in contexts) {
-        data <- model$data[model$data$context == context]
-        ## Find sensible limits
-        xmax <- quantile(data$counts[,'total']-data$counts[,'methylated'], 0.99)
-        ymax <- quantile(data$counts[,'methylated'], 0.99)
-        limits[[context]] <- c(xmax, ymax)
-        df <- data.frame(status=data$status, unmethylated=data$counts[,'total']-data$counts[,'methylated'], methylated=data$counts[,'methylated'])
-        if (datapoints < nrow(df)) {
-            df <- df[sample(1:nrow(df), datapoints, replace = FALSE), ]
-        }
-        
-        ggplt <- ggplot(df, aes_string(x='methylated', y='unmethylated', col='status'))
-        ggplt <- ggplt + geom_point(alpha=0.3)
-        ggplt <- ggplt + coord_cartesian(xlim=c(0,xmax), ylim=c(0,ymax))
-        ggplt <- ggplt + theme_bw()
-        
-        ## Legend
-        lweights <- round(model$params$weights[[context]], 2)
-        legend <- paste0(names(model$params$weights[[context]]), ", weight=", lweights)
-        ggplt <- ggplt + scale_color_manual(values=getStateColors(names(model$params$weights[[context]])), labels=legend)
-        ggplt <- ggplt + ggtitle(paste0("Context ", context))
-        ggplt <- ggplt + theme(legend.position=c(1,1), legend.justification=c(1,1))
-        ggplts[[context]] <- ggplt
+    data <- model$data
+    ## Find sensible limits
+    xmax <- quantile(data$counts[,'total']-data$counts[,'methylated'], 0.99)
+    ymax <- quantile(data$counts[,'methylated'], 0.99)
+    limits[[context]] <- c(xmax, ymax)
+    df <- data.frame(status=data$status, unmethylated=data$counts[,'total']-data$counts[,'methylated'], methylated=data$counts[,'methylated'], context=data$context)
+    if (datapoints < nrow(df)) {
+        df <- df[sample(1:nrow(df), datapoints, replace = FALSE), ]
     }
-    xmax <- max(sapply(limits, '[[', 1))
-    ymax <- max(sapply(limits, '[[', 2))
-    ggplts <- lapply(ggplts, function(ggplt) { ggplt <- ggplt + coord_cartesian(xlim=c(0,xmax), ylim=c(0,ymax)); ggplt })
-    cowplt <- cowplot::plot_grid(plotlist = ggplts, align = 'h', nrow=1)
     
-    return(cowplt)
+    ggplt <- ggplot(df, aes_string(x='methylated', y='unmethylated', col='status'))
+    ggplt <- ggplt + geom_point(alpha=0.3)
+    ggplt <- ggplt + coord_cartesian(xlim=c(0,xmax), ylim=c(0,ymax))
+    ggplt <- ggplt + theme_bw()
+    ggplt <- ggplt + xlab('methylated counts') + ylab('unmethylated counts')
+    ggplt <- ggplt + facet_wrap(~ context)
+    
+    ## Legend
+    lweights <- round(model$params$weights[[context]], 2)
+    legend <- paste0(names(model$params$weights[[context]]), ", weight=", lweights)
+    ggplt <- ggplt + scale_color_manual(values=getStateColors(names(model$params$weights[[context]])), labels=legend)
+    ggplt <- ggplt + theme(legend.position=c(1,1), legend.justification=c(1,1))
+    
+    ggplt <- ggplt + ggtitle('Classification')
+    
+    return(ggplt)
     
 }
 
@@ -179,22 +185,16 @@ plotTransitionProbs <- function(model) {
         As <- list(transitions=model$params$transProbs)
     }
 
-    ggplts <- list()
-    for (i1 in 1:length(As)) {
-        # model <- suppressMessages( loadFromFiles(model, check.class=class.univariate.hmm)[[1]] )
-        A <- reshape2::melt(As[[i1]], varnames=c('from','to'), value.name='prob')
-        A$from <- factor(A$from)
-        A$to <- factor(A$to)
-        ggplt <- ggplot(data=A) + geom_tile(aes_string(x='to', y='from', fill='prob')) + scale_fill_gradient(low="white", high="blue", limits=c(0,1)) + theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
-        ggplt <- ggplt + ggtitle(names(model$params$transProbs)[i1])
-        ggplts[[names(model$params$transProbs)[i1]]] <- ggplt
-    }
-    if (length(ggplts) > 1) {
-        # ggplts <- insertNULL(ggplts)
-        ggplts <- cowplot::plot_grid(plotlist = ggplts, align='hv')
-    }
+    A <- reshape2::melt(As, varnames=c('from','to'), value.name='prob')
+    names(A)[4] <- 'transitionContext'
+    A$from <- factor(A$from, levels=rev(unique(A$from)))
+    A$to <- factor(A$to, levels=rev(unique(A$from)))
+    ggplt <- ggplot(data=A) + geom_tile(aes_string(x='to', y='from', fill='prob')) + scale_fill_gradient(low="white", high="blue", limits=c(0,1)) + theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
+    ggplt <- ggplt + facet_wrap(~ transitionContext)
     
-    return(ggplts)
+    ggplt <- ggplt + ggtitle('Transition probabilities')
+    
+    return(ggplt)
   
 }
 
@@ -236,6 +236,9 @@ plotConvergence <- function(model) {
     ggplt <- ggplt + facet_wrap(~ context)
     ggplt <- ggplt + scale_y_continuous(limits=c(0,1))
     ggplt <- ggplt + scale_color_manual(values=getStateColors(unique(df$status)))
+    
+    ggplt <- ggplt + ggtitle('Baum-Welch convergence')
+    
     return(ggplt)
 }
 
@@ -454,8 +457,8 @@ plotTransitionDistances <- function(model) {
 
 
 #' @describeIn plotting Maximum posterior vs. distance to nearest covered cytosine.
-#' @param max.coverage.y Maximum coverage for cytosines on the y-axis.
-#' @param min.coverage.x Minimum coverage for cytosines on the x-axis.
+#' @param max.coverage.y Maximum coverage for positions on the y-axis.
+#' @param min.coverage.x Minimum coverage for positions on the x-axis.
 #' @param xmax Upper limit for the x-axis.
 #' @param xbreaks.interval Interval for breaks on the x-axis.
 #' @param cutoffs A vector with values that are plotted as horizontal lines. The names of the vector must match the context levels in \code{data$context}.
@@ -492,12 +495,13 @@ plotPosteriorDistance <- function(model, datapoints=1e6, binwidth=5, max.coverag
     df$distance.nearest.factor <- factor(df$distance.nearest)
     ggplt <- ggplot(df[df$distance.nearest <= xmax,]) + geom_boxplot(aes_string(x='distance.nearest.factor', y='posteriorMax', fill='context'), outlier.shape = NA) + theme_bw()
     ggplt <- ggplt + facet_grid(.~context)
-    ggplt <- ggplt + xlab(paste0('Distance to nearest covered C (>= ', min.coverage.x, ') in [bp]')) + ylab(paste0('Maximum posterior\n(cytosines with coverage <= ', max.coverage.y, ')'))
+    ggplt <- ggplt + xlab(paste0('Distance in [bp] to nearest position with coverage >= ', min.coverage.x)) + ylab(paste0('Maximum posterior\nat positions with coverage <= ', max.coverage.y))
     ggplt <- ggplt + scale_x_discrete(breaks=seq(0,max(df$distance.nearest, na.rm=TRUE), by=xbreaks.interval))
     if (!is.null(cutoffs)) {
         df <- data.frame(context=names(cutoffs), cutoff=cutoffs)
         ggplt <- ggplt + geom_hline(data=df, mapping=aes_string(yintercept='cutoff'), linetype=1)
     }
+    ggplt <- ggplt + ggtitle('Confidence vs. distance')
     stopTimedMessage(ptm)
     return(ggplt)
 }

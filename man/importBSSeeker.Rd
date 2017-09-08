@@ -9,7 +9,7 @@ importBSSeeker(file, chrom.lengths = NULL)
 \arguments{
 \item{file}{The file to import.}
 
-\item{chrom.lengths}{A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.}
+\item{chrom.lengths}{A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).}
 }
 \value{
 A \code{\link{methimputeData}} object.

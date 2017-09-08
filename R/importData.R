@@ -3,7 +3,7 @@
 #' Import a Methylpy methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 #' 
 #' @param file The file to import.
-#' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
+#' @param chrom.lengths A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).
 #' @return A \code{\link{methimputeData}} object.
 #' 
 #' @importFrom utils read.table
@@ -36,13 +36,16 @@ importMethylpy <- function(file, chrom.lengths=NULL) {
     data$context.full <- NULL
     stopTimedMessage(ptm)
     
+    
     ## Assign seqlengths
     if (!is.null(chrom.lengths)) {
         if (is.character(chrom.lengths)) {
             df <- utils::read.table(chrom.lengths, header=TRUE)
-            chrom.lengths <- df[,2]
-            names(chrom.lengths) <- df[,1]
+        } else if (is.data.frame(chrom.lengths)) {
+            df <- chrom.lengths
         }
+        chrom.lengths <- df[,2]
+        names(chrom.lengths) <- df[,1]
         # Filter by chromosomes supplied in chrom.lengths
         data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
         seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
@@ -57,7 +60,7 @@ importMethylpy <- function(file, chrom.lengths=NULL) {
 #' Import a BSSeeker methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 #' 
 #' @param file The file to import.
-#' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
+#' @param chrom.lengths A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).
 #' @return A \code{\link{methimputeData}} object.
 #' 
 #' @importFrom utils read.table
@@ -88,9 +91,11 @@ importBSSeeker <- function(file, chrom.lengths=NULL) {
     if (!is.null(chrom.lengths)) {
         if (is.character(chrom.lengths)) {
             df <- utils::read.table(chrom.lengths, header=TRUE)
-            chrom.lengths <- df[,2]
-            names(chrom.lengths) <- df[,1]
+        } else if (is.data.frame(chrom.lengths)) {
+            df <- chrom.lengths
         }
+        chrom.lengths <- df[,2]
+        names(chrom.lengths) <- df[,1]
         # Filter by chromosomes supplied in chrom.lengths
         data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
         seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
@@ -108,7 +113,7 @@ importBSSeeker <- function(file, chrom.lengths=NULL) {
 #' Import a Bismark methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 #' 
 #' @param file The file to import.
-#' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
+#' @param chrom.lengths A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).
 #' @return A \code{\link{methimputeData}} object.
 #' 
 #' @importFrom utils read.table
@@ -140,9 +145,11 @@ importBismark <- function(file, chrom.lengths=NULL) {
     if (!is.null(chrom.lengths)) {
         if (is.character(chrom.lengths)) {
             df <- utils::read.table(chrom.lengths, header=TRUE)
-            chrom.lengths <- df[,2]
-            names(chrom.lengths) <- df[,1]
+        } else if (is.data.frame(chrom.lengths)) {
+            df <- chrom.lengths
         }
+        chrom.lengths <- df[,2]
+        names(chrom.lengths) <- df[,1]
         # Filter by chromosomes supplied in chrom.lengths
         data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
         seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
@@ -160,7 +167,7 @@ importBismark <- function(file, chrom.lengths=NULL) {
 #' Import a Rene methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 #' 
 #' @param file The file to import.
-#' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
+#' @param chrom.lengths A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).
 #' @return A \code{\link{methimputeData}} object.
 #' 
 #' @importFrom utils read.table
@@ -182,9 +189,11 @@ importRene <- function(file, chrom.lengths=NULL) {
     if (!is.null(chrom.lengths)) {
         if (is.character(chrom.lengths)) {
             df <- utils::read.table(chrom.lengths, header=TRUE)
-            chrom.lengths <- df[,2]
-            names(chrom.lengths) <- df[,1]
+        } else if (is.data.frame(chrom.lengths)) {
+            df <- chrom.lengths
         }
+        chrom.lengths <- df[,2]
+        names(chrom.lengths) <- df[,1]
         # Filter by chromosomes supplied in chrom.lengths
         data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
         seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
@@ -201,7 +210,7 @@ importRene <- function(file, chrom.lengths=NULL) {
 #' #' Import a Bismark methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 #' #' 
 #' #' @param files The files to import.
-#' #' @param chrom.lengths A named vector containing the chromosome lengths. Only chromosomes named in here will be returned.
+#' #' @param chrom.lengths A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).
 #' #' @param temp.store A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.
 #' #' @return A \code{\link{methimputeData}} object.
 #' #' 
@@ -292,9 +301,11 @@ importRene <- function(file, chrom.lengths=NULL) {
 #'     if (!is.null(chrom.lengths)) {
 #'         if (is.character(chrom.lengths)) {
 #'             df <- utils::read.table(chrom.lengths, header=TRUE)
-#'             chrom.lengths <- df[,2]
-#'             names(chrom.lengths) <- df[,1]
+#'         } else if (is.data.frame(chrom.lengths)) {
+#'             df <- chrom.lengths
 #'         }
+#'         chrom.lengths <- df[,2]
+#'         names(chrom.lengths) <- df[,1]
 #'         # Filter by chromosomes supplied in chrom.lengths
 #'         data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
 #'         seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
