@@ -8,7 +8,7 @@
 \alias{plotScatter}
 \alias{plotTransitionProbs}
 \alias{plotting}
-\title{methimpute plotting functions}
+\title{Methimpute plotting functions}
 \usage{
 plotHistogram(model, total.counts, binwidth = 1)
 

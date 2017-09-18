@@ -1,4 +1,4 @@
-#' methimpute plotting functions
+#' Methimpute plotting functions
 #' 
 #' This page provides an overview of all \pkg{\link{methimpute}} plotting functions.
 #'
@@ -148,7 +148,7 @@ plotScatter <- function(model, datapoints=1000) {
     ## Find sensible limits
     xmax <- quantile(data$counts[,'total']-data$counts[,'methylated'], 0.99)
     ymax <- quantile(data$counts[,'methylated'], 0.99)
-    limits[[context]] <- c(xmax, ymax)
+    limits <- c(xmax, ymax)
     df <- data.frame(status=data$status, unmethylated=data$counts[,'total']-data$counts[,'methylated'], methylated=data$counts[,'methylated'], context=data$context)
     if (datapoints < nrow(df)) {
         df <- df[sample(1:nrow(df), datapoints, replace = FALSE), ]
@@ -160,12 +160,13 @@ plotScatter <- function(model, datapoints=1000) {
     ggplt <- ggplt + theme_bw()
     ggplt <- ggplt + xlab('methylated counts') + ylab('unmethylated counts')
     ggplt <- ggplt + facet_wrap(~ context)
+    ggplt <- ggplt + scale_color_manual(values=getStateColors(levels(df$status)))
     
-    ## Legend
-    lweights <- round(model$params$weights[[context]], 2)
-    legend <- paste0(names(model$params$weights[[context]]), ", weight=", lweights)
-    ggplt <- ggplt + scale_color_manual(values=getStateColors(names(model$params$weights[[context]])), labels=legend)
-    ggplt <- ggplt + theme(legend.position=c(1,1), legend.justification=c(1,1))
+    # ## Legend
+    # lweights <- round(model$params$weights[[context]], 2)
+    # legend <- paste0(names(model$params$weights[[context]]), ", weight=", lweights)
+    # ggplt <- ggplt + scale_color_manual(values=getStateColors(names(model$params$weights[[context]])), labels=legend)
+    # ggplt <- ggplt + theme(legend.position=c(1,1), legend.justification=c(1,1))
     
     ggplt <- ggplt + ggtitle('Classification')
     

@@ -1,10 +1,10 @@
 #' Chromosome lengths for Arabidopsis
 #'
-#' A named vector with chromosome lengths for Arabidopsis.
+#' A data.frame with chromosome lengths for Arabidopsis.
 #'
 #' @docType data
 #' @name arabidopsis_chromosomes
-#' @format A named numeric vector.
+#' @format A data.frame.
 #' @examples
 #'data(arabidopsis_chromosomes)
 #'print(arabidopsis_chromosomes)

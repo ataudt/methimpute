@@ -5,6 +5,7 @@
 #' @param file A character with the file name.
 #' @param contexts The contexts that should be extracted. If the contexts are named, the returned object will use those names for the contexts.
 #' @param anchor.C A named vector with positions of the anchoring C in the \code{contexts}. This is necessary to distinguish contexts such as C*C*CG (anchor.C = 2) and *C*CCG (anchor.C = 1). Names must match the contexts. If unspecified, the first C within each context will be taken as anchor.
+#' @return A \code{\link{GRanges}} object with coordinates of extracted cytosines and meta-data column 'context'.
 #' 
 #' @importFrom Biostrings readDNAStringSet vmatchPattern reverseComplement
 #' @export

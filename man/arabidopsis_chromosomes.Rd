@@ -4,9 +4,9 @@
 \name{arabidopsis_chromosomes}
 \alias{arabidopsis_chromosomes}
 \title{Chromosome lengths for Arabidopsis}
-\format{A named numeric vector.}
+\format{A data.frame.}
 \description{
-A named vector with chromosome lengths for Arabidopsis.
+A data.frame with chromosome lengths for Arabidopsis.
 }
 \examples{
 data(arabidopsis_chromosomes)

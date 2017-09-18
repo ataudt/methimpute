@@ -1,11 +1,26 @@
-#' Import a Methylpy methylation extractor file
+#' Methimpute data import
 #' 
-#' Import a Methylpy methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
-#' 
+#' This page provides an overview of all \pkg{\link{methimpute}} data import functions.
 #' @param file The file to import.
 #' @param chrom.lengths A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).
 #' @return A \code{\link{methimputeData}} object.
-#' 
+#' @name import
+#' @examples 
+#'## Get an example file in BSSeeker format
+#'file <- system.file("extdata","arabidopsis_bsseeker.txt.gz", package="methimpute")
+#'data(arabidopsis_chromosomes)
+#'bsseeker.data <- importBSSeeker(file, chrom.lengths=arabidopsis_chromosomes)
+#'
+#'## Get an example file in Bismark format
+#'file <- system.file("extdata","arabidopsis_bismark.txt", package="methimpute")
+#'data(arabidopsis_chromosomes)
+#'arabidopsis_chromosomes$chromosome <- sub('chr', '', arabidopsis_chromosomes$chromosome)
+#'bismark.data <- importBismark(file, chrom.lengths=arabidopsis_chromosomes)
+#'
+NULL
+
+
+#' @describeIn import Import a Methylpy methylation extractor file.
 #' @importFrom utils read.table
 #' @export
 #' 
@@ -55,23 +70,10 @@ importMethylpy <- function(file, chrom.lengths=NULL) {
 }
 
 
-#' Import a BSSeeker methylation extractor file
-#' 
-#' Import a BSSeeker methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
-#' 
-#' @param file The file to import.
-#' @param chrom.lengths A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).
-#' @return A \code{\link{methimputeData}} object.
-#' 
+#' @describeIn import Import a BSSeeker methylation extractor file.
 #' @importFrom utils read.table
 #' @export
 #' 
-#' @examples 
-#'## Get an example file in BSSeeker format
-#'file <- system.file("extdata","arabidopsis_bsseeker.txt.gz", package="methimpute")
-#'data(arabidopsis_chromosomes)
-#'bsseeker.data <- importBSSeeker(file, chrom.lengths=arabidopsis_chromosomes)
-#'
 importBSSeeker <- function(file, chrom.lengths=NULL) {
     
     # classes <- c(seqnames='character', nucleotide='character', position='numeric', context='character', context.dinucleotide='character', methylation.level='numeric', counts.methylated='numeric', counts.total='numeric')
@@ -108,23 +110,9 @@ importBSSeeker <- function(file, chrom.lengths=NULL) {
 }
 
 
-#' Import a Bismark methylation extractor file
-#' 
-#' Import a Bismark methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
-#' 
-#' @param file The file to import.
-#' @param chrom.lengths A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).
-#' @return A \code{\link{methimputeData}} object.
-#' 
+#' @describeIn import Import a Bismark methylation extractor file.
 #' @importFrom utils read.table
 #' @export
-#' 
-#' @examples 
-#'## Get an example file in BSSeeker format
-#'file <- system.file("extdata","arabidopsis_bismark.txt", package="methimpute")
-#'data(arabidopsis_chromosomes)
-#'names(arabidopsis_chromosomes) <- sub('chr', '', names(arabidopsis_chromosomes))
-#'bismark.data <- importBismark(file, chrom.lengths=arabidopsis_chromosomes)
 #'
 importBismark <- function(file, chrom.lengths=NULL) {
     

@@ -14,6 +14,9 @@ extractCytosinesFromFASTA(file, contexts = c("CG", "CHG", "CHH"),
 
 \item{anchor.C}{A named vector with positions of the anchoring C in the \code{contexts}. This is necessary to distinguish contexts such as C*C*CG (anchor.C = 2) and *C*CCG (anchor.C = 1). Names must match the contexts. If unspecified, the first C within each context will be taken as anchor.}
 }
+\value{
+A \code{\link{GRanges}} object with coordinates of extracted cytosines and meta-data column 'context'.
+}
 \description{
 Extract cytosine coordinates and context information from a FASTA file. Cytosines in ambiguous reference contexts are not reported.
 }
