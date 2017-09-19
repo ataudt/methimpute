@@ -32,11 +32,9 @@
 #' @examples
 #'## Load example data
 #'## Get an example multiHMM
-#'file <- system.file("data","multivariate_mode-combinatorial_condition-SHR.RData",
-#'                     package="chromstaR")
-#'model <- get(load(file))
-#'df <- as.data.frame(model$bins)
-#'shortdf <- collapseBins(df, column2collapseBy='state', columns2sumUp='width', columns2average=6:9)
+#'data(arabidopsis_toydata)
+#'df <- as.data.frame(arabidopsis_toydata)
+#'shortdf <- collapseBins(df, column2collapseBy='context', columns2sumUp='width', columns2average=7:8)
 #'
 collapseBins = function(data, column2collapseBy=NULL, columns2sumUp=NULL, columns2average=NULL, columns2getMax=NULL, columns2drop=NULL) {
 

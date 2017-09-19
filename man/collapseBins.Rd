@@ -48,11 +48,9 @@ chr1     \tab   600 \tab 999 \tab                 1 \tab        4 13 \tab       
 \examples{
 ## Load example data
 ## Get an example multiHMM
-file <- system.file("data","multivariate_mode-combinatorial_condition-SHR.RData",
-                    package="chromstaR")
-model <- get(load(file))
-df <- as.data.frame(model$bins)
-shortdf <- collapseBins(df, column2collapseBy='state', columns2sumUp='width', columns2average=6:9)
+data(arabidopsis_toydata)
+df <- as.data.frame(arabidopsis_toydata)
+shortdf <- collapseBins(df, column2collapseBy='context', columns2sumUp='width', columns2average=7:8)
 
 }
 \author{
