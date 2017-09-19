@@ -1,13 +1,13 @@
 Package: methimpute
 Type: Package
 Title: Imputation-guided re-construction of complete methylomes from WGBS data
-Version: 0.99.0
+Version: 0.99.1
 Date: 2017-09-18
 Author: Aaron Taudt
 Maintainer: Aaron Taudt <aaron.taudt@gmail.com>
 Description: This package implements functions for calling methylated and unmethylated regions and estimate variability among a population of samples.
 Depends:
-    R (>= 3.3.0),
+    R (>= 3.4.0),
     GenomicRanges,
     ggplot2
 Imports:
