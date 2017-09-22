@@ -30,7 +30,7 @@ ZiNB::ZiNB(const Rcpp::IntegerVector & obs, double size, double prob, double w, 
 	int i = 0;
 	for (int j=0; j<uobsind_per_obs.size(); j++)
 	{
-		if (this->obs_unique[i] = j)
+		if (this->obs_unique[i] == j)
 		{
 			uobsind_per_obs[j] = i;
 			i += 1;
@@ -360,7 +360,7 @@ void BinomialTest::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 {
 	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
 	double logdens_min = log(1.0/this->min_obs);
-	double logprob = log(this->prob);
+// 	double logprob = log(this->prob);
 	for (int t=0; t<this->obs_total.size(); t++)
 	{
 		if (this->obs_total[t] < this->min_obs)
@@ -382,7 +382,7 @@ void BinomialTest::calc_logdensities(Rcpp::NumericMatrix::Row & logdens)
 void BinomialTest::calc_densities(Rcpp::NumericMatrix::Row & dens)
 {
 	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
-	double logprob = log(this->prob);
+// 	double logprob = log(this->prob);
 	double dens_min = 1.0/this->min_obs;
 	for (int t=0; t<this->obs_total.size(); t++)
 	{
@@ -1511,7 +1511,6 @@ void Beta_symmetric::update(const Rcpp::NumericMatrix & weights, const int * row
 	double kmax = 20;
 	double DiC, TriC;
 	double F, dFdx, FdivM;
-	double logObs, log1mObs;
 	double a0 = this->get_a();
 
 	for (int k=0; k<kmax; k++)
@@ -1702,7 +1701,7 @@ MVCopulaApproximation::MVCopulaApproximation(const Rcpp::IntegerMatrix & obs, co
 MVCopulaApproximation::~MVCopulaApproximation()
 {
 	if (verbosity>=2) Rprintf("    %s\n", __PRETTY_FUNCTION__);
-	for (int imod=0; imod<this->marginals.size(); imod++)
+	for (int imod=0; imod<(int)this->marginals.size(); imod++)
 	{
 		delete this->marginals[imod];
 	}
