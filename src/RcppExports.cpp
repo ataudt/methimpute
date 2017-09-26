@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // fitBinomialTestHMMcontextTransition
 List fitBinomialTestHMMcontextTransition(const IntegerVector& counts_total, const IntegerVector& counts_meth, const IntegerVector& context, const IntegerVector& transitionContext, const NumericVector& distances, const List& params, const int& algorithm, const int& update_procedure);
-RcppExport SEXP methimpute_fitBinomialTestHMMcontextTransition(SEXP counts_totalSEXP, SEXP counts_methSEXP, SEXP contextSEXP, SEXP transitionContextSEXP, SEXP distancesSEXP, SEXP paramsSEXP, SEXP algorithmSEXP, SEXP update_procedureSEXP) {
+RcppExport SEXP _methimpute_fitBinomialTestHMMcontextTransition(SEXP counts_totalSEXP, SEXP counts_methSEXP, SEXP contextSEXP, SEXP transitionContextSEXP, SEXP distancesSEXP, SEXP paramsSEXP, SEXP algorithmSEXP, SEXP update_procedureSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -25,10 +25,21 @@ END_RCPP
 }
 // cleanup
 void cleanup();
-RcppExport SEXP methimpute_cleanup() {
+RcppExport SEXP _methimpute_cleanup() {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     cleanup();
     return R_NilValue;
 END_RCPP
+}
+
+static const R_CallMethodDef CallEntries[] = {
+    {"_methimpute_fitBinomialTestHMMcontextTransition", (DL_FUNC) &_methimpute_fitBinomialTestHMMcontextTransition, 8},
+    {"_methimpute_cleanup", (DL_FUNC) &_methimpute_cleanup, 0},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_methimpute(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }

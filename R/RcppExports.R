@@ -2,10 +2,10 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 fitBinomialTestHMMcontextTransition <- function(counts_total, counts_meth, context, transitionContext, distances, params, algorithm, update_procedure) {
-    .Call('methimpute_fitBinomialTestHMMcontextTransition', PACKAGE = 'methimpute', counts_total, counts_meth, context, transitionContext, distances, params, algorithm, update_procedure)
+    .Call('_methimpute_fitBinomialTestHMMcontextTransition', PACKAGE = 'methimpute', counts_total, counts_meth, context, transitionContext, distances, params, algorithm, update_procedure)
 }
 
 cleanup <- function() {
-    invisible(.Call('methimpute_cleanup', PACKAGE = 'methimpute'))
+    invisible(.Call('_methimpute_cleanup', PACKAGE = 'methimpute'))
 }
 
