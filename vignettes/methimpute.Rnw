@@ -30,7 +30,7 @@ The following example explains the necessary steps for methylation status callin
 At the end of this example you will see that positions without counts are assigned a methylation status, but the confidence (column "posteriorMax") is generally quite low for those cytosines. Column "posteriorMeth" gives the HMM posterior probability for a cytosine being methylated, which can be interpreted as a methylation level for each site. Column "status" contains the imputed and non-imputed methylation status calls.
 
 \begin{small}
-<<methylation_status_calling, results='show', message=FALSE, eval=TRUE, fig.width=15, fig.height=10, out.width='\\textwidth'>>=
+<<methylation_status_calling, results='show', message=FALSE, eval=TRUE, fig.width=15, fig.height=10, out.width='\\textwidth', fig.align='center'>>=
 library(methimpute)
 
 # ===== Step 1: Importing the data ===== #
@@ -85,15 +85,20 @@ print(model)
 
 \section{Plots and enrichment analysis}
 
-This package also offers plotting functions for a simple enrichment analysis. Let's say we are interested in the methylation level around genes and transposable elements.
+This package also offers plotting functions for a simple enrichment analysis. Let's say we are interested in the methylation level around genes and transposable elements. We would also like to see how the imputation works on cytosines with missing data compared to covered cytosines.
 
 \begin{small}
-<<enrichment_analysis, results='show', message=FALSE, eval=TRUE, fig.width=10, fig.height=6, out.width='0.5\\textwidth'>>=
+<<enrichment_analysis, results='show', message=FALSE, eval=TRUE, fig.width=10, fig.height=4, out.width='0.8\\textwidth', fig.align='center'>>=
+# Define categories to distinguish missing from covered cytosines
+model$data$category <- factor('covered', levels=c('missing', 'covered'))
+model$data$category[model$data$counts[,'total']>=1] <- 'covered'
+model$data$category[model$data$counts[,'total']==0] <- 'missing'
+
 # Note that the plots look a bit ugly because our toy data has only 200.000 datapoints.
 data(arabidopsis_genes)
-plotEnrichment(model$data, annotation=arabidopsis_genes, range = 2000)
+plotEnrichment(model$data, annotation=arabidopsis_genes, range = 2000, category.column = 'category')
 data(arabidopsis_TEs)
-plotEnrichment(model$data, annotation=arabidopsis_TEs, range = 2000)
+plotEnrichment(model$data, annotation=arabidopsis_TEs, range = 2000, category.column = 'category')
 @
 \end{small}
 
