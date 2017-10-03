@@ -2,8 +2,8 @@
 % Please edit documentation in R/methimpute-package.R
 \docType{package}
 \name{methimpute-package}
-\alias{methimpute}
 \alias{methimpute-package}
+\alias{methimpute}
 \title{methIMPUTE: Imputation-guided methylation status calling for WGBS-seq}
 \description{
 \pkg{methimpute} is an R-package for methylation status calling in Whole-Genome Bisulfite-sequencing (WGBS-seq) data. Its powerful Hidden Markov model implementation enables imputation of methylation status calls for cytosines without any coverage.
@@ -14,4 +14,3 @@ Please read the vignette for a tutorial on how to use this package. You can do t
 \author{
 Aaron Taudt
 }
-

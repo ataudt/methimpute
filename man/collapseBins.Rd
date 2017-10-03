@@ -56,4 +56,3 @@ shortdf <- collapseBins(df, column2collapseBy='context', columns2sumUp='width', 
 \author{
 Aaron Taudt
 }
-

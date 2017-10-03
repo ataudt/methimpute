@@ -1,5 +1,135 @@
 #' Call methylation status
 #' 
+#' Call methylation status of cytosines (or bins) with a separate Hidden Markov Model for each context.
+#' 
+#' The Hidden Markov model uses a binomial test for the emission densities. Transition probabilities are modeled with a distance dependent decay, specified by the parameter \code{transDist}.
+#' 
+#' @inheritParams callMethylation
+#' @return A \code{\link{methimputeBinomialHMM}} object.
+#' 
+#' @export
+#' @examples
+#'## Get some toy data
+#'file <- system.file("data","arabidopsis_toydata.RData", package="methimpute")
+#'data <- get(load(file))
+#'print(data)
+#'model <- callMethylationSeparate(data)
+#'print(model)
+#'
+callMethylationSeparate <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=2+include.intermediate, initial.params=NULL, include.intermediate=FALSE, update='independent', min.reads=0) {
+  
+    ## Variables
+    contexts <- intersect(levels(data$context), unique(data$context))
+    transitionContexts <- paste(contexts, contexts, sep='-')
+    if (!include.intermediate) {
+        states <- c('Unmethylated', 'Methylated')
+    } else {
+        states <- c('Unmethylated', 'Intermediate', 'Methylated')
+    }
+    transDistvec <- rep(Inf, length(transitionContexts))
+    names(transDistvec) <- transitionContexts
+    if (is.null(names(transDist))) {
+        transDistvec[1:length(transDistvec)] <- transDist
+    } else {
+        if (any(! names(transDist) %in% names(transDistvec))) {
+            stop("Names of 'transDist' must be ", paste0(names(transDistvec), collapse=', '), ".")
+        }
+        transDistvec[names(transDist)] <- transDist
+        rev.names <- sapply(strsplit(names(transDist), '-'), function(x) { paste0(rev(x), collapse = '-')})
+        transDistvec[rev.names] <- transDist
+    }
+  
+    ## Prepare adding of meta-data columns
+    data$distance <- numeric(length(data))
+    data$transitionContext <- factor(NA, levels=transitionContexts)
+    data$posteriorMax <- numeric(length(data))
+    data$posteriorMeth <- numeric(length(data))
+    data$posteriorUnmeth <- numeric(length(data))
+    data$status <- factor(NA, levels=states)
+    data$rc.meth.lvl <- numeric(length(data))
+    data$rc.counts <- data$counts
+    
+    cmodels <- list()
+    for (context in contexts) {
+        messageU("Running context ", context, underline = '-', overline = '-')
+        context.mask <- data$context == context
+        cdata <- data[context.mask]
+        cmodel <- callMethylation(cdata, fit.on.chrom=fit.on.chrom, transDist=transDistvec[paste0(context, '-', context)], eps=eps, max.time=max.time, max.iter=max.iter, count.cutoff=count.cutoff, verbosity=verbosity, num.threads=num.threads, initial.params=initial.params, include.intermediate=include.intermediate, update=update, min.reads=min.reads)
+        data$distance[context.mask] <- cmodel$data$distance
+        data$transitionContext[context.mask] <- cmodel$data$transitionContext
+        data$posteriorMax[context.mask] <- cmodel$data$posteriorMax
+        data$posteriorMeth[context.mask] <- cmodel$data$posteriorMeth
+        data$posteriorUnmeth[context.mask] <- cmodel$data$posteriorUnmeth
+        data$status[context.mask] <- cmodel$data$status
+        data$rc.meth.lvl[context.mask] <- cmodel$data$rc.meth.lvl
+        data$rc.counts[context.mask,] <- cmodel$data$rc.counts
+        
+        cmodel$data <- NULL
+        cmodel$segments <- NULL
+        cmodels[[context]] <- cmodel
+    }
+
+    ### Construct result object ###
+    messageU("Combining contexts ", paste0(contexts, collapse=', '), underline = '-', overline = '-')
+    ptm <- startTimedMessage("Compiling results ...")
+    r <- list()
+    class(r) <- "methimputeBinomialHMM"
+    ## Convergence info
+    convergenceInfo <- list()
+    convergenceInfo$logliks <- lapply(cmodels, function(x) { x$convergenceInfo$logliks })
+    convergenceInfo$dlogliks <- lapply(cmodels, function(x) { x$convergenceInfo$dlogliks })
+    convergenceInfo$parameterInfo <- lapply(cmodels, function(x) { x$convergenceInfo$parameterInfo })
+    convergenceInfo$time <- lapply(cmodels, function(x) { x$convergenceInfo$time })
+    r$convergenceInfo <- convergenceInfo
+    
+    ## Parameters
+    params <- list()
+    params$startProbs <- lapply(cmodels, function(x) { x$params$startProbs })
+    params$transProbs <- lapply(cmodels, function(x) { x$params$transProbs[[1]] })
+    names(params$transProbs) <- unlist(lapply(cmodels, function(x) { names(x$params$transProbs) }))
+    params$transDist <- unlist(lapply(cmodels, function(x) { x$params$transDist }))
+    names(params$transDist) <- unlist(lapply(cmodels, function(x) { names(x$params$transDist) }))
+    params$emissionParams <- list()
+    for (state in states) {
+        params$emissionParams[[state]] <- array(unlist(lapply(cmodels, function(x) { x$params$emissionParams[[state]] })), dim=c(length(contexts), 1), dimnames=list(contexts, 'prob'))
+    }
+    params$count.cutoff <- count.cutoff
+    params$weights <- lapply(cmodels, function(x) { x$params$weights[[1]] })
+    r$params <- params
+    
+    ## Parameters initial
+    params.initial <- cmodels[[1]]$params.initial
+    params.initial$startProbs_initial <- lapply(cmodels, function(x) { x$params.initial$startProbs_initial })
+    params.initial$transProbs_initial <- lapply(cmodels, function(x) { x$params.initial$transProbs_initial[[1]] })
+    names(params.initial$transProbs_initial) <- unlist(lapply(cmodels, function(x) { names(x$params.initial$transProbs_initial) }))
+    params.initial$emissionParams_initial <- list()
+    for (state in states) {
+        params.initial$emissionParams_initial[[state]] <- array(unlist(lapply(cmodels, function(x) { x$params.initial$emissionParams_initial[[state]] })), dim=c(length(contexts), 1), dimnames=list(contexts, 'prob'))
+    }
+    params.initial$transDist <- unlist(lapply(cmodels, function(x) { x$params.initial$transDist }))
+    names(params.initial$transDist) <- unlist(lapply(cmodels, function(x) { names(x$params.initial$transDist) }))
+    r$params.initial <- params.initial
+    
+    ## Segmentation
+    data.collapse <- data
+    mcols(data.collapse) <- NULL
+    data.collapse$status <- data$status
+    df <- suppressMessages( collapseBins(as.data.frame(data.collapse), column2collapseBy = 'status') )
+    segments <- methods::as(df, 'GRanges')
+    seqlengths(segments) <- seqlengths(data)[seqlevels(segments)]
+    
+    ## Data and segments
+    r$data <- data
+    r$segments <- segments
+    stopTimedMessage(ptm)
+    
+    return(r)
+}
+
+
+
+#' Call methylation status
+#' 
 #' Call methylation status of cytosines (or bins) with a Hidden Markov Model.
 #' 
 #' The Hidden Markov model uses a binomial test for the emission densities. Transition probabilities are modeled with a distance dependent decay, specified by the parameter \code{transDist}.
@@ -36,15 +166,23 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         }
     }
   
-    ### Add distance and transition context to bins ###
-    data$distance <- addDistance(data)
-    data$transitionContext <- addTransitionContext(data)
-    
     ### Assign variables ###
     update <- factor(update, levels=c('independent', 'constrained'))
     if (is.na(update)) { stop("Argument 'update' must be one of c('independent', 'constrained').") }
     contexts <- intersect(levels(data$context), unique(data$context))
     ncontexts <- length(contexts)
+    if (!include.intermediate) {
+        states <- c('Unmethylated', 'Methylated')
+    } else {
+        states <- c('Unmethylated', 'Intermediate', 'Methylated')
+    }
+    numstates <- length(states)
+    counts <- data$counts
+    
+    ### Add distance and transition context to bins ###
+    data$distance <- addDistance(data)
+    data$transitionContext <- addTransitionContext(data)
+    # Assign variables
     transitionContexts <- levels(data$transitionContext)
     transDistvec <- rep(Inf, length(transitionContexts))
     names(transDistvec) <- transitionContexts
@@ -58,17 +196,9 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         rev.names <- sapply(strsplit(names(transDist), '-'), function(x) { paste0(rev(x), collapse = '-')})
         transDistvec[rev.names] <- transDist
     }
-    if (!include.intermediate) {
-        states <- c('Unmethylated', 'Methylated')
-    } else {
-        states <- c('Unmethylated', 'Intermediate', 'Methylated')
-    }
-    numstates <- length(states)
-    counts <- data$counts
     distances <- data$distance
     context <- factor(data$context, levels=contexts)
     transitionContext <- factor(data$transitionContext, levels=transitionContexts)
-    
     
     ## Filter counts by cutoff
     mask <- counts[,'total'] > count.cutoff
@@ -225,10 +355,11 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         data$posteriorUnmeth <- hmm$posteriors["Unmethylated",]
         data$status <- factor(states, levels=states)[hmm$states+1]
         # Recalibrated methylation levels
+        data.context <- as.character(data$context)
         if (include.intermediate) {
-            data$rc.meth.lvl <- r$params$emissionParams$Unmethylated[data$context,] * data$posteriorUnmeth + r$params$emissionParams$Intermediate[data$context,] * (1 - data$posteriorMeth - data$posteriorUnmeth) + r$params$emissionParams$Methylated[data$context,] * data$posteriorMeth
+            data$rc.meth.lvl <- r$params$emissionParams$Unmethylated[data.context,] * data$posteriorUnmeth + r$params$emissionParams$Intermediate[data.context,] * (1 - data$posteriorMeth - data$posteriorUnmeth) + r$params$emissionParams$Methylated[data.context,] * data$posteriorMeth
         } else {
-            data$rc.meth.lvl <- r$params$emissionParams$Unmethylated[data$context,] * data$posteriorUnmeth + r$params$emissionParams$Methylated[data$context,] * data$posteriorMeth
+            data$rc.meth.lvl <- r$params$emissionParams$Unmethylated[data.context,] * data$posteriorUnmeth + r$params$emissionParams$Methylated[data.context,] * data$posteriorMeth
         }
         # ## Recalibrated counts
         # data$rc.counts <- data$counts

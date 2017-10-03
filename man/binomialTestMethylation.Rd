@@ -32,4 +32,3 @@ data <- get(load(file))
 data$binomial <- binomialTestMethylation(data, conversion.rate=0.998)
 
 }
-

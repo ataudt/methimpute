@@ -10,4 +10,3 @@
 \item \code{\link{methimputeBinomialHMM}}: Returned by \code{\link{callMethylation}}.
 }
 }
-

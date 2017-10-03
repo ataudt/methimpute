@@ -29,4 +29,3 @@ full.methylome <- inflateMethylome(bsseeker.data, arabidopsis_toydata)
 full.methylome
 
 }
-

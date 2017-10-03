@@ -32,4 +32,3 @@ The \code{$data} entry in this object contains the following columns:
 \seealso{
 \code{\link{methimpute-objects}}
 }
-

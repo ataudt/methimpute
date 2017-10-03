@@ -15,4 +15,3 @@ A matrix with posteriors.
 \description{
 Transform the 'posteriorMeth', 'posteriorMax', and 'status' columns into original posteriors from the HMM.
 }
-

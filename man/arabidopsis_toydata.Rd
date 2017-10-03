@@ -12,4 +12,3 @@ A \code{\link{methimputeData}} object for demonstration purposes in examples of 
 data(arabidopsis_toydata)
 print(arabidopsis_toydata)
 }
-

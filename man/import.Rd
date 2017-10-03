@@ -2,9 +2,9 @@
 % Please edit documentation in R/importData.R
 \name{import}
 \alias{import}
+\alias{importMethylpy}
 \alias{importBSSeeker}
 \alias{importBismark}
-\alias{importMethylpy}
 \title{Methimpute data import}
 \usage{
 importMethylpy(file, chrom.lengths = NULL)
@@ -32,6 +32,7 @@ This page provides an overview of all \pkg{\link{methimpute}} data import functi
 
 \item \code{importBismark}: Import a Bismark methylation extractor file.
 }}
+
 \examples{
 ## Get an example file in BSSeeker format
 file <- system.file("extdata","arabidopsis_bsseeker.txt.gz", package="methimpute")
@@ -45,4 +46,3 @@ arabidopsis_chromosomes$chromosome <- sub('chr', '', arabidopsis_chromosomes$chr
 bismark.data <- importBismark(file, chrom.lengths=arabidopsis_chromosomes)
 
 }
-

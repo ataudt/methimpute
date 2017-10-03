@@ -9,4 +9,3 @@ A \code{\link[GenomicRanges]{GRanges}} object containing cytosine coordinates wi
 \seealso{
 \code{\link{methimpute-objects}}
 }
-

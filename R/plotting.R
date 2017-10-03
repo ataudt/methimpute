@@ -8,7 +8,6 @@
 #' @return A \code{\link[ggplot2]{ggplot}} object.
 #' @name plotting
 #' @import ggplot2
-#' @importFrom cowplot plot_grid
 #' @examples 
 #'## Get some toy data
 #'file <- system.file("data","arabidopsis_toydata.RData",

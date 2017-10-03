@@ -26,4 +26,3 @@ data <- loadFromFiles(file)
 print(data)
 
 }
-

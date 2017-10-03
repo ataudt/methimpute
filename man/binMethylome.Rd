@@ -22,4 +22,3 @@ A list() with a \code{\link[GenomicRanges]{GRanges}} objects for each context.
 \description{
 Bin cytosine positions, methylation counts and state in equidistant windows.
 }
-

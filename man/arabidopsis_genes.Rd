@@ -12,4 +12,3 @@ A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in exam
 data(arabidopsis_genes)
 print(arabidopsis_genes)
 }
-

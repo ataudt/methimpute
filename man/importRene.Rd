@@ -17,4 +17,3 @@ A \code{\link{methimputeData}} object.
 \description{
 Import a Rene methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 }
-

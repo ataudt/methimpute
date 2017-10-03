@@ -30,7 +30,7 @@ The following example explains the necessary steps for methylation status callin
 At the end of this example you will see that positions without counts are assigned a methylation status, but the confidence (column "posteriorMax") is generally quite low for those cytosines. Column "posteriorMeth" gives the HMM posterior probability for a cytosine being methylated, which can be interpreted as a methylation level for each site. Column "status" contains the imputed and non-imputed methylation status calls.
 
 \begin{small}
-<<methylation_status_calling, results='show', message=FALSE, eval=TRUE, fig.width=15, fig.height=10, out.width='\\textwidth', fig.align='center'>>=
+<<methylation_status_calling, results='show', message=FALSE, eval=TRUE, fig.width=10, fig.height=7, out.width='\\textwidth', fig.align='center'>>=
 library(methimpute)
 
 # ===== Step 1: Importing the data ===== #

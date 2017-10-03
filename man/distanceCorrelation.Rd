@@ -4,12 +4,14 @@
 \alias{distanceCorrelation}
 \title{Distance correlation}
 \usage{
-distanceCorrelation(data, distances = 0:50)
+distanceCorrelation(data, distances = 0:50, separate.contexts = FALSE)
 }
 \arguments{
 \item{data}{A \code{\link{methimputeData}} object.}
 
 \item{distances}{An integer vector specifying the distances for which the correlation will be calculated.}
+
+\item{separate.contexts}{A logical indicating whether contexts are treated separately. If set to \code{TRUE}, correlations will only be calculated between cytosines of the same context.}
 }
 \value{
 A list() with an array containing the correlation values and the corresponding \code{\link[ggplot2]{ggplot}}.
@@ -26,4 +28,3 @@ distcor <- distanceCorrelation(data)
 print(distcor$plot)
 
 }
-

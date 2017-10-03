@@ -22,4 +22,3 @@ pie(1:length(cols), col=cols, labels=names(cols))
 \seealso{
 \code{\link{plotting}}
 }
-

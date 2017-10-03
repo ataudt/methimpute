@@ -26,4 +26,3 @@ model <- callMethylation(data, max.iter=10)
 exportMethylome(model, filename = tempfile())
 
 }
-

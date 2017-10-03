@@ -12,4 +12,3 @@ A data.frame with chromosome lengths for Arabidopsis.
 data(arabidopsis_chromosomes)
 print(arabidopsis_chromosomes)
 }
-

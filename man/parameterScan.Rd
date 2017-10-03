@@ -21,4 +21,3 @@ A data.frame with loglikelihood values.
 \description{
 Perform a parameter scan for an arbitrary parameter.
 }
-

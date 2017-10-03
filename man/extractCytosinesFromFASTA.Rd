@@ -48,4 +48,3 @@ cytosines <- extractCytosinesFromFASTA(filepath,
 table(cytosines$context)
 
 }
-

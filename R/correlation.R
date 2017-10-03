@@ -4,6 +4,7 @@
 #' 
 #' @param data A \code{\link{methimputeData}} object.
 #' @param distances An integer vector specifying the distances for which the correlation will be calculated.
+#' @param separate.contexts A logical indicating whether contexts are treated separately. If set to \code{TRUE}, correlations will only be calculated between cytosines of the same context.
 #' @return A list() with an array containing the correlation values and the corresponding \code{\link[ggplot2]{ggplot}}.
 #' 
 #' @export
@@ -15,16 +16,17 @@
 #'distcor <- distanceCorrelation(data)
 #'print(distcor$plot)
 #'
-distanceCorrelation <- function(data, distances=0:50) {
+distanceCorrelation <- function(data, distances=0:50, separate.contexts=FALSE) {
     
     ## Contexts
     contexts <- intersect(levels(data$context), unique(data$context))
     
-    ## Add ratio column
-    data$ratio <- data$counts[,'methylated'] / data$counts[,'total']
+    ## Add meth.lvl column
+    data$meth.lvl <- data$counts[,'methylated'] / data$counts[,'total']
+    
     ### Add distance and transition context to bins ###
-    data$distance <- addDistance(data)
-    data$transitionContext <- addTransitionContext(data)
+    data$distance <- addDistance(data, separate.contexts=separate.contexts)
+    data$transitionContext <- addTransitionContext(data, separate.contexts=separate.contexts)
   
     ## Loop through distances
     ptm <- startTimedMessage("Calculating correlations\n")
@@ -37,10 +39,10 @@ distanceCorrelation <- function(data, distances=0:50) {
             message(", ", i1, appendLF=FALSE)
         }
         ind <- which(data$distance == i1)
-        ratio <- data$ratio[ind]
-        ratio.shift <- data$ratio[ind-1]
+        meth.lvl <- data$meth.lvl[ind]
+        meth.lvl.shift <- data$meth.lvl[ind-1]
         # ## All contexts
-        # cor <- tryCatch(cor(ratio, ratio.shift, use='complete.obs'), error = function(e) NA, warning = function(w) NA)
+        # cor <- tryCatch(cor(meth.lvl, meth.lvl.shift, use='complete.obs'), error = function(e) NA, warning = function(w) NA)
         # cors[[as.character(i1)]] <- data.frame(correlation = cor, weight = length(ind))
         ## Context specific
         context.transition <- data$transitionContext[ind]
@@ -51,8 +53,8 @@ distanceCorrelation <- function(data, distances=0:50) {
                 context <- paste0(contexts[c1], '-', contexts[c2])
                 context.rev <- paste0(contexts[c2], '-', contexts[c1])
                 mask <- context.transition == context | context.transition == context.rev
-                ratio1 <- ratio[mask]
-                ratio2 <- ratio.shift[mask]
+                ratio1 <- meth.lvl[mask]
+                ratio2 <- meth.lvl.shift[mask]
                 cor.matrix[contexts[c1], contexts[c2]] <- tryCatch(cor(ratio1, ratio2, use='complete.obs'), error = function(e) NA, warning = function(w) NA)
                 cor.matrix[contexts[c2], contexts[c1]] <- cor.matrix[contexts[c1], contexts[c2]]
                 weight.matrix[contexts[c1], contexts[c2]] <- length(ratio1)
@@ -66,48 +68,32 @@ distanceCorrelation <- function(data, distances=0:50) {
     stopTimedMessage(ptm)
     
     ## Context correlation plots
-    ggplts <- list()
     maxweights <- numeric()
+    dfs <- list()
     for (c1 in 1:length(contexts)) {
         for (c2 in 1:length(contexts)) {
             context.transition <- paste0(contexts[c1], '-', contexts[c2])
-            if (c1 > c2) {
-                ggplts[context.transition] <- list(NULL)
-            } else {
-                df <- data.frame(distance = distances, correlation = cor.array[c1,c2,,'correlation'], weight = cor.array[c1,c2,,'weight'])
+            if (c1 <= c2) {
+                df <- data.frame(distance = distances, correlation = cor.array[c1,c2,,'correlation'], weight = cor.array[c1,c2,,'weight'], from = contexts[c1], to = contexts[c2])
                 df$logweight <- log(df$weight+1)
-                ggplt <- ggplot(df) + theme_bw() + geom_line(aes_string(x='distance', y='correlation', alpha='logweight'))
-                ggplt <- ggplt + xlab('distance in [bp]') + ggtitle(context.transition)
-                ggplt <- ggplt + coord_cartesian(ylim=c(0,1))
-                ggplts[[context.transition]] <- ggplt
                 maxweights[context.transition] <- max(df$logweight, na.rm = TRUE)
+                dfs[[context.transition]] <- df
             }
         }
     }
     maxweight <- max(maxweights, na.rm = TRUE)
     miny <- min(cor.array, na.rm = TRUE)
-    for (i1 in 1:length(ggplts)) {
-        if (!is.null(ggplts[[i1]])) {
-            ggplts[[i1]] <- ggplts[[i1]] + scale_alpha_continuous(name='log(weight+1)', limits=c(0,maxweight))
-            ggplts[[i1]] <- ggplts[[i1]] + coord_cartesian(ylim=c(min(0, miny), 1))
-            if (miny < 0) {
-                ggplts[[i1]] <- ggplts[[i1]] + geom_hline(aes_string('yintercept'=0), linetype=2, alpha=0.5)
-            }
-        }
-    }
-    cowplt <- suppressMessages( suppressWarnings( cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv') ) )
-            
-    # ## Plot correlation
-    # df <- do.call(rbind, cors)
-    # df$distance <- distances
-    # df$logweight <- log(df$weight+1)
-    # ggplt <- ggplot(df) + theme_bw() + geom_line(aes_string(x='distance', y='correlation', alpha='logweight'))
-    # ggplt <- ggplt + xlab('distance in [bp]')
-    # ggplt <- ggplt + coord_cartesian(ylim=c(0,1))
-    # ggplt <- ggplt + scale_alpha_continuous(name='log(weight+1)')
-    # r <- list(data=list(all = df, context = cor.array), plot=list(all = ggplt, context = cowplt))
     
-    r <- list(data=cor.array, plot=cowplt)
+    ## Plot correlation
+    df <- do.call(rbind, dfs)
+    ggplt <- ggplot(df) + theme_bw() + geom_line(aes_string(x='distance', y='correlation', alpha='logweight'))
+    ggplt <- ggplt + xlab('distance in [bp]')
+    ggplt <- ggplt + facet_grid(from ~ to)
+    if (miny < 0) {
+        ggplt <- ggplt + geom_hline(aes_string('yintercept'=0), linetype=2, alpha=0.5)
+    }
+    
+    r <- list(data=cor.array, plot=ggplt, separate.contexts=separate.contexts)
     return(r)
 }
     
@@ -117,6 +103,7 @@ distanceCorrelation <- function(data, distances=0:50) {
 #' 
 #' @param distcor The output produced by \code{\link{distanceCorrelation}}.
 #' @param skip Skip the first n cytosines for the fitting. This can be necessary to avoid periodicity artifacts due to the context definition.
+#' @param plot.parameters Whether to plot fitted parameters on to the plot or not.
 #' @return A list() with fitted \code{transDist} parameters and the corresponding \code{\link[ggplot2]{ggplot}}.
 #' 
 #' @importFrom stats na.omit coefficients
@@ -131,22 +118,25 @@ distanceCorrelation <- function(data, distances=0:50) {
 #'distcor <- distanceCorrelation(data)
 #'fit <- estimateTransDist(distcor)
 #'print(fit)
-estimateTransDist <- function(distcor, skip=2) {
+estimateTransDist <- function(distcor, skip=2, plot.parameters=TRUE) {
   
     ## Context correlation fits and plots
     contexts <- dimnames(distcor$data)[[1]]
     cor.array <- distcor$data
-    ggplts <- list()
     maxweights <- numeric()
     params.list <- list()
     miny <- min(cor.array, na.rm = TRUE)
+    dfs <- list()
     for (c1 in 1:length(contexts)) {
         for (c2 in 1:length(contexts)) {
             context.transition <- paste0(contexts[c1], '-', contexts[c2])
-            if (c1 > c2) {
-                ggplts[context.transition] <- list(NULL)
-            } else {
-                df <- data.frame(distance = as.numeric(dimnames(cor.array)[[3]]), correlation = cor.array[c1,c2,,'correlation'], weight = cor.array[c1,c2,,'weight'])
+            if (distcor$separate.contexts) {
+                if (c1 != c2) {
+                    next
+                }
+            }
+            if (c1 <= c2) {
+                df <- data.frame(distance = as.numeric(dimnames(cor.array)[[3]]), correlation = cor.array[c1,c2,,'correlation'], weight = cor.array[c1,c2,,'weight'], from = contexts[c1], to = contexts[c2])
                 
                 ## Fit
                 y <- df$correlation[(skip+1):nrow(df)]
@@ -189,27 +179,29 @@ estimateTransDist <- function(distcor, skip=2) {
                 ## Plot
                 df$correlation.fit <- p$a0 * exp(-df$distance/p$D)
                 df$logweight <- log(df$weight+1)
-                ggplt <- ggplot(df) + theme_bw() + geom_line(aes_string(x='distance', y='correlation', alpha='logweight'))
-                ggplt <- ggplt + xlab('distance in [bp]') + ggtitle(context.transition)
-                ggplt <- ggplt + geom_line(aes_string(x='distance', y='correlation.fit'), col='blue')
-                ggplt <- ggplt + ggtitle(paste0(context.transition, ": a0 = ", round(p$a0, 2), ", D = ", round(p$D)))
-                ggplts[[context.transition]] <- ggplt
+                dfs[[context.transition]] <- df
                 maxweights[context.transition] <- max(df$logweight, na.rm = TRUE)
             }
         }
     }
     maxweight <- max(maxweights, na.rm = TRUE)
-    for (i1 in 1:length(ggplts)) {
-        if (!is.null(ggplts[[i1]])) {
-            ggplts[[i1]] <- ggplts[[i1]] + scale_alpha_continuous(name='log(weight+1)', limits=c(0,maxweight))
-            ggplts[[i1]] <- ggplts[[i1]] + coord_cartesian(ylim=c(min(0, miny), 1))
-            if (miny < 0) {
-                ggplts[[i1]] <- ggplts[[i1]] + geom_hline(aes_string('yintercept'=0), linetype=2, alpha=0.5)
-            }
-        }
-    }
-    cowplt <- suppressMessages( suppressWarnings( cowplot::plot_grid(plotlist = ggplts, ncol=length(contexts), align='hv') ) )
             
+    ## Plot correlation
+    df <- do.call(rbind, dfs)
+    df$a0 <- round(sapply(params.list[paste0(df$from, '-', df$to)], '[[', 'a0'), 2)
+    df$D <- round(sapply(params.list[paste0(df$from, '-', df$to)], '[[', 'D'), 0)
+    df$params <- paste0("a0 = ", df$a0, ", D = ", df$D)
+    ggplt <- ggplot(df) + theme_bw() + geom_line(aes_string(x='distance', y='correlation', alpha='logweight'))
+    ggplt <- ggplt + geom_line(aes_string(x='distance', y='correlation.fit'), col='blue')
+    if (plot.parameters) {
+        ggplt <- ggplt + geom_text(aes_string(label='params'), x=max(df$distance, na.rm = TRUE), y=max(df$correlation, na.rm = TRUE), vjust=1, hjust=1)
+    }
+    ggplt <- ggplt + xlab('distance in [bp]')
+    ggplt <- ggplt + facet_grid(from ~ to)
+    if (miny < 0) {
+        ggplt <- ggplt + geom_hline(aes_string('yintercept'=0), linetype=2, alpha=0.5)
+    }
+    
     transDist <- sapply(params.list, '[[', 'D')
-    return(list(transDist=transDist, plot=cowplt))
+    return(list(transDist=transDist, plot=ggplt))
 }

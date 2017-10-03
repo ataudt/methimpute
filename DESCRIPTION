@@ -20,8 +20,7 @@ Imports:
     IRanges,
     Biostrings,
     reshape2,
-    minpack.lm,
-    cowplot
+    minpack.lm
 Suggests:
     knitr,
     BiocStyle
@@ -30,5 +29,5 @@ License: Artistic-2.0
 LazyLoad: yes
 VignetteBuilder: knitr
 Packaged: 2014-05-03 00:00:00 CET+1; Taudt
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
 biocViews: Software, DNAMethylation, Epigenetics, HiddenMarkovModel, Sequencing, Coverage

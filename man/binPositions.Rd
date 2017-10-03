@@ -17,4 +17,3 @@ A \code{\link[GenomicRanges]{GRanges}} object.
 \description{
 Bin cytosine positions in equidistant bins.
 }
-

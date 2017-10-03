@@ -4,12 +4,14 @@
 \alias{estimateTransDist}
 \title{\code{transDist} parameter}
 \usage{
-estimateTransDist(distcor, skip = 2)
+estimateTransDist(distcor, skip = 2, plot.parameters = TRUE)
 }
 \arguments{
 \item{distcor}{The output produced by \code{\link{distanceCorrelation}}.}
 
 \item{skip}{Skip the first n cytosines for the fitting. This can be necessary to avoid periodicity artifacts due to the context definition.}
+
+\item{plot.parameters}{Whether to plot fitted parameters on to the plot or not.}
 }
 \value{
 A list() with fitted \code{transDist} parameters and the corresponding \code{\link[ggplot2]{ggplot}}.
@@ -26,4 +28,3 @@ distcor <- distanceCorrelation(data)
 fit <- estimateTransDist(distcor)
 print(fit)
 }
-
