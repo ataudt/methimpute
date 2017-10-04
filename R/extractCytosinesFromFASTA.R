@@ -37,7 +37,7 @@
 #' table(cytosines$context)
 #' 
 extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anchor.C = NULL) {
-  
+
     ### C anchors ###
     if (is.null(anchor.C)) {
         anchor.C <- regexpr('C', contexts)[1:length(contexts)]
@@ -54,7 +54,7 @@ extractCytosinesFromFASTA <- function(file, contexts = c('CG','CHG','CHH'), anch
     } else {
         context.names <- names(contexts)
     }
-  
+
     ### Read file
     fasta <- Biostrings::readDNAStringSet(file)
     

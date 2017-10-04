@@ -160,7 +160,7 @@ importBismark <- function(file, chrom.lengths=NULL) {
 #' 
 #' @importFrom utils read.table
 importRene <- function(file, chrom.lengths=NULL) {
-  
+
     classes <- c('character', 'numeric', 'character', 'NULL', 'character', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric')
     ptm <- startTimedMessage("Reading file ", file, " ...")
     data.raw <- utils::read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
@@ -192,7 +192,7 @@ importRene <- function(file, chrom.lengths=NULL) {
     
     return(data)
 }
-  
+
 #' #' Import a Bismark methylation extractor file
 #' #' 
 #' #' Import a Bismark methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.

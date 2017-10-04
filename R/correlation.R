@@ -27,7 +27,7 @@ distanceCorrelation <- function(data, distances=0:50, separate.contexts=FALSE) {
     ### Add distance and transition context to bins ###
     data$distance <- addDistance(data, separate.contexts=separate.contexts)
     data$transitionContext <- addTransitionContext(data, separate.contexts=separate.contexts)
-  
+
     ## Loop through distances
     ptm <- startTimedMessage("Calculating correlations\n")
     # cors <- list()
@@ -119,7 +119,7 @@ distanceCorrelation <- function(data, distances=0:50, separate.contexts=FALSE) {
 #'fit <- estimateTransDist(distcor)
 #'print(fit)
 estimateTransDist <- function(distcor, skip=2, plot.parameters=TRUE) {
-  
+
     ## Context correlation fits and plots
     contexts <- dimnames(distcor$data)[[1]]
     cor.array <- distcor$data
@@ -144,29 +144,29 @@ estimateTransDist <- function(distcor, skip=2, plot.parameters=TRUE) {
                 weight <- df$weight[(skip+1):nrow(df)]
                 startvalues <- list(a0 = stats::na.omit(y)[1], D = 50)
                 p <- tryCatch({
-                  fit <- minpack.lm::nlsLM(y ~ a0 * exp(-x/D), start=startvalues, weights=weight)
-                  s <- summary(fit)
-                  c <- stats::coefficients(s)
-                  params <- c[1:length(startvalues)]
-                  names(params) <- names(startvalues)
-                  as.list(params)
+                    fit <- minpack.lm::nlsLM(y ~ a0 * exp(-x/D), start=startvalues, weights=weight)
+                    s <- summary(fit)
+                    c <- stats::coefficients(s)
+                    params <- c[1:length(startvalues)]
+                    names(params) <- names(startvalues)
+                    as.list(params)
                 }, error = function(e) {
-                  NULL
+                    NULL
                 })
                 if (is.null(p)) {
                     startvalues <- list(a0 = stats::na.omit(y)[1])
                     p <- tryCatch({
-                      fit <- minpack.lm::nlsLM(y ~ a0 * exp(-x/Inf), start=startvalues, weights=weight)
-                      s <- summary(fit)
-                      c <- stats::coefficients(s)
-                      params <- c[1:length(startvalues)]
-                      names(params) <- names(startvalues)
-                      params <- as.list(params)
-                      params$D <- Inf
-                      params
+                        fit <- minpack.lm::nlsLM(y ~ a0 * exp(-x/Inf), start=startvalues, weights=weight)
+                        s <- summary(fit)
+                        c <- stats::coefficients(s)
+                        params <- c[1:length(startvalues)]
+                        names(params) <- names(startvalues)
+                        params <- as.list(params)
+                        params$D <- Inf
+                        params
                     }, error = function(e) {
-                      startvalues$D <- Inf
-                      startvalues
+                        startvalues$D <- Inf
+                        startvalues
                     })
                 }
                 

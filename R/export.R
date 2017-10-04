@@ -16,7 +16,7 @@
 #'exportMethylome(model, filename = tempfile())
 #'
 exportMethylome <- function(model, filename) {
-  
+
     ptm <- startTimedMessage("Writing to file ", filename, " ...")
     data <- model$data
     df <- methods::as(data, 'data.frame')

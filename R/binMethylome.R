@@ -8,7 +8,7 @@
 #' 
 #' @importFrom stats aggregate
 binCounts <- function(data, binsize) {
-  
+
     ptm <- startTimedMessage("Making fixed-width bins with ", binsize, "bp ...")
     chrom.lengths.floor <- floor(seqlengths(data) / binsize) * binsize
     tiles <- GenomicRanges::tileGenome(chrom.lengths.floor, tilewidth=binsize)
@@ -41,7 +41,7 @@ binCounts <- function(data, binsize) {
 #' @return A \code{\link[GenomicRanges]{GRanges}} object.
 #' 
 binPositions <- function(data, binsize) {
-  
+
     ptm <- startTimedMessage("Making fixed-width bins with ", binsize, "bp ...")
     chrom.lengths.floor <- floor(seqlengths(data) / binsize) * binsize
     tiles <- GenomicRanges::tileGenome(chrom.lengths.floor, tilewidth=binsize)
@@ -86,7 +86,7 @@ binPositions <- function(data, binsize) {
 #' 
 #' @importFrom stats aggregate
 binMethylome <- function(data, binsize, contexts='total', columns.average=c('posteriorMeth')) {
-  
+
     ptm <- startTimedMessage("Making fixed-width bins with ", binsize, "bp ...")
     chrom.lengths.floor <- floor(seqlengths(data) / binsize) * binsize
     tiles <- GenomicRanges::tileGenome(chrom.lengths.floor, tilewidth=binsize)
@@ -107,7 +107,7 @@ binMethylome <- function(data, binsize, contexts='total', columns.average=c('pos
             mask <- data$context == context
             data.context <- data[mask]
         }
-      
+
         ptm <- startTimedMessage("Counting cytosine overlaps ...")
         bins$cytosines <- countOverlaps(bins, data.context)
         stopTimedMessage(ptm)

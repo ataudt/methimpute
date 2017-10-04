@@ -17,7 +17,7 @@
 #'print(model)
 #'
 callMethylationSeparate <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=2+include.intermediate, initial.params=NULL, include.intermediate=FALSE, update='independent', min.reads=0) {
-  
+
     ## Variables
     contexts <- intersect(levels(data$context), unique(data$context))
     transitionContexts <- paste(contexts, contexts, sep='-')
@@ -38,7 +38,7 @@ callMethylationSeparate <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=
         rev.names <- sapply(strsplit(names(transDist), '-'), function(x) { paste0(rev(x), collapse = '-')})
         transDistvec[rev.names] <- transDist
     }
-  
+
     ## Prepare adding of meta-data columns
     data$distance <- numeric(length(data))
     data$transitionContext <- factor(NA, levels=transitionContexts)
@@ -158,14 +158,14 @@ callMethylationSeparate <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=
 #'model <- callMethylation(data)
 #'print(model)
 callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=2+include.intermediate, initial.params=NULL, include.intermediate=FALSE, update='independent', min.reads=0) {
-  
+
     ### Input checks ###
     if (!is.null(fit.on.chrom)) {
         if (!fit.on.chrom %in% seqlevels(data)) {
             stop("Cannot find 'fit.on.chrom' = ", fit.on.chrom, " in the data.")
         }
     }
-  
+
     ### Assign variables ###
     update <- factor(update, levels=c('independent', 'constrained'))
     if (is.na(update)) { stop("Argument 'update' must be one of c('independent', 'constrained').") }
@@ -213,7 +213,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         transitionContext <- transitionContext[mask]
         distances <- distances[mask]
     }
-  
+
     ### Initial probabilities ###
     if (is.null(initial.params)) {
         transProbs_initial <- list()
@@ -255,7 +255,7 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         startProbs_initial <- model.init$params$startProbs
         emissionParams_initial <- model.init$params$emissionParams
     }
-  
+
     ### Define parameters for C function ###
     params <- list()
     params$startProbs_initial <- startProbs_initial
@@ -422,14 +422,14 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
 #'data$binomial <- binomialTestMethylation(data, conversion.rate=0.998)
 #'
 binomialTestMethylation <- function(data, conversion.rate, min.coverage=3, p.threshold=0.05) {
-  
+
     p <- stats::pbinom(q = data$counts[,'methylated']-1, size = data$counts[,'total'], prob = conversion.rate, lower.tail = FALSE)
     p[data$counts[,'total'] < min.coverage] <- NA
     p <- stats::p.adjust(p, method = 'BY')
     levels <- c("Unmethylated", "Methylated")
     methylated <- factor(levels[c(1,2)][(p <= p.threshold)+1], levels=levels)
     return(methylated)
-  
+
 }
 
 #' #' Make a multivariate segmentation

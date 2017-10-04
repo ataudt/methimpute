@@ -55,7 +55,7 @@ getStateColors <- function(states=NULL) {
         return(state.colors[states])
     }
 }
- 
+
 
 #' Transform genomic coordinates
 #'
@@ -64,12 +64,12 @@ getStateColors <- function(states=NULL) {
 #' @param gr A \code{\link{GRanges}} object.
 #' @return The input \code{\link{GRanges}} with two additional metadata columns 'start.genome' and 'end.genome'.
 transCoord <- function(gr) {
-  cum.seqlengths <- cumsum(as.numeric(seqlengths(gr)))
-  cum.seqlengths.0 <- c(0,cum.seqlengths[-length(cum.seqlengths)])
-  names(cum.seqlengths.0) <- seqlevels(gr)
-  gr$start.genome <- start(gr) + cum.seqlengths.0[as.character(seqnames(gr))]
-  gr$end.genome <- end(gr) + cum.seqlengths.0[as.character(seqnames(gr))]
-  return(gr)
+    cum.seqlengths <- cumsum(as.numeric(seqlengths(gr)))
+    cum.seqlengths.0 <- c(0,cum.seqlengths[-length(cum.seqlengths)])
+    names(cum.seqlengths.0) <- seqlevels(gr)
+    gr$start.genome <- start(gr) + cum.seqlengths.0[as.character(seqnames(gr))]
+    gr$end.genome <- end(gr) + cum.seqlengths.0[as.character(seqnames(gr))]
+    return(gr)
 }
 
 
@@ -78,7 +78,7 @@ transCoord <- function(gr) {
 #' @importFrom stats dbinom
 #' @export
 plotHistogram <- function(model, total.counts, binwidth=1) {
-  
+
     ## Get cross section at total counts ##
     counts <- model$data$counts
     mask.crosssec <- counts[,'total'] == total.counts
@@ -132,14 +132,14 @@ plotHistogram <- function(model, total.counts, binwidth=1) {
     ggplt <- ggplt + ggtitle('Fitted distributions')
         
     return(ggplt)
-      
+
 }
 
 
 #' @describeIn plotting Plot a scatter plot of read counts colored by methylation status.
 #' @export
 plotScatter <- function(model, datapoints=1000) {
-  
+
     contexts <- intersect(levels(model$data$context), unique(model$data$context))
     ggplts <- list()
     limits <- list()
@@ -178,7 +178,7 @@ plotScatter <- function(model, datapoints=1000) {
 #' @importFrom reshape2 melt
 #' @export
 plotTransitionProbs <- function(model) {
-  
+
     if (is.list(model$params$transProbs)) {
         As <- model$params$transProbs
     } else if (is.matrix(model$params$transProbs)) {
@@ -195,7 +195,7 @@ plotTransitionProbs <- function(model) {
     ggplt <- ggplt + ggtitle('Transition probabilities')
     
     return(ggplt)
-  
+
 }
 
 insertNULL <- function(plotlist) {
@@ -253,15 +253,15 @@ plotConvergence <- function(model) {
 #' @param df.list A list() of data.frames, output from \code{plotEnrichment(..., plot=FALSE)}. If specified, option \code{data} will be ignored.
 #' @export
 plotEnrichment <- function(model, annotation, windowsize=100, insidewindows=20, range=1000, category.column=NULL, plot=TRUE, df.list=NULL) {
-  ## For debugging
-  # windowsize=100; insidewindows=20; range=1000; category.column=NULL
-  # annotation <- arabidopsis_genes
-  # model$data$imputed <- FALSE
-  # model$data$imputed[model$data$counts[,'total'] == 0] <- TRUE
-  # model$data$imputed <- factor(model$data$imputed)
-  # category.column <- 'imputed'
-  # data <- model$data
-  
+    ## For debugging
+    # windowsize=100; insidewindows=20; range=1000; category.column=NULL
+    # annotation <- arabidopsis_genes
+    # model$data$imputed <- FALSE
+    # model$data$imputed[model$data$counts[,'total'] == 0] <- TRUE
+    # model$data$imputed <- factor(model$data$imputed)
+    # category.column <- 'imputed'
+    # data <- model$data
+
     if (class(model) == 'methimputeBinomialHMM') {
         data <- model$data
         distr <- model$params$emissionParams
@@ -290,7 +290,7 @@ plotEnrichment <- function(model, annotation, windowsize=100, insidewindows=20, 
         
         ## Subset annotation to data range
         annotation <- subsetByOverlaps(annotation, data)
-      
+
         overlaps.rc.meth.lvl <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
         overlaps.meth.lvl <- array(NA, dim=c(length(levels(data$context)), length(categories), range%/%windowsize, 2, 2), dimnames=list(context=levels(data$context), category=categories, distance=1:(range%/%windowsize), what=c('mean', 'weight'), where=c('upstream', 'downstream')))
         ## Upstream and downstream annotation
@@ -438,7 +438,7 @@ plotEnrichment <- function(model, annotation, windowsize=100, insidewindows=20, 
         # cowplt <- cowplot::plot_grid(plotlist = ggplts, align = 'v', nrow=2, rel_heights=c(2,1))
         # plotlist[[name]] <- cowplt
     }
-  
+
     if (plot) {
         return(plotlist)
     }
@@ -446,13 +446,13 @@ plotEnrichment <- function(model, annotation, windowsize=100, insidewindows=20, 
 
 
 plotTransitionDistances <- function(model) {
-  
+
     df <- as.data.frame(mcols(model$data)[c('transitionContext', 'distance')])
     df <- df[!is.na(df$transitionContext),]
     ggplt <- ggplot(df) + geom_histogram(aes_string(x='distance', y='..density..'), binwidth=1, fill='white', col='black') + theme_bw()
     ggplt <- ggplt + facet_wrap(~transitionContext, ncol = length(levels(model$data$context)))
     return(ggplt)
-  
+
 }
 
 
@@ -464,7 +464,7 @@ plotTransitionDistances <- function(model) {
 #' @param cutoffs A vector with values that are plotted as horizontal lines. The names of the vector must match the context levels in \code{data$context}.
 #' @export
 plotPosteriorDistance <- function(model, datapoints=1e6, binwidth=5, max.coverage.y=0, min.coverage.x=3, xmax=200, xbreaks.interval=xmax/10, cutoffs=NULL) {
-  
+
     if (class(model) == 'methimputeBinomialHMM') {
         data <- model$data
     } else if (class(model) == 'GRanges') {

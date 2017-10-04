@@ -8,7 +8,7 @@
 #' @param ... Other parameters passed through to \code{f}.
 #' @return A data.frame with loglikelihood values.
 parameterScan <- function(f, param, values, ...) {
-  
+
     arglist <- list(values[1], ...)
     names(arglist)[1] <- param
     result <- list()

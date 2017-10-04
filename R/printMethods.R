@@ -8,5 +8,5 @@ print.methimputeBinomialHMM <- function(x, ...) {
     
     print(x$data)
     message("Use the list operator $ to access all elements of this object.")
-  
+
 }

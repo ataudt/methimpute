@@ -1,7 +1,7 @@
 Package: methimpute
 Type: Package
 Title: Imputation-guided re-construction of complete methylomes from WGBS data
-Version: 0.99.3
+Version: 0.99.4
 Date: 2017-09-18
 Author: Aaron Taudt
 Maintainer: Aaron Taudt <aaron.taudt@gmail.com>

@@ -22,7 +22,7 @@ options(width=110)
 
 \Rpackage{Methimpute} implements a powerful HMM-based binomial test for methylation status calling. Besides improved accuracy over the classical binomial test, the HMM allows imputation of the methylation status of \textbf{all cytosines} in the genome. It achieves this by borrowing information from neighboring covered cytosines. The confidence in the methylation status call is reported as well. Methimpute also outputs context-specific conversion rates, which might be used to optimize the experimental procedure.
 
-For the exact workings of \Rpackage{methimpute} we refer the interested reader to our publication TODO.
+For the exact workings of \Rpackage{methimpute} we refer the interested reader to our publication at \url{https://doi.org/10.1101/190223}.
 
 \section{Methylation status calling}
 
