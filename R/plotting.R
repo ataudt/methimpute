@@ -79,6 +79,9 @@ transCoord <- function(gr) {
 #' @export
 plotHistogram <- function(model, total.counts, binwidth=1) {
 
+    if (class(model) == 'GRanges') {
+        model <- list(data=model)
+    }
     ## Get cross section at total counts ##
     counts <- model$data$counts
     mask.crosssec <- counts[,'total'] == total.counts
