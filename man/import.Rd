@@ -2,11 +2,14 @@
 % Please edit documentation in R/importData.R
 \name{import}
 \alias{import}
+\alias{importBSMAP}
 \alias{importMethylpy}
 \alias{importBSSeeker}
 \alias{importBismark}
 \title{Methimpute data import}
 \usage{
+importBSMAP(file, chrom.lengths = NULL)
+
 importMethylpy(file, chrom.lengths = NULL)
 
 importBSSeeker(file, chrom.lengths = NULL)
@@ -26,6 +29,8 @@ This page provides an overview of all \pkg{\link{methimpute}} data import functi
 }
 \section{Functions}{
 \itemize{
+\item \code{importBSMAP}: Import a BSMAP methylation extractor file.
+
 \item \code{importMethylpy}: Import a Methylpy methylation extractor file.
 
 \item \code{importBSSeeker}: Import a BSSeeker methylation extractor file.
@@ -45,4 +50,14 @@ data(arabidopsis_chromosomes)
 arabidopsis_chromosomes$chromosome <- sub('chr', '', arabidopsis_chromosomes$chromosome)
 bismark.data <- importBismark(file, chrom.lengths=arabidopsis_chromosomes)
 
+## Get an example file in BSMAP format
+file <- system.file("extdata","arabidopsis_BSMAP.txt", package="methimpute")
+data(arabidopsis_chromosomes)
+bsmap.data <- importBSMAP(file, chrom.lengths=arabidopsis_chromosomes)
+
+## Get an example file in Methylpy format
+file <- system.file("extdata","arabidopsis_methylpy.txt", package="methimpute")
+data(arabidopsis_chromosomes)
+arabidopsis_chromosomes$chromosome <- sub('chr', '', arabidopsis_chromosomes$chromosome)
+methylpy.data <- importMethylpy(file, chrom.lengths=arabidopsis_chromosomes)
 }

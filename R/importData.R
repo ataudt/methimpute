@@ -17,7 +17,66 @@
 #'arabidopsis_chromosomes$chromosome <- sub('chr', '', arabidopsis_chromosomes$chromosome)
 #'bismark.data <- importBismark(file, chrom.lengths=arabidopsis_chromosomes)
 #'
+#'## Get an example file in BSMAP format
+#'file <- system.file("extdata","arabidopsis_BSMAP.txt", package="methimpute")
+#'data(arabidopsis_chromosomes)
+#'bsmap.data <- importBSMAP(file, chrom.lengths=arabidopsis_chromosomes)
+#'
+#'## Get an example file in Methylpy format
+#'file <- system.file("extdata","arabidopsis_methylpy.txt", package="methimpute")
+#'data(arabidopsis_chromosomes)
+#'arabidopsis_chromosomes$chromosome <- sub('chr', '', arabidopsis_chromosomes$chromosome)
+#'methylpy.data <- importMethylpy(file, chrom.lengths=arabidopsis_chromosomes)
 NULL
+
+
+#' @describeIn import Import a BSMAP methylation extractor file.
+#' @importFrom utils read.table
+#' @export
+#' 
+importBSMAP <- function(file, chrom.lengths=NULL) {
+  
+  ## Contexts
+  contexts <- c(CG='..CG.', CHG='..C[ATC]G', CHH='..C[ATC][ATC]')
+  
+  ## Import data
+  classes <- c('character', 'numeric', 'character', 'character', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric')
+  ptm <- startTimedMessage("Reading file ", file, " ...")
+  data.raw <- utils::read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
+  data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=data.raw$V3, context=factor(NA, levels=names(contexts)), context.full=data.raw$V4)
+  counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
+  counts[,"methylated"] <- data.raw$V7
+  counts[,"total"] <- data.raw$V8
+  data$counts <- counts
+  rm(data.raw)
+  stopTimedMessage(ptm)
+  
+  # ## Rework contexts
+  # ptm <- startTimedMessage("Reworking contexts ...")
+  # for (i1 in 1:length(contexts)) {
+  #   ind <- grep(pattern = contexts[i1], x = data$context.full)
+  #   data$context[ind] <- names(contexts)[i1]
+  # }   
+  data$context.full <- NULL
+  # stopTimedMessage(ptm)
+  
+  
+  ## Assign seqlengths
+  if (!is.null(chrom.lengths)) {
+    if (is.character(chrom.lengths)) {
+      df <- utils::read.table(chrom.lengths, header=TRUE)
+    } else if (is.data.frame(chrom.lengths)) {
+      df <- chrom.lengths
+    }
+    chrom.lengths <- df[,2]
+    names(chrom.lengths) <- df[,1]
+    # Filter by chromosomes supplied in chrom.lengths
+    data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
+    seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
+  }   
+  
+  return(data)
+}
 
 
 #' @describeIn import Import a Methylpy methylation extractor file.
@@ -159,6 +218,12 @@ importBismark <- function(file, chrom.lengths=NULL) {
 #' @return A \code{\link{methimputeData}} object.
 #' 
 #' @importFrom utils read.table
+#' @examples
+#'## Get an example file in Rene format
+#'file <- system.file("extdata","arabidopsis_rene.txt", package="methimpute")
+#'data(arabidopsis_chromosomes)
+#'rene.data <- importRene(file, chrom.lengths=arabidopsis_chromosomes)
+#'
 importRene <- function(file, chrom.lengths=NULL) {
 
     classes <- c('character', 'numeric', 'character', 'NULL', 'character', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric')

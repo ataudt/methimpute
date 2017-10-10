@@ -1,0 +1,11 @@
+chr	pos	strand	context	ratio	eff_CT_count	C_count	CT_count	rev_G_count	rev_GA_count	CI_lower	CI_upper
+chr1	116	-	CCGGT	0.000	2.00	0	2	0	0	0.000	0.658
+chr1	117	-	CGGTT	0.500	2.00	1	2	0	0	0.095	0.905
+chr1	125	-	CTGGT	0.000	2.00	0	2	0	0	0.000	0.658
+chr1	126	-	TGGTT	0.500	2.00	1	2	0	0	0.095	0.905
+chr1	129	-	TTGAA	0.000	2.00	0	2	0	0	0.000	0.658
+chr1	139	-	TTGTG	0.500	2.00	1	2	0	0	0.095	0.905
+chr1	141	-	GTGTA	1.000	2.00	2	2	0	0	0.342	1.000
+chr1	150	-	ATGAT	0.000	2.00	0	2	0	0	0.000	0.658
+chr1	162	-	TCGTT	0.500	2.00	1	2	0	0	0.095	0.905
+

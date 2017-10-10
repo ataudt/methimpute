@@ -17,3 +17,10 @@ A \code{\link{methimputeData}} object.
 \description{
 Import a Rene methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
 }
+\examples{
+## Get an example file in Rene format
+file <- system.file("extdata","arabidopsis_rene.txt", package="methimpute")
+data(arabidopsis_chromosomes)
+rene.data <- importRene(file, chrom.lengths=arabidopsis_chromosomes)
+
+}
