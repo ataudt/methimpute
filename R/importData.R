@@ -3,6 +3,8 @@
 #' This page provides an overview of all \pkg{\link{methimpute}} data import functions.
 #' @param file The file to import.
 #' @param chrom.lengths A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).
+#' @param skip The number of lines to skip. Usually 1 if the file contains a header and 0 otherwise.
+#' @param contexts A character vector of the contexts that are to be assigned. Since some programs report 5-letter contexts, this parameter can be used to obtain a reduced number of contexts. Will yield contexts CG, CHG, CHH by default. Set \code{contexts=NULL} to obtain all available contexts.
 #' @return A \code{\link{methimputeData}} object.
 #' @name import
 #' @examples 
@@ -31,67 +33,70 @@ NULL
 
 
 #' @describeIn import Import a BSMAP methylation extractor file.
+#' @importFrom Biostrings readDNAStringSet vcountPattern reverseComplement
 #' @importFrom utils read.table
 #' @export
 #' 
-importBSMAP <- function(file, chrom.lengths=NULL) {
+importBSMAP <- function(file, chrom.lengths=NULL, skip=1, contexts=c(CG='NNCGN', CHG='NNCHG', CHH='NNCHH')) {
   
-  ## Contexts
-  contexts <- c(CG='..CG.', CHG='..C[ATC]G', CHH='..C[ATC][ATC]')
-  
-  ## Import data
-  classes <- c('character', 'numeric', 'character', 'character', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric')
-  ptm <- startTimedMessage("Reading file ", file, " ...")
-  data.raw <- utils::read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
-  data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=data.raw$V3, context=factor(NA, levels=names(contexts)), context.full=data.raw$V4)
-  counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
-  counts[,"methylated"] <- data.raw$V7
-  counts[,"total"] <- data.raw$V8
-  data$counts <- counts
-  rm(data.raw)
-  stopTimedMessage(ptm)
-  
-  # ## Rework contexts
-  # ptm <- startTimedMessage("Reworking contexts ...")
-  # for (i1 in 1:length(contexts)) {
-  #   ind <- grep(pattern = contexts[i1], x = data$context.full)
-  #   data$context[ind] <- names(contexts)[i1]
-  # }   
-  data$context.full <- NULL
-  # stopTimedMessage(ptm)
-  
-  
-  ## Assign seqlengths
-  if (!is.null(chrom.lengths)) {
-    if (is.character(chrom.lengths)) {
-      df <- utils::read.table(chrom.lengths, header=TRUE)
-    } else if (is.data.frame(chrom.lengths)) {
-      df <- chrom.lengths
+    ## Import data
+    classes <- c('character', 'numeric', 'character', 'character', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric')
+    ptm <- startTimedMessage("Reading file ", file, " ...")
+    data.raw <- utils::read.table(file, skip=skip, sep='\t', comment.char='', colClasses=classes)
+    data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=data.raw$V3, context=factor(NA, levels=names(contexts)), context.full=data.raw$V4)
+    counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
+    counts[,"methylated"] <- data.raw$V7
+    counts[,"total"] <- data.raw$V8
+    data$counts <- counts
+    rm(data.raw)
+    stopTimedMessage(ptm)
+    
+    ## Rework contexts
+    ptm <- startTimedMessage("Reworking contexts ...")
+    if (is.null(contexts)) {
+        data$context <- factor(data$context.full)
+    } else {
+        context.full <- Biostrings::DNAStringSet(data$context.full)
+        # Reverse complement minus
+        mask <- strand(data) == '-'
+        context.full[mask] <- Biostrings::reverseComplement(x = context.full[mask])
+        for (i1 in 1:length(contexts)) {
+            ind <- which(Biostrings::vcountPattern(contexts[i1], subject = context.full, fixed = FALSE) == 1)
+            data$context[ind] <- names(contexts)[i1]
+        }
     }
-    chrom.lengths <- df[,2]
-    names(chrom.lengths) <- df[,1]
-    # Filter by chromosomes supplied in chrom.lengths
-    data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
-    seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
-  }   
-  
-  return(data)
+    data$context.full <- NULL
+    stopTimedMessage(ptm)
+    
+    
+    ## Assign seqlengths
+    if (!is.null(chrom.lengths)) {
+        if (is.character(chrom.lengths)) {
+            df <- utils::read.table(chrom.lengths, header=TRUE)
+        } else if (is.data.frame(chrom.lengths)) {
+            df <- chrom.lengths
+        }
+        chrom.lengths <- df[,2]
+        names(chrom.lengths) <- df[,1]
+        # Filter by chromosomes supplied in chrom.lengths
+        data <- keepSeqlevels(data, seqlevels(data)[seqlevels(data) %in% names(chrom.lengths)])
+        seqlengths(data) <- chrom.lengths[names(seqlengths(data))]
+    }   
+    
+    return(data)
 }
 
 
 #' @describeIn import Import a Methylpy methylation extractor file.
 #' @importFrom utils read.table
 #' @export
-#' 
-importMethylpy <- function(file, chrom.lengths=NULL) {
-    
-    ## Contexts
-    contexts <- c(CG='CG.', CHG='C[ATC]G', CHH='C[ATC][ATC]')
+#'
+importMethylpy <- function(file, chrom.lengths=NULL, skip=1, contexts=c(CG='CGN', CHG='CHG', CHH='CHH')) {
     
     ## Import data
     classes <- c('character', 'numeric', 'character', 'character', 'numeric', 'numeric', 'numeric')
     ptm <- startTimedMessage("Reading file ", file, " ...")
-    data.raw <- utils::read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
+    data.raw <- utils::read.table(file, skip=skip, sep='\t', comment.char='', colClasses=classes)
     data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=data.raw$V3, context=factor(NA, levels=names(contexts)), context.full=data.raw$V4)
     counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
     counts[,"methylated"] <- data.raw$V5
@@ -103,9 +108,14 @@ importMethylpy <- function(file, chrom.lengths=NULL) {
     
     ## Rework contexts
     ptm <- startTimedMessage("Reworking contexts ...")
-    for (i1 in 1:length(contexts)) {
-        ind <- grep(pattern = contexts[i1], x = data$context.full)
-        data$context[ind] <- names(contexts)[i1]
+    if (is.null(contexts)) {
+        data$context <- factor(data$context.full)
+    } else {
+        context.full <- Biostrings::DNAStringSet(data$context.full)
+        for (i1 in 1:length(contexts)) {
+            ind <- which(Biostrings::vcountPattern(contexts[i1], subject = context.full, fixed = FALSE) == 1)
+            data$context[ind] <- names(contexts)[i1]
+        }
     }
     data$context.full <- NULL
     stopTimedMessage(ptm)
@@ -133,12 +143,12 @@ importMethylpy <- function(file, chrom.lengths=NULL) {
 #' @importFrom utils read.table
 #' @export
 #' 
-importBSSeeker <- function(file, chrom.lengths=NULL) {
+importBSSeeker <- function(file, chrom.lengths=NULL, skip=0) {
     
     # classes <- c(seqnames='character', nucleotide='character', position='numeric', context='character', context.dinucleotide='character', methylation.level='numeric', counts.methylated='numeric', counts.total='numeric')
     classes <- c('character', 'character', 'numeric', 'character', 'character', 'numeric', 'numeric', 'numeric')
     ptm <- startTimedMessage("Reading file ", file, " ...")
-    data.raw <- utils::read.table(file, skip=0, sep='\t', comment.char='', colClasses=classes)
+    data.raw <- utils::read.table(file, skip=skip, sep='\t', comment.char='', colClasses=classes)
     data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V3, end=data.raw$V3), strand=c('C'='+', 'G'='-')[data.raw$V2], context=data.raw$V4)
     counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
     counts[,"methylated"] <- data.raw$V7
@@ -173,12 +183,12 @@ importBSSeeker <- function(file, chrom.lengths=NULL) {
 #' @importFrom utils read.table
 #' @export
 #'
-importBismark <- function(file, chrom.lengths=NULL) {
+importBismark <- function(file, chrom.lengths=NULL, skip=0) {
     
     # classes <- c(seqnames='character', position='numeric', strand='character', counts.methylated='numeric', counts.total='numeric', context='character', context.trinucleotide='character')
     classes <- c('character', 'numeric', 'character', 'numeric', 'numeric', 'character', 'character')
     ptm <- startTimedMessage("Reading file ", file, " ...")
-    data.raw <- utils::read.table(file, skip=0, sep='\t', comment.char='', colClasses=classes)
+    data.raw <- utils::read.table(file, skip=skip, sep='\t', comment.char='', colClasses=classes)
     data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=data.raw$V3, context=data.raw$V6)
     counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
     counts[,"methylated"] <- data.raw$V4
@@ -215,6 +225,7 @@ importBismark <- function(file, chrom.lengths=NULL) {
 #' 
 #' @param file The file to import.
 #' @param chrom.lengths A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).
+#' @param skip The number of lines to skip. Usually 1 if the file contains a header and 0 otherwise.
 #' @return A \code{\link{methimputeData}} object.
 #' 
 #' @importFrom utils read.table
@@ -224,11 +235,11 @@ importBismark <- function(file, chrom.lengths=NULL) {
 #'data(arabidopsis_chromosomes)
 #'rene.data <- importRene(file, chrom.lengths=arabidopsis_chromosomes)
 #'
-importRene <- function(file, chrom.lengths=NULL) {
+importRene <- function(file, chrom.lengths=NULL, skip=1) {
 
     classes <- c('character', 'numeric', 'character', 'NULL', 'character', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric')
     ptm <- startTimedMessage("Reading file ", file, " ...")
-    data.raw <- utils::read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
+    data.raw <- utils::read.table(file, skip=skip, sep='\t', comment.char='', colClasses=classes)
     data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=c('F'='+', 'R'='-')[data.raw$V3], methylated=data.raw$V10, context=data.raw$V5)
     counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
     counts[,"methylated"] <- data.raw$V6

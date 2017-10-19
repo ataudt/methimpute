@@ -4,12 +4,14 @@
 \alias{importRene}
 \title{Import a Rene methylation extractor file}
 \usage{
-importRene(file, chrom.lengths = NULL)
+importRene(file, chrom.lengths = NULL, skip = 1)
 }
 \arguments{
 \item{file}{The file to import.}
 
 \item{chrom.lengths}{A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).}
+
+\item{skip}{The number of lines to skip. Usually 1 if the file contains a header and 0 otherwise.}
 }
 \value{
 A \code{\link{methimputeData}} object.

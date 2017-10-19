@@ -8,18 +8,24 @@
 \alias{importBismark}
 \title{Methimpute data import}
 \usage{
-importBSMAP(file, chrom.lengths = NULL)
+importBSMAP(file, chrom.lengths = NULL, skip = 1, contexts = c(CG =
+  "NNCGN", CHG = "NNCHG", CHH = "NNCHH"))
 
-importMethylpy(file, chrom.lengths = NULL)
+importMethylpy(file, chrom.lengths = NULL, skip = 1, contexts = c(CG =
+  "CGN", CHG = "CHG", CHH = "CHH"))
 
-importBSSeeker(file, chrom.lengths = NULL)
+importBSSeeker(file, chrom.lengths = NULL, skip = 0)
 
-importBismark(file, chrom.lengths = NULL)
+importBismark(file, chrom.lengths = NULL, skip = 0)
 }
 \arguments{
 \item{file}{The file to import.}
 
 \item{chrom.lengths}{A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).}
+
+\item{skip}{The number of lines to skip. Usually 1 if the file contains a header and 0 otherwise.}
+
+\item{contexts}{A character vector of the contexts that are to be assigned. Since some programs report 5-letter contexts, this parameter can be used to obtain a reduced number of contexts. Will yield contexts CG, CHG, CHH by default. Set \code{contexts=NULL} to obtain all available contexts.}
 }
 \value{
 A \code{\link{methimputeData}} object.
