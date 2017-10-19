@@ -23,6 +23,6 @@ Import a Rene methylation extractor file into a \code{\link[GenomicRanges]{GRang
 ## Get an example file in Rene format
 file <- system.file("extdata","arabidopsis_rene.txt", package="methimpute")
 data(arabidopsis_chromosomes)
-rene.data <- importRene(file, chrom.lengths=arabidopsis_chromosomes)
+rene.data <- methimpute:::importRene(file, chrom.lengths=arabidopsis_chromosomes)
 
 }
