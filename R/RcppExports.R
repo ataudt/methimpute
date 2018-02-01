@@ -9,3 +9,7 @@ cleanup <- function() {
     invisible(.Call('_methimpute_cleanup', PACKAGE = 'methimpute'))
 }
 
+fitHMM <- function(counts, distances, params, algorithm) {
+    .Call('_methimpute_fitHMM', PACKAGE = 'methimpute', counts, distances, params, algorithm)
+}
+

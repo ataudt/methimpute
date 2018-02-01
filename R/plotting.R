@@ -510,52 +510,52 @@ plotPosteriorDistance <- function(model, datapoints=1e6, binwidth=5, max.coverag
 }
 
 
-#' #' Plot a count histogram
-#' #' 
-#' #' Plot a histogram of count values and fitted distributions.
-#' #' 
-#' plotHistogram2 <- function(model, binwidth=10) {
-#'     
-#'     ## Assign variables
-#'     counts <- model$data$observable
-#'     maxcounts <- max(counts)
-#'     
-#'     ## Plot histogram
-#'     ggplt <- ggplot(data.frame(counts)) + geom_histogram(aes_string(x='counts', y='..density..'), binwidth=binwidth, color='black', fill='white') + xlab("counts")
-#'     ggplt <- ggplt + coord_cartesian(xlim=c(0,quantile(counts, 0.995)))
-#'     ggplt <- ggplt + theme_bw()
-#'     
-#'     ## Add distributions
-#'     if (!is.null(model$params$emissionParams)) {
-#'         x <- seq(0, maxcounts, by = binwidth)
-#'         distr <- list(x=x)
-#'         for (irow in 1:nrow(model$params$emissionParams)) {
-#'             e <- model$params$emissionParams
-#'             if (e$type[irow] == 'delta') {
-#'                 distr[[rownames(model$params$emissionParams)[irow]]] <- rep(0, length(x))
-#'                 distr[[rownames(model$params$emissionParams)[irow]]][1] <- model$params$weights[irow]
-#'             } else if (e$type[irow] == 'dnbinom') {
-#'                 distr[[rownames(model$params$emissionParams)[irow]]] <- model$params$weights[irow] * dnbinom(x, size=e[irow,'size'], prob=e[irow,'prob'])
-#'             }
-#'         }
-#'         distr <- as.data.frame(distr)
-#'         distr$total <- rowSums(distr[,2:(1+nrow(model$params$emissionParams))])
-#'         distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
-#'         distr$components <- sub('^X', '', distr$components)
-#'         distr$components <- factor(distr$components, levels=c(levels(model$data$state), 'total'))
-#'         ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
-#'         
-#'         ## Make legend
-#'         lmeans <- round(model$params$emissionParams[,'mu'], 2)
-#'         lvars <- round(model$params$emissionParams[,'var'], 2)
-#'         lweights <- round(model$params$weights, 2)
-#'         legend <- paste0(rownames(model$params$emissionParams), ", mean=", lmeans, ", var=", lvars, ", weight=", lweights)
-#'         legend <- c(legend, paste0('total, mean=', round(mean(counts),2), ', var=', round(var(counts),2)))
-#'         ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(c(rownames(model$params$emissionParams),'total')), labels=legend) + theme(legend.position=c(1,1), legend.justification=c(1,1))
-#'     }
-#'     
-#'     return(ggplt)
-#' }
+#' Plot a count histogram
+#'
+#' Plot a histogram of count values and fitted distributions.
+#'
+plotHistogram2 <- function(model, binwidth=10) {
+
+    ## Assign variables
+    counts <- model$data$observable
+    maxcounts <- max(counts)
+
+    ## Plot histogram
+    ggplt <- ggplot(data.frame(counts)) + geom_histogram(aes_string(x='counts', y='..density..'), binwidth=binwidth, color='black', fill='white') + xlab("counts")
+    ggplt <- ggplt + coord_cartesian(xlim=c(0,quantile(counts, 0.995)))
+    ggplt <- ggplt + theme_bw()
+
+    ## Add distributions
+    if (!is.null(model$params$emissionParams)) {
+        x <- seq(0, maxcounts, by = binwidth)
+        distr <- list(x=x)
+        for (irow in 1:nrow(model$params$emissionParams)) {
+            e <- model$params$emissionParams
+            if (e$type[irow] == 'delta') {
+                distr[[rownames(model$params$emissionParams)[irow]]] <- rep(0, length(x))
+                distr[[rownames(model$params$emissionParams)[irow]]][1] <- model$params$weights[irow]
+            } else if (e$type[irow] == 'dnbinom') {
+                distr[[rownames(model$params$emissionParams)[irow]]] <- model$params$weights[irow] * dnbinom(x, size=e[irow,'size'], prob=e[irow,'prob'])
+            }
+        }
+        distr <- as.data.frame(distr)
+        distr$total <- rowSums(distr[,2:(1+nrow(model$params$emissionParams))])
+        distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
+        distr$components <- sub('^X', '', distr$components)
+        distr$components <- factor(distr$components, levels=c(levels(model$data$state), 'Total'))
+        ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
+
+        ## Make legend
+        lmeans <- round(model$params$emissionParams[,'mu'], 2)
+        lvars <- round(model$params$emissionParams[,'var'], 2)
+        lweights <- round(model$params$weights, 2)
+        legend <- paste0(rownames(model$params$emissionParams), ", mean=", lmeans, ", var=", lvars, ", weight=", lweights)
+        legend <- c(legend, paste0('total, mean=', round(mean(counts),2), ', var=', round(var(counts),2)))
+        ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(c(rownames(model$params$emissionParams),'Total')), labels=legend) + theme(legend.position=c(1,1), legend.justification=c(1,1))
+    }
+
+    return(ggplt)
+}
 #' 
 #' 
 #' plotBoxplot <- function(model, datapoints=1000) {
