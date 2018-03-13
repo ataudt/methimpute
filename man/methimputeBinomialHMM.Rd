@@ -26,7 +26,6 @@ The \code{$data} entry in this object contains the following columns:
 \item{posteriorUnmeth }{Posterior value of the "unmethylated" component.}
 \item{status }{Methylation status.}
 \item{rc.meth.lvl }{Recalibrated methylation level, calculated as \code{r$data$rc.meth.lvl = r$data$params$emissionParams$Unmethylated[data$context,] * r$data$posteriorUnmeth + r$params$emissionParams$Methylated[data$context,] * r$data$posteriorMeth}, where \code{r} is the \code{methimputeBinomialHMM} object.}
-\item{rc.counts }{Recalibrated counts for methylated and total number of reads at each position, calculated as \code{r$data$rc.counts[,2] <- sort(r$data$counts[,2])[rank(r$data$posteriorMax, ties.method = 'first')]; r$data$rc.counts[,1] <- round(r$data$rc.counts[,2] * r$data$rc.meth.lvl)}, where \code{r} is the \code{methimputeBinomialHMM} object.}
 }
 }
 \seealso{

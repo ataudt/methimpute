@@ -47,7 +47,7 @@ callMethylationSeparate <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=
     data$posteriorUnmeth <- numeric(length(data))
     data$status <- factor(NA, levels=states)
     data$rc.meth.lvl <- numeric(length(data))
-    data$rc.counts <- data$counts
+    # data$rc.counts <- data$counts
     
     cmodels <- list()
     for (context in contexts) {
@@ -62,7 +62,7 @@ callMethylationSeparate <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=
         data$posteriorUnmeth[context.mask] <- cmodel$data$posteriorUnmeth
         data$status[context.mask] <- cmodel$data$status
         data$rc.meth.lvl[context.mask] <- cmodel$data$rc.meth.lvl
-        data$rc.counts[context.mask,] <- cmodel$data$rc.counts
+        # data$rc.counts[context.mask,] <- cmodel$data$rc.counts
         
         cmodel$data <- NULL
         cmodel$segments <- NULL
@@ -363,21 +363,8 @@ callMethylation <- function(data, fit.on.chrom=NULL, transDist=Inf, eps=1, max.t
         }
         # ## Recalibrated counts
         # data$rc.counts <- data$counts
-        # # Transform posteriorMax to uniform
-        # ecdf.postmax <- ecdf(data$posteriorMax)
-        # upostmax <- ecdf.postmax(data$posteriorMax)
-        # # Transform to count distribution
-        # x <- seq(0, 1, by=1e-5)
-        # q <- quantile(data$counts[,2], probs = x)
-        # inverse.ecdf <- stepfun(x = x, y = c(q, max(q)))
-        # cpostmax <- inverse.ecdf(upostmax)
-        # # Assign to counts
-        # data$rc.counts[,2] <- round(cpostmax)
+        # data$rc.counts[,2] <- sort(data$counts[,2])[rank(data$posteriorMax, ties.method = 'first')]
         # data$rc.counts[,1] <- round(data$rc.counts[,2] * data$rc.meth.lvl)
-        ## Recalibrated counts
-        data$rc.counts <- data$counts
-        data$rc.counts[,2] <- sort(data$counts[,2])[rank(data$posteriorMax, ties.method = 'first')]
-        data$rc.counts[,1] <- round(data$rc.counts[,2] * data$rc.meth.lvl)
         ## Segmentation
         data.collapse <- data
         mcols(data.collapse) <- NULL

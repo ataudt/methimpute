@@ -43,8 +43,10 @@ print(bsseeker.data)
 # Because most methylation extractor programs report only covered cytosines,
 # we need to inflate the data to inlcude all cytosines (including non-covered sites)
 fasta.file <- system.file("extdata","arabidopsis_sequence.fa.gz", package="methimpute")
-cytosine.positions <- extractCytosinesFromFASTA(fasta.file, contexts = c('CG','CHG','CHH'))
-seqlengths(cytosine.positions) <- seqlengths(bsseeker.data) # only necessary for our toy example
+cytosine.positions <- extractCytosinesFromFASTA(fasta.file,
+                                                contexts = c('CG','CHG','CHH'))
+seqlengths(cytosine.positions) <- seqlengths(bsseeker.data) # only necessary
+                                                            # for our toy example
 methylome <- inflateMethylome(bsseeker.data, cytosine.positions)
 print(methylome)
 
@@ -63,13 +65,13 @@ print(fit)
 
 model <- callMethylation(data = methylome, transDist = fit$transDist)
 # The confidence in the methylation status call is given in the column "posteriorMax".
-# For further analysis one could split the results into high-confidence (posteriorMax >= 0.98)
-# and low-confidence calls (posteriorMax < 0.98) for instance.
+# For further analysis one could split the results into high-confidence
+# (posteriorMax >= 0.98) and low-confidence calls (posteriorMax < 0.98) for instance.
 print(model)
 @
 \end{small}
 
-\subsection{Description of columns}
+\subsection{\label{sec:descriptionofcolumns}Description of columns}
 \begin{itemize}
 \item \textbf{context} The sequence context of the cytosine.
 \item \textbf{counts} Counts for methylated and total number of reads at each position.
@@ -80,7 +82,7 @@ print(model)
 \item \textbf{posteriorUnmeth} Posterior value of the "unmethylated" component.
 \item \textbf{status} Methylation status.
 \item \textbf{rc.meth.lvl} Recalibrated methylation level, calculated from the posteriors and the fitted parameters (see ?methimputeBinomialHMM for details).
-\item \textbf{rc.counts} Recalibrated counts for methylated and total number of reads at each position (see ?methimputeBinomialHMM for details).
+% \item \textbf{rc.counts} Recalibrated counts for methylated and total number of reads at each position (see ?methimputeBinomialHMM for details).
 \end{itemize}
 
 \section{Plots and enrichment analysis}
@@ -96,11 +98,29 @@ model$data$category[model$data$counts[,'total']==0] <- 'missing'
 
 # Note that the plots look a bit ugly because our toy data has only 200.000 datapoints.
 data(arabidopsis_genes)
-plotEnrichment(model$data, annotation=arabidopsis_genes, range = 2000, category.column = 'category')
+plotEnrichment(model$data, annotation=arabidopsis_genes, range = 2000,
+               category.column = 'category')
 data(arabidopsis_TEs)
-plotEnrichment(model$data, annotation=arabidopsis_TEs, range = 2000, category.column = 'category')
+plotEnrichment(model$data, annotation=arabidopsis_TEs, range = 2000,
+               category.column = 'category')
 @
 \end{small}
+
+
+\section{Export results}
+
+You can export the results as TSV file with the following columns:
+\begin{itemize}
+\item chromosome, position, strand, context, counts.methylated, counts.total, posteriorMax, posteriorMeth, posteriorUnmeth, status, rc.meth.lvl
+\end{itemize}
+
+\begin{small}
+<<export_results, results='show', message=FALSE, eval=TRUE>>=
+exportMethylome(model, filename = tempfile())
+@
+\end{small}
+
+Please see section \ref{sec:descriptionofcolumns} for a description of the columns.
 
 
 \section{Session Info}
