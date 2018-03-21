@@ -1,12 +1,30 @@
-#' Bin counts in windows
+#' Methimpute binning functions
 #' 
-#' Bin counts from cytosines in equidistant bins.
-#' 
-#' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata column 'counts' which is a matrix with columns 'methylated' and 'total'.
+#' This page provides an overview of all \pkg{\link{methimpute}} binning functions.
+#'
+#' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'context' and 'counts' (which is a matrix with columns 'methylated' and 'total').
 #' @param binsize The window size used for binning.
-#' @return A \code{\link[GenomicRanges]{GRanges}} object.
+#' @return A \code{\link[GenomicRanges]{GRanges}} object for \code{binCounts} and \code{binPostions}. A \code{list()} of \code{\link[GenomicRanges]{GRanges}} objects for \code{binMethylome}.
+#' @name binning
+#' @examples 
+#'## Get some toy data
+#'file <- system.file("data","arabidopsis_toydata.RData",
+#'                     package="methimpute")
+#'data <- get(load(file))
+#'print(data)
+#'## Bin the data in various ways
+#'binCounts(data, binsize=1000)
+#'binPositions(data, binsize=1000)
+#'binMethylome(data, binsize=1000, contexts=c("total", "CG"),
+#'             columns.average=NULL)
+#'
+NULL
+
+
+#' @describeIn binning Get the aggregated number of counts in each bin (no context).
 #' 
 #' @importFrom stats aggregate
+#' @export
 binCounts <- function(data, binsize) {
 
     ptm <- startTimedMessage("Making fixed-width bins with ", binsize, "bp ...")
@@ -32,14 +50,8 @@ binCounts <- function(data, binsize) {
 }
 
 
-#' Bin positions in windows
-#' 
-#' Bin cytosine positions in equidistant bins.
-#' 
-#' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata column 'context'.
-#' @param binsize The window size used for binning.
-#' @return A \code{\link[GenomicRanges]{GRanges}} object.
-#' 
+#' @describeIn binning Get the number of cytosines in each bin (total and per context).
+#' @export
 binPositions <- function(data, binsize) {
 
     ptm <- startTimedMessage("Making fixed-width bins with ", binsize, "bp ...")
@@ -74,18 +86,14 @@ binPositions <- function(data, binsize) {
 }
 
 
-#' Bin cytosine positions in windows
+#' @describeIn binning Get number of cytosines and aggregated counts for the specified contexts.
 #' 
-#' Bin cytosine positions, methylation counts and state in equidistant windows.
-#' 
-#' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'methylated', 'context', 'counts.unmethylated' and 'counts.methylated'.
-#' @param binsize The window size used for binning.
 #' @param contexts A character vector with contexts for which the binning will be done.
 #' @param columns.average A character vector with names of columns in \code{data} that should be averaged in bins.
-#' @return A list() with a \code{\link[GenomicRanges]{GRanges}} objects for each context.
 #' 
 #' @importFrom stats aggregate
-binMethylome <- function(data, binsize, contexts='total', columns.average=c('posteriorMeth')) {
+#' @export
+binMethylome <- function(data, binsize, contexts='total', columns.average=NULL) {
 
     ptm <- startTimedMessage("Making fixed-width bins with ", binsize, "bp ...")
     chrom.lengths.floor <- floor(seqlengths(data) / binsize) * binsize
@@ -111,6 +119,8 @@ binMethylome <- function(data, binsize, contexts='total', columns.average=c('pos
         ptm <- startTimedMessage("Counting cytosine overlaps ...")
         bins$cytosines <- countOverlaps(bins, data.context)
         stopTimedMessage(ptm)
+        
+        bins$context <- factor(context)
         
         ptm <- startTimedMessage("Aggregating counts ...")
         ind <- findOverlaps(data, bins, select='first')

@@ -510,52 +510,53 @@ plotPosteriorDistance <- function(model, datapoints=1e6, binwidth=5, max.coverag
 }
 
 
-#' Plot a count histogram
-#'
-#' Plot a histogram of count values and fitted distributions.
-#'
-plotHistogram2 <- function(model, binwidth=10) {
-
-    ## Assign variables
-    counts <- model$data$observable
-    maxcounts <- max(counts)
-
-    ## Plot histogram
-    ggplt <- ggplot(data.frame(counts)) + geom_histogram(aes_string(x='counts', y='..density..'), binwidth=binwidth, color='black', fill='white') + xlab("counts")
-    ggplt <- ggplt + coord_cartesian(xlim=c(0,quantile(counts, 0.995)))
-    ggplt <- ggplt + theme_bw()
-
-    ## Add distributions
-    if (!is.null(model$params$emissionParams)) {
-        x <- seq(0, maxcounts, by = binwidth)
-        distr <- list(x=x)
-        for (irow in 1:nrow(model$params$emissionParams)) {
-            e <- model$params$emissionParams
-            if (e$type[irow] == 'delta') {
-                distr[[rownames(model$params$emissionParams)[irow]]] <- rep(0, length(x))
-                distr[[rownames(model$params$emissionParams)[irow]]][1] <- model$params$weights[irow]
-            } else if (e$type[irow] == 'dnbinom') {
-                distr[[rownames(model$params$emissionParams)[irow]]] <- model$params$weights[irow] * dnbinom(x, size=e[irow,'size'], prob=e[irow,'prob'])
-            }
-        }
-        distr <- as.data.frame(distr)
-        distr$Total <- rowSums(distr[,2:(1+nrow(model$params$emissionParams))])
-        distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
-        distr$components <- sub('^X', '', distr$components)
-        distr$components <- factor(distr$components, levels=c(levels(model$data$state), 'Total'))
-        ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
-
-        ## Make legend
-        lmeans <- round(model$params$emissionParams[,'mu'], 2)
-        lvars <- round(model$params$emissionParams[,'var'], 2)
-        lweights <- round(model$params$weights, 2)
-        legend <- paste0(rownames(model$params$emissionParams), ", mean=", lmeans, ", var=", lvars, ", weight=", lweights)
-        legend <- c(legend, paste0('Total, mean=', round(mean(counts),2), ', var=', round(var(counts),2)))
-        ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(c(rownames(model$params$emissionParams),'Total')), labels=legend) + theme(legend.position=c(1,1), legend.justification=c(1,1))
-    }
-
-    return(ggplt)
-}
+#' #' Plot a count histogram
+#' #'
+#' #' Plot a histogram of count values and fitted distributions.
+#' #'
+#' #' @importFrom stats dnbinom
+#' plotHistogram2 <- function(model, binwidth=10) {
+#' 
+#'     ## Assign variables
+#'     counts <- model$data$observable
+#'     maxcounts <- max(counts)
+#' 
+#'     ## Plot histogram
+#'     ggplt <- ggplot(data.frame(counts)) + geom_histogram(aes_string(x='counts', y='..density..'), binwidth=binwidth, color='black', fill='white') + xlab("counts")
+#'     ggplt <- ggplt + coord_cartesian(xlim=c(0,quantile(counts, 0.995)))
+#'     ggplt <- ggplt + theme_bw()
+#' 
+#'     ## Add distributions
+#'     if (!is.null(model$params$emissionParams)) {
+#'         x <- seq(0, maxcounts, by = binwidth)
+#'         distr <- list(x=x)
+#'         for (irow in 1:nrow(model$params$emissionParams)) {
+#'             e <- model$params$emissionParams
+#'             if (e$type[irow] == 'delta') {
+#'                 distr[[rownames(model$params$emissionParams)[irow]]] <- rep(0, length(x))
+#'                 distr[[rownames(model$params$emissionParams)[irow]]][1] <- model$params$weights[irow]
+#'             } else if (e$type[irow] == 'dnbinom') {
+#'                 distr[[rownames(model$params$emissionParams)[irow]]] <- model$params$weights[irow] * stats::dnbinom(x, size=e[irow,'size'], prob=e[irow,'prob'])
+#'             }
+#'         }
+#'         distr <- as.data.frame(distr)
+#'         distr$Total <- rowSums(distr[,2:(1+nrow(model$params$emissionParams))])
+#'         distr <- reshape2::melt(distr, id.vars='x', variable.name='components')
+#'         distr$components <- sub('^X', '', distr$components)
+#'         distr$components <- factor(distr$components, levels=c(levels(model$data$state), 'Total'))
+#'         ggplt <- ggplt + geom_line(data=distr, mapping=aes_string(x='x', y='value', col='components'))
+#' 
+#'         ## Make legend
+#'         lmeans <- round(model$params$emissionParams[,'mu'], 2)
+#'         lvars <- round(model$params$emissionParams[,'var'], 2)
+#'         lweights <- round(model$params$weights, 2)
+#'         legend <- paste0(rownames(model$params$emissionParams), ", mean=", lmeans, ", var=", lvars, ", weight=", lweights)
+#'         legend <- c(legend, paste0('Total, mean=', round(mean(counts),2), ', var=', round(var(counts),2)))
+#'         ggplt <- ggplt + scale_color_manual(name="components", values=getStateColors(c(rownames(model$params$emissionParams),'Total')), labels=legend) + theme(legend.position=c(1,1), legend.justification=c(1,1))
+#'     }
+#' 
+#'     return(ggplt)
+#' }
 #' 
 #' 
 #' plotBoxplot <- function(model, datapoints=1000) {
@@ -639,108 +640,96 @@ plotHistogram2 <- function(model, binwidth=10) {
 
 
 
-#' @describeIn enrichment_analysis Compute the fold enrichment of combinatorial states for multiple annotations.
-#' @param model A \code{\link{combinedMultimodel}} or \code{\link{multimodel}} object or a file that contains such an object.
-#' @param annotations A \code{list()} with \code{\link{GRanges}} objects containing coordinates of multiple annotations The names of the list entries will be used to name the return values.
-#' @param plot A logical indicating whether the plot or an array with the fold enrichment values is returned.
-#' @param logscale Whether (\code{TRUE}) or not (\code{FALSE}) to plot on log scale.
-#' @param cluster Whether (\code{TRUE}) or not (\code{FALSE}) to cluster the annotations.
-#' @importFrom S4Vectors subjectHits queryHits
-#' @importFrom IRanges subsetByOverlaps
-#' @importFrom reshape2 melt
-#' @export
-heatmapEnrichment <- function(model, annotations, plot=TRUE, logscale=TRUE, cluster=TRUE) {
-  
-  ## Variables
-  bins <- model$data
-  genome <- sum(as.numeric(width(bins)))
-  annotationsAtBins <- lapply(annotations, function(x) { IRanges::subsetByOverlaps(x, bins) })
-  feature.lengths <- lapply(annotationsAtBins, function(x) { sum(as.numeric(width(x))) })
-  state.levels <- levels(bins$state)
-  # Only state levels that actually appear
-  state.levels <- state.levels[state.levels %in% unique(bins$state)]
-  
-  ggplts <- list()
-  folds <- list()
-  maxfolds <- list()
-  
-  ptm <- startTimedMessage("Calculating fold enrichment ...")
-  fold <- array(NA, dim=c(length(annotationsAtBins), length(state.levels)), dimnames=list(annotation=names(annotationsAtBins), state=state.levels))
-  for (istate in 1:length(state.levels)) {
-    mask <- bins$state == state.levels[istate]
-    bins.mask <- bins[mask]
-    state.length <- sum(as.numeric(width(bins.mask)))
-    for (ifeat in 1:length(annotationsAtBins)) {
-      feature <- annotationsAtBins[[ifeat]]
-      ind <- findOverlaps(bins.mask, feature)
-      
-      binsinfeature <- bins.mask[unique(S4Vectors::queryHits(ind))]
-      sum.binsinfeature <- sum(as.numeric(width(binsinfeature)))
-      
-      featuresinbins <- feature[unique(S4Vectors::subjectHits(ind))]
-      sum.featuresinbins <- sum(as.numeric(width(featuresinbins)))
-      
-      fold[ifeat,istate] <- sum.binsinfeature / state.length / feature.lengths[[ifeat]] * genome
-    }
-  }
-  stopTimedMessage(ptm)
-  
-  # if (plot) {
-  #     fold <- log(fold)
-  #     fold[is.infinite(fold)] <- NaN
-  #     colorbar <- gplots::colorpanel(n = 100, low="blue", mid="white",high="red")
-  #     charf <- 0.6
-  #     margins <- c( max(5, charf*max(nchar(colnames(fold)))) , max(5, charf*max(nchar(rownames(fold)))))
-  #     gplots::heatmap.2(fold, col=colorbar, trace='none', density.info='none', key.title = 'log(enrichment)', key.xlab='log(enrichment)', margins=margins, na.color='gray')
-  # } else {
-  #     return(fold)
-  # }
-  
-  ## Clustering
-  if (cluster) {
-    hc.anno <- hclust(dist(fold))
-    # hc.state <- hclust(dist(t(fold)))
-    # fold <- fold[hc.anno$order, hc.state$order]
-    fold <- fold[hc.anno$order, ]
-  }
-  
-  if (plot) {
-    df <- reshape2::melt(fold, value.name='fold')
-    if (logscale) {
-      df$fold <- log(df$fold)
-    }
-    df$state <- factor(df$state, levels=colnames(fold))
-    # Transform annotation to numeric for compatibility with the dendrogram
-    df$ylabel <- df$annotation
-    df$annotation <- as.numeric(df$annotation)
-    maxfold <- max(df$fold, na.rm=TRUE)
-    minfold <- max(df$fold, na.rm=TRUE)
-    limits <- max(abs(maxfold), abs(minfold))
-    ggplt <- ggplot(df) + geom_tile(aes_string(x='state', y='annotation', fill='fold'))
-    ggplt <- ggplt + scale_y_continuous(breaks=1:length(unique(df$annotation)), labels=unique(df$ylabel), position='right')
-    ggplt <- ggplt + theme_bw()
-    ggplt <- ggplt + theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
-    if (logscale) {
-      ggplt <- ggplt + scale_fill_gradientn(name='log(enrichment)', colors=grDevices::colorRampPalette(c("blue","white","red"))(20), values=c(seq(-limits,0,length.out=10), seq(0,limits,length.out=10)), rescaler=function(x,...) {x}, oob=identity, limits=c(-limits,limits), na.value="blue")
-    } else {
-      ggplt <- ggplt + scale_fill_gradientn(name='enrichment', colors=grDevices::colorRampPalette(c("blue","white","red"))(20), values=c(seq(0,1,length.out=10), seq(1,maxfold,length.out=10)), rescaler=function(x,...) {x}, oob=identity, limits=c(0,maxfold))
-    }
-    cowplt <- ggplt
-    ## Dendrograms
-    if (cluster) {
-      theme_none <- theme(axis.text = element_blank(),
-                          axis.ticks = element_blank(),
-                          panel.background = element_blank(),
-                          axis.title = element_blank())
-      # Row dendrogram
-      df.dendro <- ggdendro::segment(ggdendro::dendro_data(as.dendrogram(hc.anno)))
-      row.dendro <- ggplot(df.dendro) +  geom_segment(aes_string(x='y', y='x', xend='yend', yend='xend')) +  theme_none + scale_x_reverse() + coord_cartesian(ylim=c(0.5,max(df$annotation)+0.5))
-      # Column dendrogram
-      # col.dendro <- ggplot(ggdendro::segment(ggdendro::dendro_data(as.dendrogram(hc.state)))) +  geom_segment(aes_string(x='x', y='y', xend='xend', yend='yend')) + theme_none
-      cowplt <- cowplot::plot_grid(row.dendro, ggplt, align = 'h', ncol = 2, rel_widths = c(1,3))
-    }
-    return(cowplt)
-  } else {
-    return(fold)
-  }
-}
+#' #' @describeIn enrichment_analysis Compute the fold enrichment of combinatorial states for multiple annotations.
+#' #' @param model A \code{\link{combinedMultimodel}} or \code{\link{multimodel}} object or a file that contains such an object.
+#' #' @param annotations A \code{list()} with \code{\link{GRanges}} objects containing coordinates of multiple annotations The names of the list entries will be used to name the return values.
+#' #' @param plot A logical indicating whether the plot or an array with the fold enrichment values is returned.
+#' #' @param logscale Whether (\code{TRUE}) or not (\code{FALSE}) to plot on log scale.
+#' #' @param cluster Whether (\code{TRUE}) or not (\code{FALSE}) to cluster the annotations.
+#' #' @importFrom S4Vectors subjectHits queryHits
+#' #' @importFrom IRanges subsetByOverlaps
+#' #' @importFrom reshape2 melt
+#' #' @importFrom stats hclust as.dendrogram
+#' #' @export
+#' heatmapEnrichment <- function(model, annotations, plot=TRUE, logscale=TRUE, cluster=TRUE) {
+#'   
+#'   ## Variables
+#'   bins <- model$data
+#'   genome <- sum(as.numeric(width(bins)))
+#'   annotationsAtBins <- lapply(annotations, function(x) { IRanges::subsetByOverlaps(x, bins) })
+#'   feature.lengths <- lapply(annotationsAtBins, function(x) { sum(as.numeric(width(x))) })
+#'   state.levels <- levels(bins$state)
+#'   # Only state levels that actually appear
+#'   state.levels <- state.levels[state.levels %in% unique(bins$state)]
+#'   
+#'   ggplts <- list()
+#'   folds <- list()
+#'   maxfolds <- list()
+#'   
+#'   ptm <- startTimedMessage("Calculating fold enrichment ...")
+#'   fold <- array(NA, dim=c(length(annotationsAtBins), length(state.levels)), dimnames=list(annotation=names(annotationsAtBins), state=state.levels))
+#'   for (istate in 1:length(state.levels)) {
+#'     mask <- bins$state == state.levels[istate]
+#'     bins.mask <- bins[mask]
+#'     state.length <- sum(as.numeric(width(bins.mask)))
+#'     for (ifeat in 1:length(annotationsAtBins)) {
+#'       feature <- annotationsAtBins[[ifeat]]
+#'       ind <- findOverlaps(bins.mask, feature)
+#'       
+#'       binsinfeature <- bins.mask[unique(S4Vectors::queryHits(ind))]
+#'       sum.binsinfeature <- sum(as.numeric(width(binsinfeature)))
+#'       
+#'       featuresinbins <- feature[unique(S4Vectors::subjectHits(ind))]
+#'       sum.featuresinbins <- sum(as.numeric(width(featuresinbins)))
+#'       
+#'       fold[ifeat,istate] <- sum.binsinfeature / state.length / feature.lengths[[ifeat]] * genome
+#'     }
+#'   }
+#'   stopTimedMessage(ptm)
+#'   
+#'   ## Clustering
+#'   if (cluster) {
+#'     hc.anno <- stats::hclust(dist(fold))
+#'     fold <- fold[hc.anno$order, ]
+#'   }
+#'   
+#'   if (plot) {
+#'     df <- reshape2::melt(fold, value.name='fold')
+#'     if (logscale) {
+#'       df$fold <- log(df$fold)
+#'     }
+#'     df$state <- factor(df$state, levels=colnames(fold))
+#'     # Transform annotation to numeric for compatibility with the dendrogram
+#'     df$ylabel <- df$annotation
+#'     df$annotation <- as.numeric(df$annotation)
+#'     maxfold <- max(df$fold, na.rm=TRUE)
+#'     minfold <- max(df$fold, na.rm=TRUE)
+#'     limits <- max(abs(maxfold), abs(minfold))
+#'     ggplt <- ggplot(df) + geom_tile(aes_string(x='state', y='annotation', fill='fold'))
+#'     ggplt <- ggplt + scale_y_continuous(breaks=1:length(unique(df$annotation)), labels=unique(df$ylabel), position='right')
+#'     ggplt <- ggplt + theme_bw()
+#'     ggplt <- ggplt + theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
+#'     if (logscale) {
+#'       ggplt <- ggplt + scale_fill_gradientn(name='log(enrichment)', colors=grDevices::colorRampPalette(c("blue","white","red"))(20), values=c(seq(-limits,0,length.out=10), seq(0,limits,length.out=10)), rescaler=function(x,...) {x}, oob=identity, limits=c(-limits,limits), na.value="blue")
+#'     } else {
+#'       ggplt <- ggplt + scale_fill_gradientn(name='enrichment', colors=grDevices::colorRampPalette(c("blue","white","red"))(20), values=c(seq(0,1,length.out=10), seq(1,maxfold,length.out=10)), rescaler=function(x,...) {x}, oob=identity, limits=c(0,maxfold))
+#'     }
+#'     cowplt <- ggplt
+#'     ## Dendrograms
+#'     if (cluster) {
+#'       theme_none <- theme(axis.text = element_blank(),
+#'                           axis.ticks = element_blank(),
+#'                           panel.background = element_blank(),
+#'                           axis.title = element_blank())
+#'       # Row dendrogram
+#'       df.dendro <- ggdendro::segment(ggdendro::dendro_data(stats::as.dendrogram(hc.anno)))
+#'       row.dendro <- ggplot(df.dendro) +  geom_segment(aes_string(x='y', y='x', xend='yend', yend='xend')) +  theme_none + scale_x_reverse() + coord_cartesian(ylim=c(0.5,max(df$annotation)+0.5))
+#'       # Column dendrogram
+#'       # col.dendro <- ggplot(ggdendro::segment(ggdendro::dendro_data(stats::as.dendrogram(hc.state)))) +  geom_segment(aes_string(x='x', y='y', xend='xend', yend='yend')) + theme_none
+#'       cowplt <- cowplot::plot_grid(row.dendro, ggplt, align = 'h', ncol = 2, rel_widths = c(1,3))
+#'     }
+#'     return(cowplt)
+#'   } else {
+#'     return(fold)
+#'   }
+#' }
