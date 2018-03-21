@@ -651,200 +651,194 @@ binomialTestMethylation <- function(data, conversion.rate, min.coverage=3, p.thr
 #'     
 #'     return(r)
 #' }
-#' 
-#' 
-#' 
-#' 
-#' #' Fit an n-component HMM
-#' #' 
-#' #' Fit an n-component Hidden Markov Model to the supplied counts. The transition matrix is distance-dependent with exponential decaying constant \code{transDist} (only relevant in non-consecutive bins). The zero-th component is a delta distribution to account for empty bins, and all other n-components are modeled as negative binomial distributions.
-#' #' 
-#' #' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'distance' and 'counts' (or any other column specified as \code{observable}).
-#' #' @param states An integer vector giving the states for the Hidden Markov Model. State '0' will be modeled by a delta distribution, all other states ('1','2','3',...) with negative binomial distributions.
-#' #' @param observable A character naming the column of \code{data} that will serve as observable for the HMM.
-#' #' @param fit.on.chrom A character vector giving the chromosomes on which the HMM will be fitted.
-#' #' @param transDist The exponential decaying constant for the distance-dependent transition matrix. Should be given in the same units as \code{distances}.
-#' #' @param eps Convergence threshold for the Baum-Welch algorithm.
-#' #' @param max.time Maximum running time in seconds for the Baum-Welch algorithm.
-#' #' @param max.iter Maximum number of iterations for the Baum-Welch algorithm.
-#' #' @param count.cutoff A cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to \code{Inf} to disable this filtering.
-#' #' @param verbosity Integer from c(0,1) specifying the verbosity of the fitting procedure.
-#' #' @param num.threads Number of CPU to use for the computation.
-#' #' @param initial.params An \code{\link{NcomponentHMM}} or a file that contains such an object. Parameters from this model will be used for initialization of the fitting procedure.
-#' #' @return A list with fitted parameters, posteriors, and the input parameters.
-#' #' 
-#' fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=1, initial.params=NULL) {
-#'   
-#'     ### Input checks ###
-#'     if (is.null(max.time)) {
-#'         max.time <- Inf
-#'     }
-#'     if (is.null(max.iter)) {
-#'         max.iter <- Inf
-#'     }
-#'   
-#'     ### Add distance to bins ###
-#'     data$distance <- addDistance(data)
-#'     
-#'     ### Assign variables ###
-#'     numstates <- length(states)
-#'     counts <- mcols(data)[,observable]
-#'     counts <- as.matrix(counts)
-#'     distances <- data$distance
-#'     
-#'     ## Filter counts by cutoff
-#'     mask <- counts[,'total'] > count.cutoff
-#'     counts[mask,] <- round(sweep(x = counts[mask,], MARGIN = 1, STATS = counts[mask,'total']/count.cutoff, FUN = '/'))
-#'     data$observable <- counts # assign it now to have filtered values in there
-#'     colnames(data$observable) <- observable
-#'     
-#'     ## Subset by chromosomes
-#'     if (!is.null(fit.on.chrom)) {
-#'         counts <- counts[as.logical(data@seqnames %in% fit.on.chrom)]
-#'     }
-#'   
-#'     ### Initial probabilities ###
-#'     if (is.null(initial.params)) {
-#'         s <- 0.9
-#'         transProbs_initial <- matrix((1-s)/(numstates-1), ncol=numstates, nrow=numstates, dimnames=list(from=states, to=states))
-#'         diag(transProbs_initial) <- s
-#'         startProbs_initial <- rep(1/numstates, numstates)
-#'         names(startProbs_initial) <- states
-#'         
-#'         ### Initialization of emission distributions ###
-#'         counts.greater.0 <- counts[counts>0]
-#'         mean.counts <- mean(counts.greater.0)
-#'         var.counts <- var(counts.greater.0)
-#'         ep <- list()
-#'         for (state in setdiff(states,0)) {
-#'             ep[[as.character(state)]] <- data.frame(type='dnbinom', mu=mean.counts*state/2, var=var.counts*state/2)
-#'         }
-#'         ep <- do.call(rbind, ep)
-#'         # Make sure variance is bigger than mean for negative binomial
-#'         ep$var[ep$mu >= ep$var] <- ep$mu[ep$mu >= ep$var] + 1
-#'         ep$size <- dnbinom.size(ep$mu, ep$var)
-#'         ep$prob <- dnbinom.prob(ep$mu, ep$var)
-#'         ## Add zero-inflation
-#'         if (0 %in% states) {
-#'             ep <- rbind(data.frame(type='delta', mu=0, var=0, size=NA, prob=NA), ep)
-#'         }
-#'         rownames(ep) <- states
-#'         emissionParams_initial <- ep
-#'     } else {
-#'         model.init <- loadFromFiles(initial.params, check.class='NcomponentHMM')[[1]]
-#'         transProbs_initial <- model.init$params$transProbs
-#'         startProbs_initial <- model.init$params$startProbs
-#'         emissionParams_initial <- model.init$params$emissionParams
-#'     }
-#'   
-#'     ### Define parameters for C function ###
-#'     params <- list()
-#'     params$startProbs_initial <- startProbs_initial
-#'     params$transProbs_initial <- transProbs_initial
-#'     params$emissionParams_initial <- emissionParams_initial
-#'     params$transDist <- transDist
-#'     params$eps <- eps
-#'     params$maxtime <- max.time
-#'     params$maxiter <- max.iter
-#'     params$verbosity <- verbosity
-#'     params$numThreads <- num.threads
-#'     
-#'     ### Call the C function ###
-#'     on.exit(cleanup())
-#'     if (is.null(fit.on.chrom)) {
-#'         ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
-#'         hmm <- fitHMM(counts=counts, distances=distances, params=params, algorithm=1)
-#'         message("Time spent in Baum-Welch:", appendLF=FALSE)
-#'         stopTimedMessage(ptm)
-#'     } else {
-#'         ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
-#'         message(" ... on chromosomes ", paste0(fit.on.chrom, collapse=', '))
-#'         hmm <- fitHMM(counts=counts, distances=distances, params=params, algorithm=1)
-#'         message("Time spent in Baum-Welch:", appendLF=FALSE)
-#'         stopTimedMessage(ptm)
-#'         counts <- as.integer(data$observable)
-#'         params2 <- list()
-#'         params2$startProbs_initial <- hmm$startProbs
-#'         params2$transProbs_initial <- hmm$transProbs
-#'         params2$emissionParams_initial <- hmm$emissionParams
-#'         params2$transDist <- transDist
-#'         params2$eps <- eps
-#'         params2$maxtime <- max.time
-#'         params2$maxiter <- max.iter
-#'         params2$verbosity <- verbosity
-#'         params2$numThreads <- num.threads
-#'         ptm <- startTimedMessage("Forward-Backward: Obtaining state sequence - no updates\n")
-#'         message(" ... on all chromosomes")
-#'         hmm <- fitHMM(counts=counts, distances=distances, params=params2, algorithm=2)
-#'         message("Time spent in Forward-Backward:", appendLF=FALSE)
-#'         stopTimedMessage(ptm)
-#'     }
-#'     
-#'     ### Construct result object ###
-#'     ptm <- startTimedMessage("Compiling results ...")
-#'     r <- list()
-#'     class(r) <- "NcomponentHMM"
-#'     if (hmm$error == "") {
-#'       
-#'         r$convergenceInfo <- hmm$convergenceInfo
-#'         names(hmm$weights) <- states
-#'         r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams, weights=hmm$weights)
-#'         r$params.initial <- params
-#'         # States and posteriors
-#'         data$posteriorMax <- NA
-#'         for (i1 in 0:(nrow(hmm$posteriors)-1)) {
-#'             mask <- hmm$states == i1
-#'             data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
-#'         }
-#'         rownames(hmm$posteriors) <- states
-#'         data$posteriors <- t(hmm$posteriors)
-#'         data$state <- factor(states, levels=states)[hmm$states+1]
-#'         ## Segmentation
-#'         data.collapse <- data
-#'         mcols(data.collapse) <- NULL
-#'         data.collapse$state <- data$state
-#'         df <- suppressMessages( collapseBins(as.data.frame(data.collapse), column2collapseBy = 'state') )
-#'         segments <- methods::as(df, 'GRanges')
-#'         seqlengths(segments) <- seqlengths(data)[seqlevels(segments)]
-#'         
-#'         ## Reorder the states by mean of the emission distrbution
-#'         stateorder <- as.character(states[order(hmm$emissionParams$mu)])
-#'         # Initial params
-#'         r$params.initial$startProbs_initial <- r$params.initial$startProbs_initial[stateorder]
-#'         names(r$params.initial$startProbs_initial) <- states
-#'         r$params.initial$transProbs_initial <- r$params.initial$transProbs_initial[stateorder, stateorder]
-#'         rownames(r$params.initial$transProbs_initial) <- states
-#'         colnames(r$params.initial$transProbs_initial) <- states
-#'         r$params.initial$emissionParams_initial <- r$params.initial$emissionParams_initial[stateorder, ]
-#'         rownames(r$params.initial$emissionParams_initial) <- states
-#'         # Params
-#'         r$params$startProbs <- r$params$startProbs[stateorder]
-#'         names(r$params$startProbs) <- states
-#'         r$params$transProbs <- r$params$transProbs[stateorder, stateorder]
-#'         rownames(r$params$transProbs) <- states
-#'         colnames(r$params$transProbs) <- states
-#'         r$params$emissionParams <- r$params$emissionParams[stateorder, ]
-#'         rownames(r$params$emissionParams) <- states
-#'         r$params$weights <- r$params$weights[stateorder]
-#'         names(r$params$weights) <- states
-#'         # Posteriors
-#'         data$posteriors <- data$posteriors[,stateorder]
-#'         colnames(data$posteriors) <- states
-#'         # Actual states
-#'         stateorder.mapping <- states
-#'         names(stateorder.mapping) <- stateorder
-#'         stateorder.mapping <- factor(stateorder.mapping, levels=states)
-#'         data$state <- stateorder.mapping[as.character(data$state)]
-#'         segments$state <- stateorder.mapping[as.character(segments$state)]
-#'     }
-#'     r$data <- data
-#'     r$segments <- segments
-#'     stopTimedMessage(ptm)
-#'     
-#'     return(r)
-#' }
-#' 
-#' 
+
+
+
+
+#' Fit an n-component HMM
+#'
+#' Fit an n-component Hidden Markov Model to the supplied counts. The transition matrix is distance-dependent with exponential decaying constant \code{transDist} (only relevant in non-consecutive bins). The zero-th component is a delta distribution to account for empty bins, and all other n-components are modeled as negative binomial distributions.
+#'
+#' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'distance' and 'counts' (or any other column specified as \code{observable}).
+#' @param states An integer vector giving the states for the Hidden Markov Model. State '0' will be modeled by a delta distribution, all other states ('1','2','3',...) with negative binomial distributions.
+#' @param observable A character naming the column of \code{data} that will serve as observable for the HMM.
+#' @param fit.on.chrom A character vector giving the chromosomes on which the HMM will be fitted.
+#' @param transDist The exponential decaying constant for the distance-dependent transition matrix. Should be given in the same units as \code{distances}.
+#' @param eps Convergence threshold for the Baum-Welch algorithm.
+#' @param max.time Maximum running time in seconds for the Baum-Welch algorithm.
+#' @param max.iter Maximum number of iterations for the Baum-Welch algorithm.
+#' @param count.cutoff A cutoff for the \code{observable}. Lower cutoffs will speed up the fitting procedure and improve convergence in some cases. Set to \code{Inf} to disable this filtering.
+#' @param verbosity Integer from c(0,1) specifying the verbosity of the fitting procedure.
+#' @param num.threads Number of CPU to use for the computation.
+#' @param initial.params An \code{\link{NcomponentHMM}} or a file that contains such an object. Parameters from this model will be used for initialization of the fitting procedure.
+#' @return A list with fitted parameters, posteriors, and the input parameters.
+#'
+fitNComponentHMM <- function(data, states=0:5, observable='counts', fit.on.chrom=NULL, transDist=700, eps=0.01, max.time=Inf, max.iter=Inf, count.cutoff=500, verbosity=1, num.threads=1, initial.params=NULL) {
+
+    ### Input checks ###
+    if (is.null(max.time)) {
+        max.time <- Inf
+    }
+    if (is.null(max.iter)) {
+        max.iter <- Inf
+    }
+
+    ### Add distance to bins ###
+    data$distance <- addDistance(data)
+
+    ### Assign variables ###
+    numstates <- length(states)
+    counts <- mcols(data)[,observable]
+    distances <- data$distance
+    data$observable <- counts
+
+    ## Subset by chromosomes
+    if (!is.null(fit.on.chrom)) {
+        counts <- counts[as.logical(data@seqnames %in% fit.on.chrom)]
+    }
+
+    ### Initial probabilities ###
+    if (is.null(initial.params)) {
+        s <- 0.9
+        transProbs_initial <- matrix((1-s)/(numstates-1), ncol=numstates, nrow=numstates, dimnames=list(from=states, to=states))
+        diag(transProbs_initial) <- s
+        startProbs_initial <- rep(1/numstates, numstates)
+        names(startProbs_initial) <- states
+
+        ### Initialization of emission distributions ###
+        counts.greater.0 <- counts[counts>0]
+        mean.counts <- mean(counts.greater.0)
+        var.counts <- var(counts.greater.0)
+        ep <- list()
+        for (state in setdiff(states,0)) {
+            ep[[as.character(state)]] <- data.frame(type='dnbinom', mu=mean.counts*state/2, var=var.counts*state/2)
+        }
+        ep <- do.call(rbind, ep)
+        # Make sure variance is bigger than mean for negative binomial
+        ep$var[ep$mu >= ep$var] <- ep$mu[ep$mu >= ep$var] + 1
+        ep$size <- dnbinom.size(ep$mu, ep$var)
+        ep$prob <- dnbinom.prob(ep$mu, ep$var)
+        ## Add zero-inflation
+        if (0 %in% states) {
+            ep <- rbind(data.frame(type='delta', mu=0, var=0, size=NA, prob=NA), ep)
+        }
+        rownames(ep) <- states
+        emissionParams_initial <- ep
+    } else {
+        model.init <- loadFromFiles(initial.params, check.class='NcomponentHMM')[[1]]
+        transProbs_initial <- model.init$params$transProbs
+        startProbs_initial <- model.init$params$startProbs
+        emissionParams_initial <- model.init$params$emissionParams
+    }
+
+    ### Define parameters for C function ###
+    params <- list()
+    params$startProbs_initial <- startProbs_initial
+    params$transProbs_initial <- transProbs_initial
+    params$emissionParams_initial <- emissionParams_initial
+    params$transDist <- transDist
+    params$eps <- eps
+    params$maxtime <- max.time
+    params$maxiter <- max.iter
+    params$verbosity <- verbosity
+    params$numThreads <- num.threads
+
+    ### Call the C function ###
+    on.exit(cleanup())
+    if (is.null(fit.on.chrom)) {
+        ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
+        hmm <- fitHMM(counts=counts, distances=distances, params=params, algorithm=1)
+        message("Time spent in Baum-Welch:", appendLF=FALSE)
+        stopTimedMessage(ptm)
+    } else {
+        ptm <- startTimedMessage("Baum-Welch: Fitting HMM parameters\n")
+        message(" ... on chromosomes ", paste0(fit.on.chrom, collapse=', '))
+        hmm <- fitHMM(counts=counts, distances=distances, params=params, algorithm=1)
+        message("Time spent in Baum-Welch:", appendLF=FALSE)
+        stopTimedMessage(ptm)
+        counts <- mcols(data)[,observable]
+        params2 <- list()
+        params2$startProbs_initial <- hmm$startProbs
+        params2$transProbs_initial <- hmm$transProbs
+        params2$emissionParams_initial <- hmm$emissionParams
+        params2$transDist <- transDist
+        params2$eps <- eps
+        params2$maxtime <- max.time
+        params2$maxiter <- max.iter
+        params2$verbosity <- verbosity
+        params2$numThreads <- num.threads
+        ptm <- startTimedMessage("Forward-Backward: Obtaining state sequence - no updates\n")
+        message(" ... on all chromosomes")
+        hmm <- fitHMM(counts=counts, distances=distances, params=params2, algorithm=2)
+        message("Time spent in Forward-Backward:", appendLF=FALSE)
+        stopTimedMessage(ptm)
+    }
+
+    ### Construct result object ###
+    ptm <- startTimedMessage("Compiling results ...")
+    r <- list()
+    class(r) <- "NcomponentHMM"
+    if (hmm$error == "") {
+
+        r$convergenceInfo <- hmm$convergenceInfo
+        names(hmm$weights) <- states
+        r$params <- list(startProbs=hmm$startProbs, transProbs=hmm$transProbs, transDist=hmm$transDist, emissionParams=hmm$emissionParams, weights=hmm$weights)
+        r$params.initial <- params
+        # States and posteriors
+        data$posteriorMax <- NA
+        for (i1 in 0:(nrow(hmm$posteriors)-1)) {
+            mask <- hmm$states == i1
+            data$posteriorMax[mask] <- hmm$posteriors[i1+1,mask]
+        }
+        rownames(hmm$posteriors) <- states
+        data$posteriors <- t(hmm$posteriors)
+        data$state <- factor(states, levels=states)[hmm$states+1]
+        ## Segmentation
+        data.collapse <- data
+        mcols(data.collapse) <- NULL
+        data.collapse$state <- data$state
+        df <- suppressMessages( collapseBins(as.data.frame(data.collapse), column2collapseBy = 'state') )
+        segments <- methods::as(df, 'GRanges')
+        seqlengths(segments) <- seqlengths(data)[seqlevels(segments)]
+
+        ## Reorder the states by mean of the emission distrbution
+        stateorder <- as.character(states[order(hmm$emissionParams$mu)])
+        # Initial params
+        r$params.initial$startProbs_initial <- r$params.initial$startProbs_initial[stateorder]
+        names(r$params.initial$startProbs_initial) <- states
+        r$params.initial$transProbs_initial <- r$params.initial$transProbs_initial[stateorder, stateorder]
+        rownames(r$params.initial$transProbs_initial) <- states
+        colnames(r$params.initial$transProbs_initial) <- states
+        r$params.initial$emissionParams_initial <- r$params.initial$emissionParams_initial[stateorder, ]
+        rownames(r$params.initial$emissionParams_initial) <- states
+        # Params
+        r$params$startProbs <- r$params$startProbs[stateorder]
+        names(r$params$startProbs) <- states
+        r$params$transProbs <- r$params$transProbs[stateorder, stateorder]
+        rownames(r$params$transProbs) <- states
+        colnames(r$params$transProbs) <- states
+        r$params$emissionParams <- r$params$emissionParams[stateorder, ]
+        rownames(r$params$emissionParams) <- states
+        r$params$weights <- r$params$weights[stateorder]
+        names(r$params$weights) <- states
+        # Posteriors
+        data$posteriors <- data$posteriors[,stateorder]
+        colnames(data$posteriors) <- states
+        # Actual states
+        stateorder.mapping <- states
+        names(stateorder.mapping) <- stateorder
+        stateorder.mapping <- factor(stateorder.mapping, levels=states)
+        data$state <- stateorder.mapping[as.character(data$state)]
+        segments$state <- stateorder.mapping[as.character(segments$state)]
+    }
+    r$data <- data
+    r$segments <- segments
+    stopTimedMessage(ptm)
+
+    return(r)
+}
+
+
 #' #' @importFrom stats pnbinom qnorm dnbinom
 #' prepareMultivariate = function(data, hmms, statedef, max.states=Inf) {
 #'   

@@ -32,10 +32,25 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// fitHMM
+List fitHMM(const IntegerVector& counts, const NumericVector& distances, const List& params, const int& algorithm);
+RcppExport SEXP _methimpute_fitHMM(SEXP countsSEXP, SEXP distancesSEXP, SEXP paramsSEXP, SEXP algorithmSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector& >::type counts(countsSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type distances(distancesSEXP);
+    Rcpp::traits::input_parameter< const List& >::type params(paramsSEXP);
+    Rcpp::traits::input_parameter< const int& >::type algorithm(algorithmSEXP);
+    rcpp_result_gen = Rcpp::wrap(fitHMM(counts, distances, params, algorithm));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_methimpute_fitBinomialTestHMMcontextTransition", (DL_FUNC) &_methimpute_fitBinomialTestHMMcontextTransition, 8},
     {"_methimpute_cleanup", (DL_FUNC) &_methimpute_cleanup, 0},
+    {"_methimpute_fitHMM", (DL_FUNC) &_methimpute_fitHMM, 4},
     {NULL, NULL, 0}
 };
 
