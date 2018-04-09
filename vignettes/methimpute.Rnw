@@ -15,22 +15,27 @@ BiocStyle::latex()
 \clearpage
 <<options, results='hide', message=FALSE, eval=TRUE, echo=FALSE>>=
 library(methimpute)
-options(width=110)
+options(width=80)
 @
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
-\Rpackage{Methimpute} implements a powerful HMM-based binomial test for methylation status calling. Besides improved accuracy over the classical binomial test, the HMM allows imputation of the methylation status of \textbf{all cytosines} in the genome. It achieves this by borrowing information from neighboring covered cytosines. The confidence in the methylation status call is reported as well. Methimpute also outputs context-specific conversion rates, which might be used to optimize the experimental procedure.
+\Rpackage{Methimpute} implements a powerful HMM-based binomial test for methylation status calling. Besides improved accuracy over the classical binomial test, the HMM allows imputation of the methylation status of \textbf{all cytosines} in the genome. It achieves this by borrowing information from neighboring covered cytosines. The confidence in the methylation status call is reported as well. The HMM can also be used to impute the methylation status for binned data instead of individual cytosines. Furthermore, \Rpackage{methimpute} also outputs context-specific conversion rates, which might be used to optimize the experimental procedure.
 
 For the exact workings of \Rpackage{methimpute} we refer the interested reader to our publication at \url{https://doi.org/10.1101/190223}.
 
-\section{Methylation status calling}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Methylation status calling on individual cytosines}
 
-The following example explains the necessary steps for methylation status calling (and imputation). To keep the calculation time short, it uses only the first 200.000 bp of the Arabidopsis genome. The example consists of three steps: 1) Data import, 2) estimating the distance correlation and 3) methylation status calling.
-At the end of this example you will see that positions without counts are assigned a methylation status, but the confidence (column "posteriorMax") is generally quite low for those cytosines. Column "posteriorMeth" gives the HMM posterior probability for a cytosine being methylated, which can be interpreted as a methylation level for each site. Column "status" contains the imputed and non-imputed methylation status calls.
+The following examples explain the necessary steps for methylation status calling (and imputation). To keep the calculation time short, it uses only the first 200.000 bp of the Arabidopsis genome. The example consists of three steps: 1) Data import, 2) estimating the distance correlation and 3) methylation status calling.
+At the end of this example you will see that positions without counts are assigned a methylation status, but the confidence (column "posteriorMax") is generally quite low for those cytosines, whereas it is high for well-covered cytosines ($>=$0.99).
+
+\subsection{\label{separatecontextmodel}Separate-context model}
+
+The separate-context model runs a separate HMM for each context. This assumes that only within-context correlations are important, and between-context correlations do not need to be considered.\\
 
 \begin{small}
-<<methylation_status_calling, results='show', message=FALSE, eval=TRUE, fig.width=10, fig.height=7, out.width='\\textwidth', fig.align='center'>>=
+<<methylation_status_calling_separate, results='markup', message=FALSE, eval=TRUE, fig.width=10, fig.height=7, out.width='\\textwidth', fig.align='center'>>=
 library(methimpute)
 
 # ===== Step 1: Importing the data ===== #
@@ -45,8 +50,63 @@ print(bsseeker.data)
 fasta.file <- system.file("extdata","arabidopsis_sequence.fa.gz", package="methimpute")
 cytosine.positions <- extractCytosinesFromFASTA(fasta.file,
                                                 contexts = c('CG','CHG','CHH'))
-seqlengths(cytosine.positions) <- seqlengths(bsseeker.data) # only necessary
-                                                            # for our toy example
+methylome <- inflateMethylome(bsseeker.data, cytosine.positions)
+print(methylome)
+
+
+# ===== Step 2: Obtain correlation parameters ===== #
+
+# The correlation of methylation levels between neighboring cytosines is an important
+# parameter for the methylation status calling, so we need to get it first. Keep in mind
+# that we only use the first 200.000 bp here, that's why the plot looks a bit meagre.
+distcor <- distanceCorrelation(methylome, separate.contexts = TRUE)
+fit <- estimateTransDist(distcor)
+print(fit)
+
+
+# ===== Step 3: Methylation status calling (and imputation) ===== #
+
+model <- callMethylationSeparate(data = methylome, transDist = fit$transDist, verbosity = 0)
+# The confidence in the methylation status call is given in the column "posteriorMax".
+# For further analysis one could split the results into high-confidence
+# (posteriorMax >= 0.98) and low-confidence calls (posteriorMax < 0.98) for instance.
+print(model)
+
+# Bisulfite conversion rates can be obtained with
+1 - model$params$emissionParams$Unmethylated
+@
+\end{small}
+
+You can also check several properties of the fitted Hidden Markov Model, such as convergence or transition probabilities, and check how well the fitted distributions describe the data.
+
+\begin{small}
+<<methylation_status_calling_separate_checkresults, results='markup', message=FALSE, eval=TRUE, fig.width=10, fig.height=2.5, out.width='\\textwidth', fig.align='center'>>=
+plotConvergence(model)
+plotTransitionProbs(model)
+plotHistogram(model, total.counts = 10)
+@
+\end{small}
+
+\subsection{Interacting-context model}
+
+The interacting-context model runs a single HMM for all contexts. This takes into account the within-context and between-context correlations and should be more accurate than the separate-context model if sufficient data is available. However, we have observed that in low coverage settings too much information from well covered contexts is diffusing into the low covered contexts (e.g. CHH and CHG will look like CG with very low coverage). In this case, please use the separate-context model in section~\ref{separatecontextmodel}.\\
+
+\begin{small}
+<<methylation_status_calling, results='markup', message=FALSE, eval=TRUE, fig.width=10, fig.height=7, out.width='\\textwidth', fig.align='center'>>=
+library(methimpute)
+
+# ===== Step 1: Importing the data ===== #
+
+# We load an example file in BSSeeker format that comes with the package
+file <- system.file("extdata","arabidopsis_bsseeker.txt.gz", package="methimpute")
+bsseeker.data <- importBSSeeker(file)
+print(bsseeker.data)
+
+# Because most methylation extractor programs report only covered cytosines,
+# we need to inflate the data to inlcude all cytosines (including non-covered sites)
+fasta.file <- system.file("extdata","arabidopsis_sequence.fa.gz", package="methimpute")
+cytosine.positions <- extractCytosinesFromFASTA(fasta.file,
+                                                contexts = c('CG','CHG','CHH'))
 methylome <- inflateMethylome(bsseeker.data, cytosine.positions)
 print(methylome)
 
@@ -68,10 +128,62 @@ model <- callMethylation(data = methylome, transDist = fit$transDist)
 # For further analysis one could split the results into high-confidence
 # (posteriorMax >= 0.98) and low-confidence calls (posteriorMax < 0.98) for instance.
 print(model)
+
+# Bisulfite conversion rates can be obtained with
+1 - model$params$emissionParams$Unmethylated
 @
 \end{small}
 
-\subsection{\label{sec:descriptionofcolumns}Description of columns}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Methylation status calling on binned data}
+
+The following examples explain the necessary steps for methylation status calling (and imputation) on binned data, such as commonly used 100bp bins. To keep the calculation time short, it uses only the first 200.000 bp of the Arabidopsis genome. The example consists of four steps: 1) Data import, 2) binning and 3) methylation status calling.\\
+
+\begin{small}
+<<methylation_status_calling_binned, results='markup', message=FALSE, eval=TRUE, fig.width=10, fig.height=7, out.width='\\textwidth', fig.align='center'>>=
+library(methimpute)
+
+# ===== Step 1: Importing the data ===== #
+
+# We load an example file in BSSeeker format that comes with the package
+file <- system.file("extdata","arabidopsis_bsseeker.txt.gz", package="methimpute")
+bsseeker.data <- importBSSeeker(file)
+print(bsseeker.data)
+
+# Because most methylation extractor programs report only covered cytosines,
+# we need to inflate the data to inlcude all cytosines (including non-covered sites)
+fasta.file <- system.file("extdata","arabidopsis_sequence.fa.gz", package="methimpute")
+cytosine.positions <- extractCytosinesFromFASTA(fasta.file,
+                                                contexts = c('CG','CHG','CHH'))
+methylome <- inflateMethylome(bsseeker.data, cytosine.positions)
+print(methylome)
+
+
+# ===== Step 2: Binning into 100bp bins ===== #
+binnedMethylome <- binMethylome(methylome, binsize = 100, contexts = c('total','CG'))
+print(binnedMethylome$CG)
+
+
+# ===== Step 3: Methylation status calling (and imputation) ===== #
+
+binnedModel <- callMethylation(data = binnedMethylome$CG)
+print(binnedModel)
+@
+\end{small}
+
+You can also check several properties of the fitted Hidden Markov Model, such as convergence or transition probabilities, and check how well the fitted distributions describe the data. This last point is important because the binomial distributions that the HMM uses were originally meant to describe individual cytosines and not bins. However, we have observed that they still capture the bimodal distributions of methylation levels in binned data quite well. Note that the histogram for our example looks quite sparse due to the very low number of bins that were used.
+
+\begin{small}
+<<methylation_status_calling_binned_checkresults, results='markup', message=FALSE, eval=TRUE, fig.width=5, fig.height=2.5, out.width='0.5\\textwidth', fig.align='center'>>=
+plotConvergence(binnedModel)
+plotTransitionProbs(binnedModel)
+plotHistogram(binnedModel, total.counts = 150)
+@
+\end{small}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{\label{sec:descriptionofcolumns}Description of columns in the output}
 \begin{itemize}
 \item \textbf{context} The sequence context of the cytosine.
 \item \textbf{counts} Counts for methylated and total number of reads at each position.
@@ -85,12 +197,13 @@ print(model)
 % \item \textbf{rc.counts} Recalibrated counts for methylated and total number of reads at each position (see ?methimputeBinomialHMM for details).
 \end{itemize}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Plots and enrichment analysis}
 
 This package also offers plotting functions for a simple enrichment analysis. Let's say we are interested in the methylation level around genes and transposable elements. We would also like to see how the imputation works on cytosines with missing data compared to covered cytosines.
 
 \begin{small}
-<<enrichment_analysis, results='show', message=FALSE, eval=TRUE, fig.width=10, fig.height=4, out.width='0.8\\textwidth', fig.align='center'>>=
+<<enrichment_analysis, results='markup', message=FALSE, eval=TRUE, fig.width=10, fig.height=4, out.width='0.8\\textwidth', fig.align='center'>>=
 # Define categories to distinguish missing from covered cytosines
 model$data$category <- factor('covered', levels=c('missing', 'covered'))
 model$data$category[model$data$counts[,'total']>=1] <- 'covered'
@@ -98,6 +211,8 @@ model$data$category[model$data$counts[,'total']==0] <- 'missing'
 
 # Note that the plots look a bit ugly because our toy data has only 200.000 datapoints.
 data(arabidopsis_genes)
+seqlengths(model$data) <- seqlengths(arabidopsis_genes)[seqlevels(model$data)] # this
+                          # line should only be necessary for our toy example
 plotEnrichment(model$data, annotation=arabidopsis_genes, range = 2000,
                category.column = 'category')
 data(arabidopsis_TEs)
@@ -107,6 +222,7 @@ plotEnrichment(model$data, annotation=arabidopsis_TEs, range = 2000,
 \end{small}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Export results}
 
 You can export the results as TSV file with the following columns:
@@ -115,7 +231,7 @@ You can export the results as TSV file with the following columns:
 \end{itemize}
 
 \begin{small}
-<<export_results, results='show', message=FALSE, eval=TRUE>>=
+<<export_results, results='markup', message=FALSE, eval=TRUE>>=
 exportMethylome(model, filename = tempfile())
 @
 \end{small}
@@ -123,6 +239,7 @@ exportMethylome(model, filename = tempfile())
 Please see section \ref{sec:descriptionofcolumns} for a description of the columns.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Session Info}
 \begin{scriptsize}
 <<sessionInfo, eval=TRUE, results="asis">>=
