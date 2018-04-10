@@ -5,7 +5,7 @@
 #' @param model A \code{\link{methimputeBinomialHMM}} object.
 #' @param filename The name of the file to be exported.
 #' @return \code{NULL}
-#' @importFrom utils write.table
+#' @importFrom data.table fwrite
 #' @export
 #' @examples
 #'## Get some toy data
@@ -21,8 +21,7 @@ exportMethylome <- function(model, filename) {
     data <- model$data
     df <- methods::as(data, 'data.frame')
     df <- df[,c('seqnames', 'start', 'strand', 'context', 'counts.methylated', 'counts.total', 'posteriorMax', 'posteriorMeth', 'posteriorUnmeth', 'status','rc.meth.lvl')]
-    fwrite(df,file = filename, quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
-    #utils::write.table(df, file = filename, quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
+    data.table::fwrite(df,file = filename, quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
     stopTimedMessage(ptm)
     
 }

@@ -34,6 +34,7 @@ NULL
 
 #' @describeIn import Import a BSMAP methylation extractor file.
 #' @importFrom Biostrings readDNAStringSet vcountPattern reverseComplement
+#' @importFrom data.table fread
 #' @importFrom utils read.table
 #' @export
 #' 
@@ -42,7 +43,11 @@ importBSMAP <- function(file, chrom.lengths=NULL, skip=1, contexts=c(CG='NNCGN',
     ## Import data
     classes <- c('character', 'numeric', 'character', 'character', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric')
     ptm <- startTimedMessage("Reading file ", file, " ...")
-    data.raw <- utils::read.table(file, skip=skip, sep='\t', comment.char='', colClasses=classes)
+    data.raw <- tryCatch({
+        data.raw <- data.table::fread(file, skip=skip, sep='\t', colClasses=classes)
+    }, error = function(err) {
+        data.raw <- utils::read.table(file, skip=skip, sep='\t', colClasses=classes)
+    })
     data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=data.raw$V3, context=factor(NA, levels=names(contexts)), context.full=data.raw$V4)
     counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
     counts[,"methylated"] <- data.raw$V7
@@ -72,7 +77,11 @@ importBSMAP <- function(file, chrom.lengths=NULL, skip=1, contexts=c(CG='NNCGN',
     ## Assign seqlengths
     if (!is.null(chrom.lengths)) {
         if (is.character(chrom.lengths)) {
-            df <- utils::read.table(chrom.lengths, header=TRUE)
+            df <- tryCatch({
+                df <- data.table::fread(chrom.lengths, header=TRUE)
+            }, error = function(err) {
+                df <- utils::read.table(chrom.lengths, header=TRUE)
+            })
         } else if (is.data.frame(chrom.lengths)) {
             df <- chrom.lengths
         }
@@ -88,6 +97,7 @@ importBSMAP <- function(file, chrom.lengths=NULL, skip=1, contexts=c(CG='NNCGN',
 
 
 #' @describeIn import Import a Methylpy methylation extractor file.
+#' @importFrom data.table fread
 #' @importFrom utils read.table
 #' @export
 #'
@@ -96,7 +106,11 @@ importMethylpy <- function(file, chrom.lengths=NULL, skip=1, contexts=c(CG='CGN'
     ## Import data
     classes <- c('character', 'numeric', 'character', 'character', 'numeric', 'numeric', 'numeric')
     ptm <- startTimedMessage("Reading file ", file, " ...")
-    data.raw <- utils::read.table(file, skip=skip, sep='\t', comment.char='', colClasses=classes)
+    data.raw <- tryCatch({
+        data.raw <- data.table::fread(file, skip=skip, sep='\t', colClasses=classes)
+    }, error = function(err) {
+        data.raw <- utils::read.table(file, skip=skip, sep='\t', colClasses=classes)
+    })
     data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=data.raw$V3, context=factor(NA, levels=names(contexts)), context.full=data.raw$V4)
     counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
     counts[,"methylated"] <- data.raw$V5
@@ -124,7 +138,11 @@ importMethylpy <- function(file, chrom.lengths=NULL, skip=1, contexts=c(CG='CGN'
     ## Assign seqlengths
     if (!is.null(chrom.lengths)) {
         if (is.character(chrom.lengths)) {
-            df <- utils::read.table(chrom.lengths, header=TRUE)
+            df <- tryCatch({
+                df <- data.table::fread(chrom.lengths, header=TRUE)
+            }, error = function(err) {
+                df <- utils::read.table(chrom.lengths, header=TRUE)
+            })
         } else if (is.data.frame(chrom.lengths)) {
             df <- chrom.lengths
         }
@@ -140,6 +158,7 @@ importMethylpy <- function(file, chrom.lengths=NULL, skip=1, contexts=c(CG='CGN'
 
 
 #' @describeIn import Import a BSSeeker methylation extractor file.
+#' @importFrom data.table fread
 #' @importFrom utils read.table
 #' @export
 #' 
@@ -148,7 +167,11 @@ importBSSeeker <- function(file, chrom.lengths=NULL, skip=0) {
     # classes <- c(seqnames='character', nucleotide='character', position='numeric', context='character', context.dinucleotide='character', methylation.level='numeric', counts.methylated='numeric', counts.total='numeric')
     classes <- c('character', 'character', 'numeric', 'character', 'character', 'numeric', 'numeric', 'numeric')
     ptm <- startTimedMessage("Reading file ", file, " ...")
-    data.raw <- utils::read.table(file, skip=skip, sep='\t', comment.char='', colClasses=classes)
+    data.raw <- tryCatch({
+        data.raw <- data.table::fread(file, skip=skip, sep='\t', colClasses=classes)
+    }, error = function(err) {
+        data.raw <- utils::read.table(file, skip=skip, sep='\t', colClasses=classes)
+    })
     data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V3, end=data.raw$V3), strand=c('C'='+', 'G'='-')[data.raw$V2], context=data.raw$V4)
     counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
     counts[,"methylated"] <- data.raw$V7
@@ -161,7 +184,11 @@ importBSSeeker <- function(file, chrom.lengths=NULL, skip=0) {
     ## Assign seqlengths
     if (!is.null(chrom.lengths)) {
         if (is.character(chrom.lengths)) {
-            df <- utils::read.table(chrom.lengths, header=TRUE)
+            df <- tryCatch({
+                df <- data.table::fread(chrom.lengths, header=TRUE)
+            }, error = function(err) {
+                df <- utils::read.table(chrom.lengths, header=TRUE)
+            })
         } else if (is.data.frame(chrom.lengths)) {
             df <- chrom.lengths
         }
@@ -180,6 +207,7 @@ importBSSeeker <- function(file, chrom.lengths=NULL, skip=0) {
 
 
 #' @describeIn import Import a Bismark methylation extractor file.
+#' @importFrom data.table fread
 #' @importFrom utils read.table
 #' @export
 #'
@@ -188,8 +216,11 @@ importBismark <- function(file, chrom.lengths=NULL, skip=0) {
     # classes <- c(seqnames='character', position='numeric', strand='character', counts.methylated='numeric', counts.total='numeric', context='character', context.trinucleotide='character')
     classes <- c('character', 'numeric', 'character', 'numeric', 'numeric', 'character', 'character')
     ptm <- startTimedMessage("Reading file ", file, " ...")
-    #data.raw <- utils::read.table(file, skip=skip, sep='\t', comment.char='', colClasses=classes)
-    data.raw <- fread(file, skip=skip, sep='\t', colClasses=classes)
+    data.raw <- tryCatch({
+        data.raw <- data.table::fread(file, skip=skip, sep='\t', colClasses=classes)
+    }, error = function(err) {
+        data.raw <- utils::read.table(file, skip=skip, sep='\t', colClasses=classes)
+    })
     data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=data.raw$V3, context=data.raw$V6)
     counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
     counts[,"methylated"] <- data.raw$V4
@@ -202,7 +233,11 @@ importBismark <- function(file, chrom.lengths=NULL, skip=0) {
     ## Assign seqlengths
     if (!is.null(chrom.lengths)) {
         if (is.character(chrom.lengths)) {
-            df <- utils::read.table(chrom.lengths, header=TRUE)
+            df <- tryCatch({
+                df <- data.table::fread(chrom.lengths, header=TRUE)
+            }, error = function(err) {
+                df <- utils::read.table(chrom.lengths, header=TRUE)
+            })
         } else if (is.data.frame(chrom.lengths)) {
             df <- chrom.lengths
         }
@@ -229,6 +264,7 @@ importBismark <- function(file, chrom.lengths=NULL, skip=0) {
 #' @param skip The number of lines to skip. Usually 1 if the file contains a header and 0 otherwise.
 #' @return A \code{\link{methimputeData}} object.
 #' 
+#' @importFrom data.table fread
 #' @importFrom utils read.table
 #' @examples
 #'## Get an example file in Rene format
@@ -240,7 +276,11 @@ importRene <- function(file, chrom.lengths=NULL, skip=1) {
 
     classes <- c('character', 'numeric', 'character', 'NULL', 'character', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric')
     ptm <- startTimedMessage("Reading file ", file, " ...")
-    data.raw <- utils::read.table(file, skip=skip, sep='\t', comment.char='', colClasses=classes)
+    data.raw <- tryCatch({
+        data.raw <- data.table::fread(file, skip=skip, sep='\t', colClasses=classes)
+    }, error = function(err) {
+        data.raw <- utils::read.table(file, skip=skip, sep='\t', colClasses=classes)
+    })
     data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=c('F'='+', 'R'='-')[data.raw$V3], methylated=data.raw$V10, context=data.raw$V5)
     counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
     counts[,"methylated"] <- data.raw$V6
@@ -253,7 +293,11 @@ importRene <- function(file, chrom.lengths=NULL, skip=1) {
     ## Assign seqlengths
     if (!is.null(chrom.lengths)) {
         if (is.character(chrom.lengths)) {
-            df <- utils::read.table(chrom.lengths, header=TRUE)
+            df <- tryCatch({
+                df <- data.table::fread(chrom.lengths, header=TRUE)
+            }, error = function(err) {
+                df <- utils::read.table(chrom.lengths, header=TRUE)
+            })
         } else if (is.data.frame(chrom.lengths)) {
             df <- chrom.lengths
         }
@@ -279,6 +323,7 @@ importRene <- function(file, chrom.lengths=NULL, skip=1) {
 #' #' @param temp.store A folder where to save temporary files on disk. Set to \code{NULL} if no temporary files should be created.
 #' #' @return A \code{\link{methimputeData}} object.
 #' #' 
+#' #' @importFrom data.table fread
 #' #' @importFrom utils read.table
 #' #' @export
 #' importBismark <- function(files, chrom.lengths=NULL, temp.store=tempfile("importBismark")) {
@@ -300,7 +345,11 @@ importRene <- function(file, chrom.lengths=NULL, skip=1) {
 #'         savename <- file.path(temp.store, paste0(basename(file), '.RData'))
 #'         if (!file.exists(savename)) {
 #'             ptm <- startTimedMessage("Reading file ", file, " ...")
-#'             data.raw <- utils::read.table(file, skip=1, sep='\t', comment.char='', colClasses=classes)
+#'             data.raw <- tryCatch({
+#'                 data.raw <- data.table::fread(file, skip=1, sep='\t', colClasses=classes)
+#'             }, error = function(err) {
+#'                 data.raw <- utils::read.table(file, skip=1, sep='\t', colClasses=classes)
+#'             })
 #'             data <- GRanges(seqnames=data.raw$V3, ranges=IRanges(start=data.raw$V4, end=data.raw$V4), strand="*", methylated=factor(data.raw$V2, levels=c("-", "+")), context=data.raw$V5)
 #'             rm(data.raw)
 #'             stopTimedMessage(ptm)
@@ -365,7 +414,11 @@ importRene <- function(file, chrom.lengths=NULL, skip=1) {
 #'     ## Assign seqlengths
 #'     if (!is.null(chrom.lengths)) {
 #'         if (is.character(chrom.lengths)) {
-#'             df <- utils::read.table(chrom.lengths, header=TRUE)
+#'             df <- tryCatch({
+#'                 df <- data.table::fread(chrom.lengths, header=TRUE)
+#'             }, error = function(err) {
+#'                 df <- utils::read.table(chrom.lengths, header=TRUE)
+#'             })
 #'         } else if (is.data.frame(chrom.lengths)) {
 #'             df <- chrom.lengths
 #'         }

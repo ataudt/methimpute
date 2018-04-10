@@ -1,15 +1,14 @@
 Package: methimpute
 Type: Package
 Title: Imputation-guided re-construction of complete methylomes from WGBS data
-Version: 1.1.1
+Version: 1.1.2
 Author: Aaron Taudt
 Maintainer: Aaron Taudt <aaron.taudt@gmail.com>
 Description: This package implements functions for calling methylation for all cytosines in the genome.
 Depends:
     R (>= 3.4.0),
     GenomicRanges,
-    ggplot2,
-    data.table
+    ggplot2
 Imports:
     Rcpp (>= 0.12.4.5),
     methods,

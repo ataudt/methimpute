@@ -1,3 +1,11 @@
+CHANGES IN VERSION 1.1.2
+------------------------
+  
+NEW FEATURES
+
+    o Data import with data.table::fread for faster performance.
+
+
 CHANGES IN VERSION 1.1.1
 ------------------------
   
