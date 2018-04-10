@@ -8,7 +8,8 @@ Description: This package implements functions for calling methylation for all c
 Depends:
     R (>= 3.4.0),
     GenomicRanges,
-    ggplot2
+    ggplot2,
+    data.table
 Imports:
     Rcpp (>= 0.12.4.5),
     methods,
@@ -19,7 +20,8 @@ Imports:
     IRanges,
     Biostrings,
     reshape2,
-    minpack.lm
+    minpack.lm,
+    data.table
 Suggests:
     knitr,
     BiocStyle

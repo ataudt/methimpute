@@ -188,7 +188,8 @@ importBismark <- function(file, chrom.lengths=NULL, skip=0) {
     # classes <- c(seqnames='character', position='numeric', strand='character', counts.methylated='numeric', counts.total='numeric', context='character', context.trinucleotide='character')
     classes <- c('character', 'numeric', 'character', 'numeric', 'numeric', 'character', 'character')
     ptm <- startTimedMessage("Reading file ", file, " ...")
-    data.raw <- utils::read.table(file, skip=skip, sep='\t', comment.char='', colClasses=classes)
+    #data.raw <- utils::read.table(file, skip=skip, sep='\t', comment.char='', colClasses=classes)
+    data.raw <- fread(file, skip=skip, sep='\t', colClasses=classes)
     data <- GRanges(seqnames=data.raw$V1, ranges=IRanges(start=data.raw$V2, end=data.raw$V2), strand=data.raw$V3, context=data.raw$V6)
     counts <- array(NA, dim=c(length(data), 2), dimnames=list(NULL, c("methylated", "total")))
     counts[,"methylated"] <- data.raw$V4
