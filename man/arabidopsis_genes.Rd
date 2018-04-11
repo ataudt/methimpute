@@ -4,9 +4,9 @@
 \name{arabidopsis_genes}
 \alias{arabidopsis_genes}
 \title{Gene coordinates for Arabidopsis (chr1)}
-\format{A \code{\link[GenomicRanges]{GRanges}} object.}
+\format{A \code{\link[GenomicRanges]{GRanges-class}} object.}
 \description{
-A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains gene coordinates of chr1 from Arabidopsis.
+A \code{\link[GenomicRanges]{GRanges-class}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains gene coordinates of chr1 from Arabidopsis.
 }
 \examples{
 data(arabidopsis_genes)

@@ -2,9 +2,9 @@
 #'
 #' Wrapper to load \pkg{\link{methimpute}} objects from file and check the class of the loaded objects.
 #'
-#' @param files A list of \code{\link{GRanges}} or \code{\link{methimputeBinomialHMM}} objects or a character vector with files that contain such objects.
+#' @param files A list of \code{\link{GRanges-class}} or \code{\link{methimputeBinomialHMM}} objects or a character vector with files that contain such objects.
 #' @param check.class Any combination of \code{c('GRanges', 'methimputeBinomialHMM')}. If any of the loaded objects does not belong to the specified class, an error is thrown.
-#' @return A list of \code{\link{GRanges}} or \code{\link{methimputeBinomialHMM}} objects.
+#' @return A list of \code{\link{GRanges-class}} or \code{\link{methimputeBinomialHMM}} objects.
 #' 
 #' @export
 #' @examples

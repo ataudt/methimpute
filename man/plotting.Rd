@@ -34,7 +34,7 @@ plotPosteriorDistance(model, datapoints = 1e+06, binwidth = 5,
 
 \item{datapoints}{The number of randomly selected datapoints for the plot.}
 
-\item{annotation}{A \code{\link[GenomicRanges]{GRanges}} object with coordinates for the annotation.}
+\item{annotation}{A \code{\link[GenomicRanges]{GRanges-class}} object with coordinates for the annotation.}
 
 \item{windowsize}{Resolution in base-pairs for the curve upstream and downstream of the annotation.}
 

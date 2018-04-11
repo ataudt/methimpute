@@ -7,9 +7,9 @@
 inflateMethylome(methylome, methylome.full)
 }
 \arguments{
-\item{methylome}{A \code{\link[GenomicRanges]{GRanges}} with methylation counts.}
+\item{methylome}{A \code{\link[GenomicRanges]{GRanges-class}} with methylation counts.}
 
-\item{methylome.full}{A \code{\link[GenomicRanges]{GRanges}} with positions for all cytosines or a file with such an object.}
+\item{methylome.full}{A \code{\link[GenomicRanges]{GRanges-class}} with positions for all cytosines or a file with such an object.}
 }
 \value{
 The \code{methylome.full} object with added metadata column 'counts'.

@@ -24,11 +24,11 @@ NULL
 
 #' Gene coordinates for Arabidopsis (chr1)
 #'
-#' A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains gene coordinates of chr1 from Arabidopsis.
+#' A \code{\link[GenomicRanges]{GRanges-class}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains gene coordinates of chr1 from Arabidopsis.
 #'
 #' @docType data
 #' @name arabidopsis_genes
-#' @format A \code{\link[GenomicRanges]{GRanges}} object.
+#' @format A \code{\link[GenomicRanges]{GRanges-class}} object.
 #' @examples
 #'data(arabidopsis_genes)
 #'print(arabidopsis_genes)
@@ -36,11 +36,11 @@ NULL
 
 #' Transposable element coordinates for Arabidopsis (chr1)
 #'
-#' A \code{\link[GenomicRanges]{GRanges}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains transposable element coordinates of chr1 from Arabidopsis.
+#' A \code{\link[GenomicRanges]{GRanges-class}} object for demonstration purposes in examples of package \pkg{\link{methimpute}}. The object contains transposable element coordinates of chr1 from Arabidopsis.
 #'
 #' @docType data
 #' @name arabidopsis_TEs
-#' @format A \code{\link[GenomicRanges]{GRanges}} object.
+#' @format A \code{\link[GenomicRanges]{GRanges-class}} object.
 #' @examples
 #'data(arabidopsis_TEs)
 #'print(arabidopsis_TEs)
@@ -62,7 +62,7 @@ NULL
 
 #' methimputeData
 #'
-#' A \code{\link[GenomicRanges]{GRanges}} object containing cytosine coordinates with meta-data columns 'context' and 'counts'.
+#' A \code{\link[GenomicRanges]{GRanges-class}} object containing cytosine coordinates with meta-data columns 'context' and 'counts'.
 #' @name methimputeData
 #' @seealso \code{\link{methimpute-objects}}
 NULL
@@ -91,7 +91,7 @@ NULL
 #' \item{convergenceInfo}{A list() with information about the convergence of the model fitting procedure.}
 #' \item{params}{A list() with fitted and non-fitted model parameters.}
 #' \item{params.initial}{A list() with initial values for the model parameters.}
-#' \item{data}{A \code{\link[GenomicRanges]{GRanges}} with cytosine positions and methylation status calls.}
+#' \item{data}{A \code{\link[GenomicRanges]{GRanges-class}} with cytosine positions and methylation status calls.}
 #' \item{segments}{The \code{data} entry where coordinates of consecutive cytosines with the same methylation status have been merged.}
 #' 
 #' @name methimputeBinomialHMM

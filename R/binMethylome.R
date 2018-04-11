@@ -2,9 +2,9 @@
 #' 
 #' This page provides an overview of all \pkg{\link{methimpute}} binning functions.
 #'
-#' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'context' and 'counts' (which is a matrix with columns 'methylated' and 'total').
+#' @param data A \code{\link[GenomicRanges]{GRanges-class}} object with metadata columns 'context' and 'counts' (which is a matrix with columns 'methylated' and 'total').
 #' @param binsize The window size used for binning.
-#' @return A \code{\link[GenomicRanges]{GRanges}} object for \code{binCounts} and \code{binPostions}. A \code{list()} of \code{\link[GenomicRanges]{GRanges}} objects for \code{binMethylome}.
+#' @return A \code{\link[GenomicRanges]{GRanges-class}} object for \code{binCounts} and \code{binPostions}. A \code{list()} of \code{\link[GenomicRanges]{GRanges-class}} objects for \code{binMethylome}.
 #' @name binning
 #' @examples 
 #'## Get some toy data

@@ -14,7 +14,7 @@ binPositions(data, binsize)
 binMethylome(data, binsize, contexts = "total", columns.average = NULL)
 }
 \arguments{
-\item{data}{A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'context' and 'counts' (which is a matrix with columns 'methylated' and 'total').}
+\item{data}{A \code{\link[GenomicRanges]{GRanges-class}} object with metadata columns 'context' and 'counts' (which is a matrix with columns 'methylated' and 'total').}
 
 \item{binsize}{The window size used for binning.}
 
@@ -23,7 +23,7 @@ binMethylome(data, binsize, contexts = "total", columns.average = NULL)
 \item{columns.average}{A character vector with names of columns in \code{data} that should be averaged in bins.}
 }
 \value{
-A \code{\link[GenomicRanges]{GRanges}} object for \code{binCounts} and \code{binPostions}. A \code{list()} of \code{\link[GenomicRanges]{GRanges}} objects for \code{binMethylome}.
+A \code{\link[GenomicRanges]{GRanges-class}} object for \code{binCounts} and \code{binPostions}. A \code{list()} of \code{\link[GenomicRanges]{GRanges-class}} objects for \code{binMethylome}.
 }
 \description{
 This page provides an overview of all \pkg{\link{methimpute}} binning functions.

@@ -521,7 +521,7 @@ binomialTestMethylation <- function(data, conversion.rate, min.coverage=3, p.thr
 #' #' 
 #' #' Fit a two-component Hidden Markov Model to the supplied counts. The transition matrix is distance-dependent with exponential decaying constant \code{transDist}. Components are modeled as negative binomial distributions.
 #' #' 
-#' #' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata column 'counts' (or any other column specified as \code{observable}).
+#' #' @param data A \code{\link[GenomicRanges]{GRanges-class}} object with metadata column 'counts' (or any other column specified as \code{observable}).
 #' #' @param observable A character naming the metadata column of \code{data} that will serve as observable for the HMM.
 #' #' @param fit.on.chrom A character vector giving the chromosomes on which the HMM will be fitted.
 #' #' @param transDist The exponential decaying constant for the distance-dependent transition matrix. Should be given in the same units as \code{distances}.
@@ -659,7 +659,7 @@ binomialTestMethylation <- function(data, conversion.rate, min.coverage=3, p.thr
 #' #'
 #' #' Fit an n-component Hidden Markov Model to the supplied counts. The transition matrix is distance-dependent with exponential decaying constant \code{transDist} (only relevant in non-consecutive bins). The zero-th component is a delta distribution to account for empty bins, and all other n-components are modeled as negative binomial distributions.
 #' #'
-#' #' @param data A \code{\link[GenomicRanges]{GRanges}} object with metadata columns 'distance' and 'counts' (or any other column specified as \code{observable}).
+#' #' @param data A \code{\link[GenomicRanges]{GRanges-class}} object with metadata columns 'distance' and 'counts' (or any other column specified as \code{observable}).
 #' #' @param states An integer vector giving the states for the Hidden Markov Model. State '0' will be modeled by a delta distribution, all other states ('1','2','3',...) with negative binomial distributions.
 #' #' @param observable A character naming the column of \code{data} that will serve as observable for the HMM.
 #' #' @param fit.on.chrom A character vector giving the chromosomes on which the HMM will be fitted.

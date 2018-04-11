@@ -8,7 +8,7 @@ A list() with the following entries:
 \item{convergenceInfo}{A list() with information about the convergence of the model fitting procedure.}
 \item{params}{A list() with fitted and non-fitted model parameters.}
 \item{params.initial}{A list() with initial values for the model parameters.}
-\item{data}{A \code{\link[GenomicRanges]{GRanges}} with cytosine positions and methylation status calls.}
+\item{data}{A \code{\link[GenomicRanges]{GRanges-class}} with cytosine positions and methylation status calls.}
 \item{segments}{The \code{data} entry where coordinates of consecutive cytosines with the same methylation status have been merged.}
 }
 \description{

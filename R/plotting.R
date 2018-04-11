@@ -59,10 +59,10 @@ getStateColors <- function(states=NULL) {
 
 #' Transform genomic coordinates
 #'
-#' Add two columns with transformed genomic coordinates to the \code{\link{GRanges}} object. This is useful for making genomewide plots.
+#' Add two columns with transformed genomic coordinates to the \code{\link{GRanges-class}} object. This is useful for making genomewide plots.
 #'
-#' @param gr A \code{\link{GRanges}} object.
-#' @return The input \code{\link{GRanges}} with two additional metadata columns 'start.genome' and 'end.genome'.
+#' @param gr A \code{\link{GRanges-class}} object.
+#' @return The input \code{\link{GRanges-class}} with two additional metadata columns 'start.genome' and 'end.genome'.
 transCoord <- function(gr) {
     cum.seqlengths <- cumsum(as.numeric(seqlengths(gr)))
     cum.seqlengths.0 <- c(0,cum.seqlengths[-length(cum.seqlengths)])
@@ -247,7 +247,7 @@ plotConvergence <- function(model) {
 
 
 #' @describeIn plotting Plot an enrichment profile around an annotation.
-#' @param annotation A \code{\link[GenomicRanges]{GRanges}} object with coordinates for the annotation.
+#' @param annotation A \code{\link[GenomicRanges]{GRanges-class}} object with coordinates for the annotation.
 #' @param windowsize Resolution in base-pairs for the curve upstream and downstream of the annotation.
 #' @param insidewindows Number of data points for the curve inside the annotation.
 #' @param range Distance upstream and downstream for which the enrichment profile is calculated.
@@ -642,7 +642,7 @@ plotPosteriorDistance <- function(model, datapoints=1e6, binwidth=5, max.coverag
 
 #' #' @describeIn enrichment_analysis Compute the fold enrichment of combinatorial states for multiple annotations.
 #' #' @param model A \code{\link{combinedMultimodel}} or \code{\link{multimodel}} object or a file that contains such an object.
-#' #' @param annotations A \code{list()} with \code{\link{GRanges}} objects containing coordinates of multiple annotations The names of the list entries will be used to name the return values.
+#' #' @param annotations A \code{list()} with \code{\link{GRanges-class}} objects containing coordinates of multiple annotations The names of the list entries will be used to name the return values.
 #' #' @param plot A logical indicating whether the plot or an array with the fold enrichment values is returned.
 #' #' @param logscale Whether (\code{TRUE}) or not (\code{FALSE}) to plot on log scale.
 #' #' @param cluster Whether (\code{TRUE}) or not (\code{FALSE}) to cluster the annotations.

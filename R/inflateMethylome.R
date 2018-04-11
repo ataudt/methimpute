@@ -2,8 +2,8 @@
 #' 
 #' Inflate an imported methylation extractor file to contain all cytosine positions. This is useful to obtain a full methylome, including non-covered cytosines, because most methylation extractor programs only report covered cytosines.
 #' 
-#' @param methylome A \code{\link[GenomicRanges]{GRanges}} with methylation counts. 
-#' @param methylome.full A \code{\link[GenomicRanges]{GRanges}} with positions for all cytosines or a file with such an object.
+#' @param methylome A \code{\link[GenomicRanges]{GRanges-class}} with methylation counts. 
+#' @param methylome.full A \code{\link[GenomicRanges]{GRanges-class}} with positions for all cytosines or a file with such an object.
 #' @return The \code{methylome.full} object with added metadata column 'counts'.
 #' 
 #' @export

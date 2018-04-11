@@ -17,7 +17,7 @@ importRene(file, chrom.lengths = NULL, skip = 1)
 A \code{\link{methimputeData}} object.
 }
 \description{
-Import a Rene methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
+Import a Rene methylation extractor file into a \code{\link[GenomicRanges]{GRanges-class}} object.
 }
 \examples{
 ## Get an example file in Rene format

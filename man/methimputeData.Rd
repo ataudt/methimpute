@@ -4,7 +4,7 @@
 \alias{methimputeData}
 \title{methimputeData}
 \description{
-A \code{\link[GenomicRanges]{GRanges}} object containing cytosine coordinates with meta-data columns 'context' and 'counts'.
+A \code{\link[GenomicRanges]{GRanges-class}} object containing cytosine coordinates with meta-data columns 'context' and 'counts'.
 }
 \seealso{
 \code{\link{methimpute-objects}}

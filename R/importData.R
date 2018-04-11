@@ -257,7 +257,7 @@ importBismark <- function(file, chrom.lengths=NULL, skip=0) {
 
 #' Import a Rene methylation extractor file
 #' 
-#' Import a Rene methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
+#' Import a Rene methylation extractor file into a \code{\link[GenomicRanges]{GRanges-class}} object.
 #' 
 #' @param file The file to import.
 #' @param chrom.lengths A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).
@@ -316,7 +316,7 @@ importRene <- function(file, chrom.lengths=NULL, skip=1) {
 
 #' #' Import a Bismark methylation extractor file
 #' #' 
-#' #' Import a Bismark methylation extractor file into a \code{\link[GenomicRanges]{GRanges}} object.
+#' #' Import a Bismark methylation extractor file into a \code{\link[GenomicRanges]{GRanges-class}} object.
 #' #' 
 #' #' @param files The files to import.
 #' #' @param chrom.lengths A data.frame with chromosome names in the first, and chromosome lengths in the second column. Only chromosomes named in here will be returned. Alternatively a tab-separated file with such a data.frame (with headers).
