@@ -375,7 +375,7 @@ Rcpp::List HMM_context::baumWelch(double eps, double maxiter, double maxtime)
 		}
 		else if (this->emissionDensities[0]->get_name() == BINOMIAL_TEST_CONTEXT)
 		{ 
-			if (this->NSTATES == 2 | this->UPDATE_PROCEDURE == 1)
+			if ((this->NSTATES == 2) | (this->UPDATE_PROCEDURE == 1))
 			{
 				for (int i=0; i<this->NSTATES; i++)
 				{
