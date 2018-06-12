@@ -1,0 +1,18 @@
+citEntry(entry="article",
+         title = "METHimpute: imputation-guided construction of complete methylomes from WGBS data",
+         author = personList( as.person("Aaron Taudt" ),
+                              as.person("David Roquis" ),
+                              as.person("Amaryllis Vidalis" ),
+                              as.person("Rene Wardenaar" ),
+                              as.person("Frank Johannes" ),
+                              as.person("Maria Colome-Tatche" )
+                            ),
+         year = 2018,
+         journal = "BMC Genomics",
+         volume = "19",
+         issue = "1",
+         doi = "10.1186/s12864-018-4641-x",
+         url = "https://doi.org/10.1186/s12864-018-4641-x",
+         textVersion = 
+         "Taudt A. et al. (2018) METHimpute: imputation-guided construction of complete methylomes from WGBS data. BMC Genomics. https://doi.org/10.1186/s12864-018-4641-x" )
+
