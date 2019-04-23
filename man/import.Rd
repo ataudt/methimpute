@@ -11,8 +11,8 @@
 importBSMAP(file, chrom.lengths = NULL, skip = 1, contexts = c(CG =
   "NNCGN", CHG = "NNCHG", CHH = "NNCHH"))
 
-importMethylpy(file, chrom.lengths = NULL, skip = 1, contexts = c(CG =
-  "CGN", CHG = "CHG", CHH = "CHH"))
+importMethylpy(file, chrom.lengths = NULL, skip = 1, contexts = c(CG
+  = "CGN", CHG = "CHG", CHH = "CHH"))
 
 importBSSeeker(file, chrom.lengths = NULL, skip = 0)
 

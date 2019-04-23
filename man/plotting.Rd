@@ -19,7 +19,8 @@ plotTransitionProbs(model)
 plotConvergence(model)
 
 plotEnrichment(model, annotation, windowsize = 100, insidewindows = 20,
-  range = 1000, category.column = NULL, plot = TRUE, df.list = NULL)
+  range = 1000, category.column = NULL, plot = TRUE,
+  df.list = NULL)
 
 plotPosteriorDistance(model, datapoints = 1e+06, binwidth = 5,
   max.coverage.y = 0, min.coverage.x = 3, xmax = 200,

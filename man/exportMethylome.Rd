@@ -18,11 +18,13 @@ exportMethylome(model, filename)
 Export a methylome as a TSV file.
 }
 \examples{
+\dontrun{
 ## Get some toy data
 file <- system.file("data","arabidopsis_toydata.RData", package="methimpute")
 data <- get(load(file))
 print(data)
 model <- callMethylation(data, max.iter=10)
 exportMethylome(model, filename = tempfile())
+}
 
 }

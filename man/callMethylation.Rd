@@ -5,9 +5,10 @@
 \title{Call methylation status}
 \usage{
 callMethylation(data, fit.on.chrom = NULL, transDist = Inf, eps = 1,
-  max.time = Inf, max.iter = Inf, count.cutoff = 500, verbosity = 1,
-  num.threads = 2 + include.intermediate, initial.params = NULL,
-  include.intermediate = FALSE, update = "independent", min.reads = 0)
+  max.time = Inf, max.iter = Inf, count.cutoff = 500,
+  verbosity = 1, num.threads = 2 + include.intermediate,
+  initial.params = NULL, include.intermediate = FALSE,
+  update = "independent", min.reads = 0)
 }
 \arguments{
 \item{data}{A \code{\link{methimputeData}} object.}
